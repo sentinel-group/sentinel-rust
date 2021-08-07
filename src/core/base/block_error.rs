@@ -1,18 +1,19 @@
 use super::{BlockType, SentinelRule};
 use std::any::Any;
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
+use std::sync::Arc;
+
+pub type Snapshot = dyn Any + Send + Sync;
 
 // BlockError indicates the request was blocked by Sentinel.
 #[derive(Debug, Clone, Default)]
 pub struct BlockError {
-    pub(crate) block_type: BlockType,
+    block_type: BlockType,
     // blockMsg provides additional message for the block error.
-    pub(crate) block_msg: String,
-    pub(crate) rule: Option<Rc<RefCell<dyn SentinelRule>>>,
+    block_msg: String,
+    rule: Option<Arc<dyn SentinelRule>>,
     // snapshotValue represents the triggered "snapshot" value
-    pub(crate) snapshot_value: Option<Rc<RefCell<dyn Any>>>,
+    snapshot_value: Option<Arc<Snapshot>>,
 }
 
 impl BlockError {
@@ -34,8 +35,8 @@ impl BlockError {
     pub fn new_with_cause(
         block_type: BlockType,
         block_msg: String,
-        rule: Rc<RefCell<dyn SentinelRule>>,
-        snapshot_value: Rc<RefCell<dyn Any>>,
+        rule: Arc<dyn SentinelRule>,
+        snapshot_value: Arc<Snapshot>,
     ) -> Self {
         Self {
             block_type,
@@ -53,11 +54,11 @@ impl BlockError {
         self.block_msg.clone()
     }
 
-    pub fn triggered_rule(&self) -> Option<Rc<RefCell<dyn SentinelRule>>> {
+    pub fn triggered_rule(&self) -> Option<Arc<dyn SentinelRule>> {
         self.rule.clone()
     }
 
-    pub fn triggered_value(&self) -> Option<Rc<RefCell<dyn Any>>> {
+    pub fn triggered_value(&self) -> Option<Arc<Snapshot>> {
         self.snapshot_value.clone()
     }
 }
@@ -99,8 +100,8 @@ mod test {
     fn testcase(
         block_type: BlockType,
         block_msg: Option<String>,
-        rule: Option<Rc<RefCell<dyn SentinelRule>>>,
-        snapshot_value: Option<Rc<RefCell<dyn Any>>>,
+        rule: Option<Arc<dyn SentinelRule>>,
+        snapshot_value: Option<Arc<Snapshot>>,
     ) {
         let block_err: BlockError;
         if let (Some(rule), Some(snapshot_value), Some(block_msg)) =
@@ -114,8 +115,8 @@ mod test {
             );
             assert_eq!(block_err.block_type(), block_type);
             assert_eq!(block_err.block_msg(), block_msg);
-            assert!(Rc::ptr_eq(&block_err.triggered_rule().unwrap(), &rule));
-            assert!(Rc::ptr_eq(
+            assert!(Arc::ptr_eq(&block_err.triggered_rule().unwrap(), &rule));
+            assert!(Arc::ptr_eq(
                 &block_err.triggered_value().unwrap(),
                 &snapshot_value
             ));
@@ -143,8 +144,8 @@ mod test {
         testcase(
             BlockType::Flow,
             Some(String::from("mock msg")),
-            Some(Rc::new(RefCell::new(MockRule::default()))),
-            Some(Rc::new(RefCell::new(String::from("mock value")))),
+            Some(Arc::new(MockRule::default())),
+            Some(Arc::new(String::from("mock value"))),
         );
     }
 }

@@ -1,30 +1,25 @@
 use super::{EntryContext, ResourceWrapper, SlotChain};
-use crate::logging::log::error;
+use crate::logging;
 use crate::{Error, Result};
 use std::cell::RefCell;
-use std::rc::{Weak, Rc};
+use std::rc::Rc;
+use std::sync::Arc;
 use std::vec::Vec;
 
 type ExitHandler = fn(entry: &SentinelEntry, ctx: Rc<RefCell<EntryContext>>) -> Result<()>;
 
 pub struct SentinelEntry {
-    res: Option<ResourceWrapper>,
-    /// one entry bounds with one context
-    ctx: Weak<RefCell<EntryContext>>,
+    /// inner context may need mutability in ExitHandlers, thus, RefCell is used
+    ctx: Rc<RefCell<EntryContext>>,
     exit_handlers: Vec<ExitHandler>,
-    /// each entry holds a slot chain.
-    /// it means this entry will go through the sc
-    sc: Rc<RefCell<SlotChain>>,
+    /// each entry traverses a slot chain,
+    /// global slot chain is wrapped by Arc, thus here we use Arc
+    sc: Arc<SlotChain>,
 }
 
 impl SentinelEntry {
-    pub fn new(
-        res: Option<ResourceWrapper>,
-        ctx: Weak<RefCell<EntryContext>>,
-        sc: Rc<RefCell<SlotChain>>,
-    ) -> Self {
-        Self {
-            res,
+    pub fn new(ctx: Rc<RefCell<EntryContext>>, sc: Arc<SlotChain>) -> Self {
+        SentinelEntry {
             ctx,
             exit_handlers: Vec::new(),
             sc,
@@ -35,24 +30,20 @@ impl SentinelEntry {
         self.exit_handlers.push(exit_handler);
     }
 
-    pub fn context(&self) -> Weak<RefCell<EntryContext>> {
+    pub fn context(&self) -> Rc<RefCell<EntryContext>> {
         self.ctx.clone()
     }
 
-    pub fn resource(&self) -> Option<&ResourceWrapper> {
-        self.res.as_ref()
-    }
-
     // todo: cleanup
-    pub fn exit(self) {
+    pub fn exit(&self) {
         for handler in &self.exit_handlers {
-            handler(&self, self.ctx.upgrade().unwrap())
+            handler(&self, self.ctx.clone())
                 .map_err(|err: Error| {
-                    error!("ERROR: {}", err);
+                    logging::error!("ERROR: {}", err);
                 })
                 .unwrap();
         }
-        self.sc.borrow().exit(self.ctx.upgrade().unwrap());
+        self.sc.exit(self.ctx.clone());
     }
 }
 
@@ -72,11 +63,13 @@ mod test {
         unsafe {
             EXIT_FLAG = 0;
         }
-        let sc = Rc::new(RefCell::new(SlotChain::new()));
+        let sc = Arc::new(SlotChain::new());
         let ctx = Rc::new(RefCell::new(EntryContext::new()));
-        let mut entry =
-            SentinelEntry::new(None, Rc::downgrade(&ctx), sc);
+        let mut entry = SentinelEntry::new(ctx.clone(), sc);
+
         entry.when_exit(exit_handler_mock);
+        let entry = Rc::new(entry);
+        ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
         entry.exit();
         unsafe {
             assert_eq!(EXIT_FLAG, 1);

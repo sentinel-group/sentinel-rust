@@ -1,10 +1,14 @@
-pub(crate) mod base;
-pub(crate) mod circuitbreaker;
-pub(crate) mod config;
-pub(crate) mod flow;
-pub(crate) mod hotspot;
-pub(crate) mod isolation;
-pub(crate) mod log;
-pub(crate) mod stat;
-pub(crate) mod system;
-pub(crate) mod system_metric;
+pub mod base;
+pub mod system_metric;
+// statistic preparation slots, statistic slots
+pub mod stat;
+// statistic slots
+pub mod log;
+// statistic slots, rule check slots
+pub mod circuitbreaker;
+pub mod config;
+pub mod flow;
+pub mod hotspot;
+// rule check slots
+pub mod isolation;
+pub mod system;

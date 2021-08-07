@@ -1,12 +1,10 @@
 //! Metric Item
 //!
 
-use super::TimePredicate;
+use super::{ResourceType, TimePredicate};
 use crate::utils::format_time_millis;
 use crate::{Error, Result};
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
 
 pub const METRIC_PART_SEPARATOR: &str = "|";
 pub const METRIC_EMPTY_STRING_ERROR: &str = "invalid metric line: empty string";
@@ -15,16 +13,16 @@ pub const METRIC_INVALID_FORMAT_ERROR: &str = "invalid metric line: invalid form
 /// MetricItem represents the data of metric log per line.
 #[derive(Debug, Clone, Default)]
 pub struct MetricItem {
-    pub(self) resource: String,
-    pub(self) classification: i32,
-    pub(self) timestamp: u64,
-    pub(self) pass_qps: u64,
-    pub(self) block_qps: u64,
-    pub(self) complete_qps: u64,
-    pub(self) error_qps: u64,
-    pub(self) avg_rt: u64,
-    pub(self) occupied_pass_qps: u64,
-    pub(self) concurrency: u32,
+    pub(crate) resource: String,
+    pub(crate) resource_type: ResourceType,
+    pub(crate) timestamp: u64,
+    pub(crate) pass_qps: u64,
+    pub(crate) block_qps: u64,
+    pub(crate) complete_qps: u64,
+    pub(crate) error_qps: u64,
+    pub(crate) avg_rt: u64,
+    pub(crate) occupied_pass_qps: u64,
+    pub(crate) concurrency: u32,
 }
 
 impl fmt::Display for MetricItem {
@@ -44,13 +42,13 @@ impl fmt::Display for MetricItem {
             self.avg_rt,
             self.occupied_pass_qps,
             self.concurrency,
-            self.classification
+            self.resource_type as u8
         )
     }
 }
 
 impl MetricItem {
-    /// cannot use From<String> trait, since conversion may fail
+    /// cannot use String trait, since conversion may fail
     pub fn from_string(line: String) -> Result<Self> {
         if line.len() == 0 {
             return Err(Error::msg(METRIC_EMPTY_STRING_ERROR));
@@ -72,7 +70,7 @@ impl MetricItem {
             if arr.len() >= 10 {
                 item.concurrency = arr[9].parse::<u32>()?;
                 if arr.len() >= 11 {
-                    item.classification = arr[10].parse::<i32>()?;
+                    item.resource_type = arr[10].parse::<u8>()?.into();
                 }
             }
         }
@@ -80,8 +78,8 @@ impl MetricItem {
     }
 }
 
-pub trait MetricItemRetriever {
-    fn metrics_on_condition(&self, predicate: TimePredicate) -> Vec<MetricItem>;
+pub trait MetricItemRetriever: Send + Sync {
+    fn metrics_on_condition(&self, predicate: &TimePredicate) -> Vec<MetricItem>;
 }
 
 #[cfg(test)]
@@ -99,7 +97,7 @@ mod test {
         assert_eq!(0u64, metric_item.error_qps);
         assert_eq!(25u64, metric_item.avg_rt);
         assert_eq!("/foo/*", metric_item.resource);
-        assert_eq!(1i32, metric_item.classification);
+        assert_eq!(1u8, metric_item.resource_type as u8);
     }
 
     #[test]

@@ -1,10 +1,19 @@
 //! # Sentinel in Rust
 //!
 //!
+#![allow(warnings)]
 
 pub mod api;
-pub(crate) mod core;
-pub(crate) mod logging;
-pub(crate) mod utils;
+pub mod core;
+pub mod logging;
+pub mod metrics;
+pub mod utils;
+
+pub use ::core::*;
+pub use api::*;
 
 use anyhow::{Error, Result};
+
+// todo: replace useless Arc by ref
+// returning of getter of Arc should be replaced to ref of Arc, too
+// possible use of getter and setter

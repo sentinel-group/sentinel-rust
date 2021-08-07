@@ -1,6 +1,6 @@
 pub const TOTAL_IN_BOUND_RESOURCE_NAME: &str = "__total_inbound_traffic__";
 
-pub const DEFAULT_MAX_RESOURCE_AMOUNT: u32 = 10000;
+pub const DEFAULT_MAX_RESOURCE_AMOUNT: usize = 10000;
 
 pub const DEFAULT_SAMPLE_COUNT: u32 = 2;
 pub const DEFAULT_INTERVAL_MS: u32 = 1000;
