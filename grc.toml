@@ -1,0 +1,10 @@
+emoji = true
+
+pre = [
+    "cargo fmt",
+    "cp ./README.md ./sentinel/README.md",
+]
+
+after = [
+    "git status",
+]
