@@ -1,0 +1,10 @@
+# use grcov to analyze code coverage
+
+name: grcov
+
+on:
+  push:
+    branches: 
+      - main
+  schedule: 
+    - cron: '0 0 * * 0' # Sunday

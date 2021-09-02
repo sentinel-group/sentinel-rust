@@ -10,9 +10,6 @@ on:
   schedule: 
     - cron: '0 0 * * 0' # Sunday
 
-env:
-  RUSTC: 1.53.0
-
 jobs:
   # Depends on all actions that are required for a "successful" CI run.
   ci:
@@ -22,7 +19,6 @@ jobs:
       - check
       - test-single
       - test-parallel
-      - clippy
       - fmt
       - docs
       - check-readme
@@ -74,18 +70,6 @@ jobs:
             printf "Please run \`rustfmt --edition 2018 \$(find . -name '*.rs' -print)\` to fix rustfmt errors.\nSee CONTRIBUTING.md for more details.\n" >&2
             exit 1
           fi
-          
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Rust
-        run: rustup update stable && rustup default stable
-      - name: Install clippy
-        run: rustup component add clippy
-      - name: "clippy --all"
-        run: cargo clippy --all --tests --all-features
 
   docs:
     name: Docs
