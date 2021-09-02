@@ -301,6 +301,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn valid_head() {
         let sample_count = 10;
         let interval_ms = 1000;
@@ -310,21 +311,11 @@ mod test {
         let window = time::Duration::from_millis(bucket_len_ms);
         {
             let expected1 = arr.current_bucket().unwrap();
-            println!(
-                "{} {}",
-                curr_time_millis(),
-                expected1.start_stamp.load(Ordering::SeqCst)
-            );
             expected1.value().store(1, Ordering::SeqCst);
         }
         thread::sleep(window);
         {
             let expected2 = arr.current_bucket().unwrap();
-            println!(
-                "{} {}",
-                curr_time_millis(),
-                expected2.start_stamp.load(Ordering::SeqCst)
-            );
             expected2.value().store(2, Ordering::SeqCst);
         }
         for i in 0..((sample_count as u64) - 2) {
@@ -335,19 +326,9 @@ mod test {
                 .store(i + 3, Ordering::SeqCst);
         }
         let head = arr.get_valid_head().unwrap();
-        println!(
-            "{} {}",
-            curr_time_millis(),
-            head.start_stamp.load(Ordering::SeqCst)
-        );
         assert_eq!(1, head.value().load(Ordering::SeqCst));
         thread::sleep(window);
         let head = arr.get_valid_head().unwrap();
-        println!(
-            "{} {}",
-            curr_time_millis(),
-            head.start_stamp.load(Ordering::SeqCst)
-        );
         assert_eq!(2, head.value().load(Ordering::SeqCst));
     }
 }

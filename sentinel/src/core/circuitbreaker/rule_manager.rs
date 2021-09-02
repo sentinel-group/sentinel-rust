@@ -21,10 +21,10 @@ lazy_static! {
         gen_fun_map.insert(BreakerStrategy::ErrorRatio, Box::new(gen_error_ratio));
         RwLock::new(gen_fun_map)
     };
-    pub static ref BREAKER_MAP: RwLock<HashMap<String, Vec<Arc<dyn CircuitBreakerTrait>>>> =
-        RwLock::new(HashMap::new());
     pub static ref STATE_CHANGE_LISTERNERS: Mutex<Vec<Arc<dyn StateChangeListener>>> =
         Mutex::new(Vec::new());
+    pub static ref BREAKER_MAP: RwLock<HashMap<String, Vec<Arc<dyn CircuitBreakerTrait>>>> =
+        RwLock::new(HashMap::new());
     pub static ref CURRENT_RULES: Mutex<RuleMap> = Mutex::new(HashMap::new());
     pub static ref BREAKER_RULES: RwLock<RuleMap> = RwLock::new(HashMap::new());
 }
@@ -106,11 +106,12 @@ pub fn get_rules() -> Vec<Arc<Rule>> {
 }
 
 /// `clear_rules` clear all the previous rules.
-// This func acquires locks on global `BREAKER_RULES` and `CURRENT_RULES`,
+// This func acquires locks on global `BREAKER_RULES`, `CURRENT_RULES` and `BREAKER_MAP`,
 // please release your locks on them before calling this func
 pub fn clear_rules() {
     CURRENT_RULES.lock().unwrap().clear();
     BREAKER_RULES.write().unwrap().clear();
+    BREAKER_MAP.write().unwrap().clear();
 }
 
 fn log_rule_update(map: &RuleMap) {
@@ -282,7 +283,6 @@ pub fn get_breakers_of_resource(resource: &String) -> Vec<Arc<dyn CircuitBreaker
 }
 
 /// register_state_change_listeners registers the global state change listener for all circuit breakers
-/// Note: this function is not thread-safe.
 pub fn register_state_change_listeners(mut listeners: Vec<Arc<dyn StateChangeListener>>) {
     if listeners.len() == 0 {
         return;
@@ -294,7 +294,6 @@ pub fn register_state_change_listeners(mut listeners: Vec<Arc<dyn StateChangeLis
 }
 
 /// clear_state_change_listeners clears the all StateChangeListener
-/// Note: this function is not thread-safe.
 pub fn clear_state_change_listeners() {
     STATE_CHANGE_LISTERNERS.lock().unwrap().clear();
 }
@@ -316,7 +315,7 @@ pub fn set_circuit_breaker_generator(
     }
 }
 
-pub fn remove_circuit_breaker_generator(s: BreakerStrategy) -> Result<()> {
+pub fn remove_circuit_breaker_generator(s: &BreakerStrategy) -> Result<()> {
     match s {
         BreakerStrategy::Custom(_) => {
             GEN_FUN_MAP.write().unwrap().remove(&s);
@@ -415,4 +414,361 @@ pub fn build_resource_circuit_breaker(
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    #[should_panic(expected = "Default circuit breakers are not allowed to be modified.")]
+    fn illegal_set() {
+        set_circuit_breaker_generator(
+            BreakerStrategy::SlowRequestRatio,
+            Box::new(
+                |rule: Arc<Rule>,
+                 _: Option<Arc<CounterLeapArray>>|
+                 -> Arc<dyn CircuitBreakerTrait> {
+                    Arc::new(SlowRtBreaker::new(rule))
+                },
+            ),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Default circuit breakers are not allowed to be modified.")]
+    fn illegal_remove() {
+        remove_circuit_breaker_generator(&BreakerStrategy::SlowRequestRatio).unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn set_and_remove_generator() {
+        clear_rules();
+        let key = BreakerStrategy::Custom(1);
+        set_circuit_breaker_generator(
+            key,
+            Box::new(
+                |rule: Arc<Rule>,
+                 _: Option<Arc<CounterLeapArray>>|
+                 -> Arc<dyn CircuitBreakerTrait> {
+                    Arc::new(SlowRtBreaker::new(rule))
+                },
+            ),
+        );
+        let resource = String::from("test-customized-cb");
+        load_rules(vec![Arc::new(Rule {
+            resource: resource.clone(),
+            strategy: key,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            threshold: 0.3,
+            ..Default::default()
+        })]);
+
+        let breaker_map = BREAKER_MAP.write().unwrap();
+
+        assert!(GEN_FUN_MAP.read().unwrap().contains_key(&key));
+        assert!(breaker_map[&resource].len() > 0);
+        remove_circuit_breaker_generator(&key);
+        assert!(!GEN_FUN_MAP.read().unwrap().contains_key(&key));
+        drop(breaker_map);
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_load_rules_valid() {
+        clear_rules();
+        let r0 = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            max_allowed_rt_ms: 20,
+            threshold: 0.1,
+            ..Default::default()
+        });
+        let r1 = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            threshold: 0.3,
+            ..Default::default()
+        });
+        let r2 = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            threshold: 10.0,
+            ..Default::default()
+        });
+        let sucess = load_rules(vec![Arc::clone(&r0), Arc::clone(&r1), Arc::clone(&r2)]);
+        assert!(sucess);
+        let breaker_map = BREAKER_MAP.read().unwrap();
+        let b2 = &breaker_map["abc"][1];
+        assert_eq!(breaker_map.len(), 1);
+        assert_eq!(breaker_map["abc"].len(), 3);
+        assert_eq!(breaker_map["abc"][0].bound_rule(), &r0);
+        assert_eq!(breaker_map["abc"][1].bound_rule(), &r1);
+        assert_eq!(breaker_map["abc"][2].bound_rule(), &r2);
+        drop(breaker_map);
+
+        let r3 = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            max_allowed_rt_ms: 20,
+            threshold: 0.1,
+            ..Default::default()
+        });
+        let r4 = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorRatio,
+            retry_timeout_ms: 100,
+            min_request_amount: 25,
+            stat_interval_ms: 1000,
+            threshold: 0.5,
+            ..Default::default()
+        });
+        let r5 = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 100,
+            threshold: 10.0,
+            ..Default::default()
+        });
+        let r6 = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1100,
+            threshold: 10.0,
+            ..Default::default()
+        });
+
+        let sucess = load_rules(vec![
+            Arc::clone(&r3),
+            Arc::clone(&r4),
+            Arc::clone(&r5),
+            Arc::clone(&r6),
+        ]);
+        assert!(sucess);
+        let breaker_map = BREAKER_MAP.read().unwrap();
+        let b2 = &breaker_map["abc"][1];
+        assert_eq!(breaker_map.len(), 1);
+        assert_eq!(breaker_map["abc"].len(), 4);
+        assert_eq!(breaker_map["abc"][0].bound_rule(), &r0);
+        assert!(Arc::ptr_eq(breaker_map["abc"][1].stat(), b2.stat()));
+        assert_eq!(breaker_map["abc"][2].bound_rule(), &r5);
+        assert_eq!(breaker_map["abc"][3].bound_rule(), &r6);
+        drop(breaker_map);
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_load_rules_same() {
+        clear_rules();
+        let rule = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            max_allowed_rt_ms: 20,
+            threshold: 0.1,
+            ..Default::default()
+        });
+        let success = load_rules(vec![Arc::clone(&rule)]);
+        assert!(success);
+        let success = load_rules(vec![rule]);
+        assert!(!success);
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_load_rules_of_resource_invalid() {
+        clear_rules();
+        let rule = Arc::new(Rule {
+            resource: "abc".into(),
+            ..Default::default()
+        });
+        let success = load_rules_of_resource(&"".into(), vec![rule]);
+        assert!(success.is_err());
+        assert_eq!(0, get_rules().len());
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_load_rules_of_resource() {
+        clear_rules();
+        let r0 = Arc::new(Rule {
+            resource: "abc1".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            max_allowed_rt_ms: 20,
+            threshold: 0.1,
+            ..Default::default()
+        });
+        let r1 = Arc::new(Rule {
+            resource: "abc1".into(),
+            strategy: BreakerStrategy::ErrorRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            threshold: 0.3,
+            ..Default::default()
+        });
+        let r2 = Arc::new(Rule {
+            resource: "abc2".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            threshold: 10.0,
+            ..Default::default()
+        });
+        let success =
+            load_rules_of_resource(&"abc1".into(), vec![Arc::clone(&r0), Arc::clone(&r1)]);
+        assert!(success.unwrap());
+        let success = load_rules_of_resource(&"abc2".into(), vec![Arc::clone(&r2)]);
+        assert!(success.unwrap());
+        let breaker_map = BREAKER_MAP.read().unwrap();
+        let breaker_rules = BREAKER_RULES.read().unwrap();
+        let current_rules = CURRENT_RULES.lock().unwrap();
+        assert_eq!(2, breaker_map["abc1"].len());
+        assert_eq!(2, breaker_rules["abc1"].len());
+        assert_eq!(2, current_rules["abc1"].len());
+        assert_eq!(1, breaker_map["abc2"].len());
+        assert_eq!(1, breaker_rules["abc2"].len());
+        assert_eq!(1, current_rules["abc2"].len());
+
+        drop(breaker_map);
+        drop(breaker_rules);
+        drop(current_rules);
+
+        let success =
+            load_rules_of_resource(&"abc1".into(), vec![Arc::clone(&r0), Arc::clone(&r1)]);
+        assert!(!success.unwrap());
+        assert_eq!(2, BREAKER_MAP.read().unwrap()["abc1"].len());
+        assert_eq!(2, BREAKER_RULES.read().unwrap()["abc1"].len());
+        assert_eq!(2, CURRENT_RULES.lock().unwrap()["abc1"].len());
+
+        let success = load_rules_of_resource(&"abc1".into(), Vec::new());
+        assert!(success.unwrap());
+        assert!(!BREAKER_MAP.read().unwrap().contains_key("abc1"));
+        assert!(!BREAKER_RULES.read().unwrap().contains_key("abc1"));
+        assert!(!CURRENT_RULES.lock().unwrap().contains_key("abc1"));
+
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_get_rules() {
+        clear_rules();
+        let rule = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            max_allowed_rt_ms: 20,
+            threshold: 0.1,
+            ..Default::default()
+        });
+        let success = load_rules(vec![Arc::clone(&rule)]);
+        assert!(success);
+        let rules = get_rules();
+        assert_eq!(1, rules.len());
+        assert_eq!(rule.resource, rules[0].resource);
+        assert_eq!(rule.strategy, rules[0].strategy);
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_get_breakers_of_resource() {
+        clear_rules();
+        let rule = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            max_allowed_rt_ms: 20,
+            threshold: 0.1,
+            ..Default::default()
+        });
+        let success = load_rules(vec![Arc::clone(&rule)]);
+        assert!(success);
+        let breakers = get_breakers_of_resource(&rule.resource);
+        assert_eq!(1, breakers.len());
+        assert_eq!(breakers[0].bound_rule(), &rule);
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_clear_rules_of_resource() {
+        clear_rules();
+        let r0 = Arc::new(Rule {
+            resource: "abc1".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            max_allowed_rt_ms: 20,
+            threshold: 0.1,
+            ..Default::default()
+        });
+        let r1 = Arc::new(Rule {
+            resource: "abc1".into(),
+            strategy: BreakerStrategy::ErrorRatio,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            threshold: 0.3,
+            ..Default::default()
+        });
+        let r2 = Arc::new(Rule {
+            resource: "abc2".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 1000,
+            min_request_amount: 5,
+            stat_interval_ms: 1000,
+            threshold: 10.0,
+            ..Default::default()
+        });
+        let success = load_rules(vec![r0, r1, r2]);
+        assert!(success);
+
+        clear_rules_of_resource(&"abc1".into());
+        let breaker_map = BREAKER_MAP.read().unwrap();
+        let breaker_rules = BREAKER_RULES.read().unwrap();
+        let current_rules = CURRENT_RULES.lock().unwrap();
+        assert_eq!(0, breaker_map.get("abc1").unwrap_or(&Vec::new()).len());
+        assert_eq!(0, breaker_rules.get("abc1").unwrap_or(&Vec::new()).len());
+        assert_eq!(0, current_rules.get("abc1").unwrap_or(&Vec::new()).len());
+        assert_eq!(1, breaker_map["abc2"].len());
+        assert_eq!(1, breaker_rules["abc2"].len());
+        assert_eq!(1, current_rules["abc2"].len());
+        drop(breaker_map);
+        drop(breaker_rules);
+        drop(current_rules);
+
+        clear_rules();
+    }
 }

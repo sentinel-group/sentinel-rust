@@ -71,9 +71,9 @@ mod test {
         let mut entry = SentinelEntry::new(ctx.clone(), sc);
 
         entry.when_exit(Box::new(exit_handler_mock));
-        let entry = Rc::new(entry);
+        let entry = Rc::new(RefCell::new(entry));
         ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
-        entry.exit();
+        entry.borrow().exit();
         EXIT_FLAG.with(|f| {
             assert_eq!(*f.borrow(), 1);
         });

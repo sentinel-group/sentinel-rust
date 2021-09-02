@@ -48,9 +48,8 @@ impl Rule {
     }
 
     pub fn get_rule_stat_sliding_window_bucket_count(&self) -> u32 {
-        let interval = self.stat_interval_ms;
         let mut bucket_count = self.stat_sliding_window_bucket_count;
-        if bucket_count == 0 || interval % bucket_count != 0 {
+        if bucket_count == 0 || self.stat_interval_ms % bucket_count != 0 {
             bucket_count = 1
         }
         return bucket_count;
@@ -92,23 +91,19 @@ impl SentinelRule for Rule {
 
 impl PartialEq for Rule {
     fn eq(&self, other: &Self) -> bool {
-        if self.resource == other.resource
+        self.resource == other.resource
             && self.strategy == other.strategy
             && self.retry_timeout_ms == other.retry_timeout_ms
             && self.min_request_amount == other.min_request_amount
             && self.stat_interval_ms == other.stat_interval_ms
             && self.stat_sliding_window_bucket_count == other.stat_sliding_window_bucket_count
-        {
-            match self.strategy {
+            && match self.strategy {
                 BreakerStrategy::SlowRequestRatio => {
                     self.max_allowed_rt_ms == other.max_allowed_rt_ms
                         && self.threshold == other.threshold
                 }
                 _ => self.threshold == other.threshold,
             }
-        } else {
-            false
-        }
     }
 }
 
@@ -121,5 +116,295 @@ impl fmt::Display for Rule {
 
 #[cfg(test)]
 mod test {
+    use std::fmt::Debug;
+
     use super::*;
+
+    #[test]
+    fn test_reusable() {
+        let rules = vec![
+            // different resource
+            (
+                Rule {
+                    resource: "abc".into(),
+                    ..Default::default()
+                },
+                Rule {
+                    resource: "def".into(),
+                    ..Default::default()
+                },
+                false,
+                false,
+            ),
+            // different strategy
+            (
+                Rule {
+                    strategy: BreakerStrategy::ErrorCount,
+                    ..Default::default()
+                },
+                Rule {
+                    strategy: BreakerStrategy::ErrorRatio,
+                    ..Default::default()
+                },
+                false,
+                false,
+            ),
+            // different stat_interval_ms
+            (
+                Rule {
+                    stat_interval_ms: 10000,
+                    ..Default::default()
+                },
+                Rule {
+                    stat_interval_ms: 5000,
+                    ..Default::default()
+                },
+                false,
+                false,
+            ),
+            // different stat_sliding_window_bucket_count
+            (
+                Rule {
+                    stat_sliding_window_bucket_count: 2,
+                    ..Default::default()
+                },
+                Rule {
+                    stat_sliding_window_bucket_count: 5,
+                    ..Default::default()
+                },
+                false,
+                false,
+            ),
+            // different retry_timeout_ms
+            (
+                Rule {
+                    retry_timeout_ms: 3000,
+                    ..Default::default()
+                },
+                Rule {
+                    retry_timeout_ms: 5000,
+                    ..Default::default()
+                },
+                true,
+                false,
+            ),
+            // different min_request_amount
+            (
+                Rule {
+                    min_request_amount: 10,
+                    ..Default::default()
+                },
+                Rule {
+                    min_request_amount: 20,
+                    ..Default::default()
+                },
+                true,
+                false,
+            ),
+            // different threshold
+            (
+                Rule {
+                    threshold: 1.0,
+                    ..Default::default()
+                },
+                Rule {
+                    threshold: 2.0,
+                    ..Default::default()
+                },
+                true,
+                false,
+            ),
+            // different max_allowed_rt_ms on BreakerStrategy::ErrorCount
+            (
+                Rule {
+                    strategy: BreakerStrategy::ErrorCount,
+                    max_allowed_rt_ms: 1000,
+                    ..Default::default()
+                },
+                Rule {
+                    strategy: BreakerStrategy::ErrorCount,
+                    max_allowed_rt_ms: 2000,
+                    ..Default::default()
+                },
+                true,
+                true,
+            ),
+            // different max_allowed_rt_ms on BreakerStrategy::SlowRequestRatio
+            (
+                Rule {
+                    strategy: BreakerStrategy::SlowRequestRatio,
+                    max_allowed_rt_ms: 1000,
+                    ..Default::default()
+                },
+                Rule {
+                    strategy: BreakerStrategy::SlowRequestRatio,
+                    max_allowed_rt_ms: 2000,
+                    ..Default::default()
+                },
+                true,
+                false,
+            ),
+        ];
+        for (r1, r2, reuse_expected, eq_expected) in rules {
+            assert_eq!(r1.is_stat_reusable(&r2), reuse_expected);
+            assert_eq!(r1 == r2, eq_expected);
+        }
+    }
+
+    #[test]
+    fn test_bucket_count() {
+        let rules = vec![
+            // count == 1
+            (
+                Rule {
+                    stat_interval_ms: 1000,
+                    ..Default::default()
+                },
+                1,
+            ),
+            (
+                Rule {
+                    stat_sliding_window_bucket_count: 1,
+                    stat_interval_ms: 1000,
+                    ..Default::default()
+                },
+                1,
+            ),
+            (
+                Rule {
+                    stat_sliding_window_bucket_count: 10,
+                    stat_interval_ms: 1000,
+                    ..Default::default()
+                },
+                10,
+            ),
+            (
+                Rule {
+                    stat_sliding_window_bucket_count: 30,
+                    stat_interval_ms: 1000,
+                    ..Default::default()
+                },
+                1,
+            ),
+            (
+                Rule {
+                    stat_sliding_window_bucket_count: 100,
+                    stat_interval_ms: 100,
+                    ..Default::default()
+                },
+                100,
+            ),
+            (
+                Rule {
+                    stat_sliding_window_bucket_count: 200,
+                    stat_interval_ms: 100,
+                    ..Default::default()
+                },
+                1,
+            ),
+        ];
+        for (rule, expected) in rules {
+            assert_eq!(rule.get_rule_stat_sliding_window_bucket_count(), expected);
+        }
+    }
+
+    #[test]
+    fn test_valid() {
+        let rules = vec![
+            Rule {
+                resource: "abc".into(),
+                strategy: BreakerStrategy::SlowRequestRatio,
+                retry_timeout_ms: 1000,
+                min_request_amount: 5,
+                stat_interval_ms: 1000,
+                max_allowed_rt_ms: 20,
+                threshold: 0.1,
+                ..Default::default()
+            },
+            Rule {
+                resource: "abc".into(),
+                strategy: BreakerStrategy::ErrorRatio,
+                retry_timeout_ms: 1000,
+                min_request_amount: 5,
+                stat_interval_ms: 1000,
+                threshold: 0.3,
+                ..Default::default()
+            },
+            Rule {
+                resource: "abc".into(),
+                strategy: BreakerStrategy::ErrorCount,
+                retry_timeout_ms: 1000,
+                min_request_amount: 5,
+                stat_interval_ms: 1000,
+                threshold: 10.0,
+                ..Default::default()
+            },
+        ];
+        for rule in rules {
+            assert!(rule.is_valid().is_ok());
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "empty resource name")]
+    fn illegal1() {
+        let rule = Rule::default();
+        rule.is_valid().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid stat_interval_ms")]
+    fn illegal2() {
+        let rule = Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 1000,
+            stat_interval_ms: 0,
+            threshold: 3.0,
+            ..Default::default()
+        };
+        rule.is_valid().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid retry_timeout_ms")]
+    fn illegal3() {
+        let rule = Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 0,
+            stat_interval_ms: 1000,
+            threshold: 3.0,
+            ..Default::default()
+        };
+        rule.is_valid().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid threshold")]
+    fn illegal4() {
+        let rule = Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::ErrorCount,
+            retry_timeout_ms: 1000,
+            stat_interval_ms: 1000,
+            threshold: -4.0,
+            ..Default::default()
+        };
+        rule.is_valid().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid SlowRequestRatio ratio threshold (valid range: [0.0, 1.0])")]
+    fn illegal5() {
+        let rule = Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::SlowRequestRatio,
+            retry_timeout_ms: 1000,
+            stat_interval_ms: 1000,
+            threshold: 2.0,
+            ..Default::default()
+        };
+        rule.is_valid().unwrap();
+    }
 }

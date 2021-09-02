@@ -12,22 +12,22 @@ use std::sync::{
 };
 
 #[derive(Debug)]
-pub struct RejectChecker {
-    owner: Weak<Controller>,
+pub struct RejectChecker<C: CounterTrait = Counter> {
+    owner: Weak<Controller<C>>,
 }
 
-impl RejectChecker {
+impl<C: CounterTrait> RejectChecker<C> {
     pub fn new() -> Self {
         RejectChecker { owner: Weak::new() }
     }
 }
 
-impl Checker for RejectChecker {
-    fn get_owner(&self) -> &Weak<Controller> {
+impl<C: CounterTrait> Checker<C> for RejectChecker<C> {
+    fn get_owner(&self) -> &Weak<Controller<C>> {
         &self.owner
     }
 
-    fn set_owner(&mut self, owner: Weak<Controller>) {
+    fn set_owner(&mut self, owner: Weak<Controller<C>>) {
         self.owner = owner;
     }
 
@@ -116,8 +116,7 @@ impl Checker for RejectChecker {
                     last_add_token_time_arc.store(current_time_in_ms, Ordering::SeqCst);
                     return TokenResult::new_pass();
                 }
-                // runtime.Gosched()
-                continue;
+                std::thread::yield_now();
             } else {
                 //check whether the rest of token is enough to batch
                 if let Some(old_qps_arc) = token_counter.get(&arg) {
@@ -145,8 +144,7 @@ impl Checker for RejectChecker {
                         );
                     }
                 }
-                // runtime.Gosched()
-                continue;
+                std::thread::yield_now();
             }
         }
     }

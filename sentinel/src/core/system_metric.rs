@@ -77,9 +77,6 @@ pub fn init_cpu_collector(cpu_interval: u32) {
 #[inline]
 fn get_process_cpu_stat() -> Result<f32> {
     let mut process = CURRENT_PROCESS.lock().unwrap();
-    if cfg!(test) {
-        println!("{:?}\n current pid {}", process, std::process::id());
-    }
     process
         .cpu_percent()
         .map_err(|err| Error::msg(format!("{:?}", err)))
@@ -159,6 +156,7 @@ mod test {
     #[test]
     #[ignore]
     fn cpu_usage() {
+        set_cpu_usage(0.0);
         let usage = current_cpu_usage();
         assert_eq!(0.0, usage);
         set_cpu_usage(0.3);

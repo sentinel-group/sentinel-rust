@@ -656,14 +656,6 @@ mod test {
     use crate::core::base::ReadStat;
     use crate::utils::AsAny;
 
-    #[inline]
-    // remember drop the CONTROLLER_MAP and RULE_MAP in the scope,
-    // before calling this function
-    fn clear_data() {
-        CONTROLLER_MAP.lock().unwrap().clear();
-        RULE_MAP.lock().unwrap().clear();
-    }
-
     #[test]
     #[should_panic(expected = "Default control behaviors are not allowed to be modified.")]
     fn illegal_set() {
@@ -692,6 +684,7 @@ mod test {
     #[test]
     #[ignore]
     fn set_and_remove_generator() {
+        clear_rules();
         const STRATEGY: u8 = 1;
         set_traffic_shaping_generator(
             CalculateStrategy::Custom(STRATEGY),
@@ -728,107 +721,7 @@ mod test {
         );
         assert!(!GEN_FUN_MAP.read().unwrap().contains_key(&key));
         drop(controller_map);
-        clear_data();
-    }
-
-    #[test]
-    fn is_valid_flow_rule1() {
-        let bad_rule1 = Rule {
-            threshold: 1.0,
-            resource: "".into(),
-            ..Default::default()
-        };
-        let bad_rule2 = Rule {
-            threshold: -1.9,
-            resource: "test".into(),
-            ..Default::default()
-        };
-        let bad_rule3 = Rule {
-            threshold: 5.0,
-            resource: "test".into(),
-            calculate_strategy: CalculateStrategy::WarmUp,
-            control_strategy: ControlStrategy::Reject,
-            ..Default::default()
-        };
-        let bad_rule4 = Rule {
-            threshold: 5.0,
-            resource: "test".into(),
-            calculate_strategy: CalculateStrategy::WarmUp,
-            control_strategy: ControlStrategy::Reject,
-            stat_interval_ms: 6000000,
-            ..Default::default()
-        };
-
-        let good_rule1 = Rule {
-            threshold: 10.0,
-            resource: "test".into(),
-            calculate_strategy: CalculateStrategy::WarmUp,
-            control_strategy: ControlStrategy::Throttling,
-            warm_up_period_sec: 10,
-            max_queueing_time_ms: 10,
-            stat_interval_ms: 1000,
-            ..Default::default()
-        };
-        let good_rule2 = Rule {
-            threshold: 10.0,
-            resource: "test".into(),
-            calculate_strategy: CalculateStrategy::WarmUp,
-            control_strategy: ControlStrategy::Throttling,
-            warm_up_period_sec: 10,
-            max_queueing_time_ms: 0,
-            stat_interval_ms: 1000,
-            ..Default::default()
-        };
-
-        assert!(bad_rule1.is_valid().is_err());
-        assert!(bad_rule2.is_valid().is_err());
-        assert!(bad_rule3.is_valid().is_err());
-        assert!(bad_rule4.is_valid().is_err());
-
-        assert!(good_rule1.is_valid().is_ok());
-        assert!(good_rule2.is_valid().is_ok());
-    }
-
-    #[test]
-    fn is_valid_flow_rule2() {
-        let mut rule = Rule {
-            resource: "hello0".into(),
-            calculate_strategy: CalculateStrategy::MemoryAdaptive,
-            control_strategy: ControlStrategy::Reject,
-            stat_interval_ms: 10,
-            low_mem_usage_threshold: 2,
-            high_mem_usage_threshold: 1,
-            mem_low_water_mark: 1,
-            mem_high_water_mark: 2,
-            ..Default::default()
-        };
-        assert!(rule.is_valid().is_ok());
-
-        rule.low_mem_usage_threshold = 9;
-        rule.high_mem_usage_threshold = 9;
-        assert!(rule.is_valid().is_err());
-        rule.low_mem_usage_threshold = 10;
-        assert!(rule.is_valid().is_ok());
-
-        rule.mem_low_water_mark = 0;
-        assert!(rule.is_valid().is_err());
-
-        rule.mem_low_water_mark = 100 * 1024 * 1024;
-        rule.mem_high_water_mark = 300 * 1024 * 1024;
-        assert!(rule.is_valid().is_ok());
-
-        rule.mem_high_water_mark = 0;
-        assert!(rule.is_valid().is_err());
-
-        rule.mem_high_water_mark = 300 * 1024 * 1024;
-        assert!(rule.is_valid().is_ok());
-
-        rule.mem_low_water_mark = 100 * 1024 * 1024;
-        rule.mem_high_water_mark = 30 * 1024 * 1024;
-        assert!(rule.is_valid().is_err());
-
-        rule.mem_high_water_mark = 300 * 1024 * 1024;
-        assert!(rule.is_valid().is_ok());
+        clear_rules();
     }
 
     #[test]
@@ -860,12 +753,13 @@ mod test {
             assert_eq!(rs[0], r2);
             assert_eq!(rs[1], r1);
         }
-        clear_data();
+        clear_rules();
     }
 
     #[test]
     #[ignore]
     fn get_rules2() {
+        clear_rules();
         let r1 = Arc::new(Rule {
             resource: "abc1".into(),
             calculate_strategy: CalculateStrategy::Direct,
@@ -909,7 +803,7 @@ mod test {
             NOP_STAT.write_only_metric().unwrap()
         ));
         drop(controller_map);
-        clear_data();
+        clear_rules();
     }
 
     #[test]
@@ -971,6 +865,7 @@ mod test {
     #[test]
     #[ignore]
     fn build_controller1() {
+        clear_rules();
         let r1 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 100.0,
@@ -1009,12 +904,13 @@ mod test {
         assert_eq!(&r1, tcs[0].rule());
         assert_eq!(&r2, tcs[1].rule());
         drop(controller_map);
-        clear_data();
+        clear_rules();
     }
 
     #[test]
     #[ignore]
     fn build_controller2() {
+        clear_rules();
         // use nop statistics because of no need statistics
         let r0 = Arc::new(Rule {
             resource: "abc1".into(),
@@ -1194,7 +1090,7 @@ mod test {
         // since the `controller_map` has not leave its scope
         // explicitly drop it or put the codes above in an individual `{}`
         drop(controller_map);
-        clear_data();
+        clear_rules();
     }
 
     #[test]
@@ -1293,6 +1189,6 @@ mod test {
         assert_eq!(2, rule_map["abc2"].len());
         drop(controller_map);
         drop(rule_map);
-        clear_data();
+        clear_rules();
     }
 }

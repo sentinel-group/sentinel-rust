@@ -30,7 +30,7 @@ fn main() {
                     println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
                     sleep_for_ms(rand::random::<u64>() % 10);
                     // Be sure the entry is exited finally.
-                    entry.exit()
+                    entry.borrow().exit()
                 } else {
                     // Blocked. We could get the block reason from the BlockError.
                     sleep_for_ms(rand::random::<u64>() % 10);

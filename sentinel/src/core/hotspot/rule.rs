@@ -62,10 +62,10 @@ pub struct Rule {
     pub param_key: String,
     /// threshold is the threshold to trigger rejection
     pub threshold: u64,
-    /// max_queueing_time_ms only takes effect when control_strategy is Throttling and `metric_type` is QPS
+    /// max_queueing_time_ms only takes effect when `control_strategy` is `Throttling` and `metric_type` is `QPS`
     pub max_queueing_time_ms: u64,
     /// `burst_count` is the silent count
-    /// `burst_count` only takes effect when control_strategy is Reject and `metric_type` is QPS
+    /// `burst_count` only takes effect when `control_strategy` is `Reject` and `metric_type` is `QPS`
     pub burst_count: u64,
     /// `duration_in_sec` is the time interval in statistic
     /// `duration_in_sec` only takes effect when `metric_type` is QPS
@@ -129,5 +129,83 @@ impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let fmtted = serde_json::to_string_pretty(self).unwrap();
         write!(f, "{}", fmtted)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "empty resource name")]
+    fn invalid_name() {
+        let rule = Rule::default();
+        rule.is_valid().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid duration")]
+    fn invalid_duration() {
+        let rule = Rule {
+            resource: "name".into(),
+            metric_type: MetricType::QPS,
+            ..Default::default()
+        };
+        rule.is_valid().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "param index and param key are mutually exclusive")]
+    fn invalid_param() {
+        let rule = Rule {
+            resource: "abc".into(),
+            metric_type: MetricType::QPS,
+            control_strategy: ControlStrategy::Reject,
+            duration_in_sec: 1,
+            param_index: 10,
+            param_key: "test2".into(),
+            ..Default::default()
+        };
+        rule.is_valid().unwrap();
+    }
+
+    #[test]
+    fn test_eq() {
+        let mut specific_items: HashMap<ParamKey, u64> = HashMap::new();
+        specific_items.insert("sss".into(), 1);
+        specific_items.insert("1123".into(), 3);
+        let rule1 = Rule {
+            id: Some("abc".into()),
+            resource: "abc".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            param_index: 0,
+            param_key: "key".into(),
+            threshold: 110,
+            max_queueing_time_ms: 5,
+            burst_count: 10,
+            duration_in_sec: 1,
+            params_max_capacity: 10000,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        };
+        let rule2 = Rule {
+            id: Some("abc".into()),
+            resource: "abc".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            param_index: 0,
+            param_key: "key".into(),
+            threshold: 110,
+            max_queueing_time_ms: 5,
+            burst_count: 10,
+            duration_in_sec: 1,
+            params_max_capacity: 10000,
+            specific_items,
+            ..Default::default()
+        };
+        assert_eq!(rule1, rule2);
     }
 }

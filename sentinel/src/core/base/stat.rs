@@ -137,15 +137,16 @@ pub fn check_validity_for_reuse_statistic(
 
 // expose the moudle in crate for possible testing usage
 #[cfg(test)]
-pub(crate) use test::*;
+pub(crate) use test::MockStatNode;
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::super::MetricItem;
     use super::*;
     use mockall::predicate::*;
     use mockall::*;
 
+    /// MockStatNode
     mock! {
         #[derive(Debug)]
         pub(crate) StatNode {}

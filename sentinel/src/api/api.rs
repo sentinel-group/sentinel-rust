@@ -50,7 +50,7 @@ impl EntryBuilder {
     }
 
     /// `build()` would consume EntryBuilder
-    pub fn build(self) -> Result<Rc<SentinelEntry>> {
+    pub fn build(self) -> Result<Rc<RefCell<SentinelEntry>>> {
         // get context from pool.
         let mut ctx = EntryContext::new();
 
@@ -71,17 +71,20 @@ impl EntryBuilder {
 
         let ctx = Rc::new(RefCell::new(ctx));
 
-        let entry = Rc::new(SentinelEntry::new(ctx.clone(), self.slot_chain.clone()));
+        let entry = Rc::new(RefCell::new(SentinelEntry::new(
+            Rc::clone(&ctx),
+            Arc::clone(&self.slot_chain),
+        )));
         ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
-        let r = self.slot_chain.entry(ctx.clone());
+        let r = self.slot_chain.entry(Rc::clone(&ctx));
 
         if *r.status() == ResultStatus::Blocked {
             // todo: here need fix
             // if return block_error,
             // must deep copy the error, since Arc only clone pointer
             let block_err = r.block_err();
-            entry.exit();
+            entry.borrow().exit();
             Err(Error::msg(r.to_string()))
         } else {
             Ok(entry)
@@ -136,7 +139,6 @@ mod test {
 
     #[test]
     fn pass() {
-        println!("just at beginning");
         let mut ps = Arc::new(MockStatPrepareSlot::new());
         let mut rcs1 = Arc::new(MockRuleCheckSlot::new());
         let mut rcs2 = Arc::new(MockRuleCheckSlot::new());
@@ -186,13 +188,10 @@ mod test {
         sc.add_stat_slot(ssm.clone());
         let sc = Arc::new(sc);
 
-        println!("just before builder");
-
         let builder = EntryBuilder::new("abc".into()).with_slot_chain(sc);
-        println!("just before building");
         let entry = builder.build().unwrap();
-        assert_eq!("abc", entry.context().borrow().resource().name());
-        entry.exit();
+        assert_eq!("abc", entry.borrow().context().borrow().resource().name());
+        entry.borrow().exit();
     }
 
     #[test]
@@ -250,7 +249,7 @@ mod test {
         ctx.set_resource(rw);
         ctx.set_stat_node(Arc::new(MockStatNode::new()));
         let ctx = Rc::new(RefCell::new(ctx));
-        let entry = Rc::new(SentinelEntry::new(ctx.clone(), sc.clone()));
+        let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
         ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
         let builder = EntryBuilder::new("abc".into()).with_slot_chain(sc);

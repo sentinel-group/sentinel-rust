@@ -16,22 +16,22 @@ use std::sync::{
 static BLOCK_MSG_QUEUEING: &'static str = "flow throttling check blocked, threshold is <= 0.0";
 
 #[derive(Debug)]
-pub struct ThrottlingChecker {
-    owner: Weak<Controller>,
+pub struct ThrottlingChecker<C: CounterTrait = Counter> {
+    owner: Weak<Controller<C>>,
 }
 
-impl ThrottlingChecker {
+impl<C: CounterTrait> ThrottlingChecker<C> {
     pub fn new() -> Self {
         ThrottlingChecker { owner: Weak::new() }
     }
 }
 
-impl Checker for ThrottlingChecker {
-    fn get_owner(&self) -> &Weak<Controller> {
+impl<C: CounterTrait> Checker<C> for ThrottlingChecker<C> {
+    fn get_owner(&self) -> &Weak<Controller<C>> {
         &self.owner
     }
 
-    fn set_owner(&mut self, owner: Weak<Controller>) {
+    fn set_owner(&mut self, owner: Weak<Controller<C>>) {
         self.owner = owner;
     }
 
@@ -89,8 +89,7 @@ impl Checker for ThrottlingChecker {
                         return TokenResult::new_pass();
                     }
                 } else {
-                    // runtime.Gosched()
-                    continue;
+                    std::thread::yield_now();
                 }
             } else {
                 let msg = format!("hotspot throttling check blocked, wait time exceedes max queueing time, arg: {:?}", arg);

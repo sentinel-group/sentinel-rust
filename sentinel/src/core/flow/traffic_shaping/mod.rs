@@ -94,6 +94,7 @@ pub struct Controller {
 }
 
 impl Controller {
+    /// Please refer to the generators in the `rule_manager`
     pub fn new(rule: Arc<Rule>, stat: Arc<StandaloneStat>) -> Self {
         Controller {
             calculator: None,

@@ -93,18 +93,18 @@ fn can_pass_check(rule: &Arc<Rule>) -> (bool, String, Option<Arc<Snapshot>>) {
             if l > threshold {
                 if rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple() {
                     msg = "system load check blocked".into();
-                    snapshot = Some(Arc::new(l) as Arc<Snapshot>);
                 }
             }
+            snapshot = Some(Arc::new(l) as Arc<Snapshot>);
         }
         MetricType::CpuUsage => {
             let c = system_metric::current_cpu_usage() as f64;
             if c > threshold {
                 if rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple() {
                     msg = "system cpu usage check blocked".into();
-                    snapshot = Some(Arc::new(c) as Arc<Snapshot>);
                 }
             }
+            snapshot = Some(Arc::new(c) as Arc<Snapshot>);
         }
     }
     (res, msg, snapshot)
@@ -231,9 +231,9 @@ mod test {
             trigger_count: 0.5,
             ..Default::default()
         });
+        system_metric::set_cpu_usage(0.0);
         let (r, _, v) = can_pass_check(&rule);
         assert!(r);
-        assert!(v.is_none());
     }
 
     #[test]
@@ -246,9 +246,7 @@ mod test {
             ..Default::default()
         });
         system_metric::set_cpu_usage(0.8);
-        stat::inbound_node().increase_concurrency();
         let (r, _, v) = can_pass_check(&rule);
-        stat::inbound_node().decrease_concurrency();
         assert!(r);
         const DELTA: f64 = 0.0001;
         let snapshot = *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap();

@@ -125,7 +125,7 @@ mod test {
         });
         load_rules(vec![r1]);
 
-        for i in 0..50 {
+        for _ in 0..50 {
             slot.check(&ctx);
             stat_slot.on_entry_pass(Rc::clone(&ctx));
         }

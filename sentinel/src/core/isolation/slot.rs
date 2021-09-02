@@ -33,32 +33,33 @@ impl BaseSlot for AdaptiveSlot {
 
 impl RuleCheckSlot for AdaptiveSlot {
     fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        let mut ctx_borrow = ctx.borrow_mut();
-        let res_name = ctx_borrow.resource().name();
+        let res_name = ctx.borrow().resource().name().clone();
         if res_name.len() == 0 {
-            return ctx_borrow.result().clone();
+            return ctx.borrow().result().clone();
         }
-        let (passed, rule, snapshot) = can_pass_check(ctx);
+        let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
         if !passed {
             // never panic
-            ctx_borrow.set_result(TokenResult::new_blocked_with_cause(
-                BlockType::SystemFlow,
-                "concurrency exceeds threshold".into(),
-                rule.unwrap(),
-                snapshot.unwrap(),
-            ));
+            ctx.borrow_mut()
+                .set_result(TokenResult::new_blocked_with_cause(
+                    BlockType::SystemFlow,
+                    "concurrency exceeds threshold".into(),
+                    rule.unwrap(),
+                    snapshot.unwrap(),
+                ));
         }
-        return ctx_borrow.result().clone();
+        return ctx.borrow().result().clone();
     }
 }
 
 fn can_pass_check(
     ctx: &Rc<RefCell<EntryContext>>,
+    res: &String,
 ) -> (bool, Option<Arc<Rule>>, Option<Arc<Snapshot>>) {
     let ctx = ctx.borrow();
     let stat_node = ctx.stat_node().unwrap();
     let batch_count = ctx.input().batch_count();
-    for rule in get_rules_of_resource(ctx.resource().name()) {
+    for rule in get_rules_of_resource(res) {
         let threshold = rule.threshold;
         if rule.metric_type == MetricType::Concurrency {
             let curr_count = stat_node.current_concurrency();

@@ -374,4 +374,104 @@ mod test {
         };
         assert!(r61.is_stat_reusable(&r62));
     }
+
+    #[test]
+    fn is_valid_flow_rule1() {
+        let bad_rule1 = Rule {
+            threshold: 1.0,
+            resource: "".into(),
+            ..Default::default()
+        };
+        let bad_rule2 = Rule {
+            threshold: -1.9,
+            resource: "test".into(),
+            ..Default::default()
+        };
+        let bad_rule3 = Rule {
+            threshold: 5.0,
+            resource: "test".into(),
+            calculate_strategy: CalculateStrategy::WarmUp,
+            control_strategy: ControlStrategy::Reject,
+            ..Default::default()
+        };
+        let bad_rule4 = Rule {
+            threshold: 5.0,
+            resource: "test".into(),
+            calculate_strategy: CalculateStrategy::WarmUp,
+            control_strategy: ControlStrategy::Reject,
+            stat_interval_ms: 6000000,
+            ..Default::default()
+        };
+
+        let good_rule1 = Rule {
+            threshold: 10.0,
+            resource: "test".into(),
+            calculate_strategy: CalculateStrategy::WarmUp,
+            control_strategy: ControlStrategy::Throttling,
+            warm_up_period_sec: 10,
+            max_queueing_time_ms: 10,
+            stat_interval_ms: 1000,
+            ..Default::default()
+        };
+        let good_rule2 = Rule {
+            threshold: 10.0,
+            resource: "test".into(),
+            calculate_strategy: CalculateStrategy::WarmUp,
+            control_strategy: ControlStrategy::Throttling,
+            warm_up_period_sec: 10,
+            max_queueing_time_ms: 0,
+            stat_interval_ms: 1000,
+            ..Default::default()
+        };
+
+        assert!(bad_rule1.is_valid().is_err());
+        assert!(bad_rule2.is_valid().is_err());
+        assert!(bad_rule3.is_valid().is_err());
+        assert!(bad_rule4.is_valid().is_err());
+
+        assert!(good_rule1.is_valid().is_ok());
+        assert!(good_rule2.is_valid().is_ok());
+    }
+
+    #[test]
+    fn is_valid_flow_rule2() {
+        let mut rule = Rule {
+            resource: "hello0".into(),
+            calculate_strategy: CalculateStrategy::MemoryAdaptive,
+            control_strategy: ControlStrategy::Reject,
+            stat_interval_ms: 10,
+            low_mem_usage_threshold: 2,
+            high_mem_usage_threshold: 1,
+            mem_low_water_mark: 1,
+            mem_high_water_mark: 2,
+            ..Default::default()
+        };
+        assert!(rule.is_valid().is_ok());
+
+        rule.low_mem_usage_threshold = 9;
+        rule.high_mem_usage_threshold = 9;
+        assert!(rule.is_valid().is_err());
+        rule.low_mem_usage_threshold = 10;
+        assert!(rule.is_valid().is_ok());
+
+        rule.mem_low_water_mark = 0;
+        assert!(rule.is_valid().is_err());
+
+        rule.mem_low_water_mark = 100 * 1024 * 1024;
+        rule.mem_high_water_mark = 300 * 1024 * 1024;
+        assert!(rule.is_valid().is_ok());
+
+        rule.mem_high_water_mark = 0;
+        assert!(rule.is_valid().is_err());
+
+        rule.mem_high_water_mark = 300 * 1024 * 1024;
+        assert!(rule.is_valid().is_ok());
+
+        rule.mem_low_water_mark = 100 * 1024 * 1024;
+        rule.mem_high_water_mark = 30 * 1024 * 1024;
+        assert!(rule.is_valid().is_err());
+
+        rule.mem_high_water_mark = 300 * 1024 * 1024;
+        assert!(rule.is_valid().is_ok());
+    }
 }

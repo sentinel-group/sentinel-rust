@@ -45,16 +45,12 @@ impl ErrorCountBreaker {
 }
 
 impl CircuitBreakerTrait for ErrorCountBreaker {
-    fn current_state(&self) -> State {
-        self.breaker.current_state()
+    fn breaker(&self) -> &BreakerBase {
+        &self.breaker
     }
 
     fn stat(&self) -> &Arc<CounterLeapArray> {
         &self.stat
-    }
-
-    fn bound_rule(&self) -> &Arc<Rule> {
-        self.breaker.bound_rule()
     }
 
     fn try_pass(&self, ctx: Rc<RefCell<EntryContext>>) -> bool {
@@ -115,12 +111,6 @@ impl CircuitBreakerTrait for ErrorCountBreaker {
                 }
             }
             State::Open => {}
-        }
-    }
-
-    fn reset_metric(&self) {
-        for c in self.stat.all_counter() {
-            c.value().reset()
         }
     }
 }

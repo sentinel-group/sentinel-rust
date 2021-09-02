@@ -132,7 +132,6 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     }
 
     let valid_res_rules_string = format!("{:?}", &valid_res_rules);
-    println!("{}", valid_res_rules_string);
     let start = utils::curr_time_nanos();
     if valid_res_rules.len() == 0 {
         RULE_MAP.write().unwrap().remove(res);

@@ -34,28 +34,27 @@ impl BaseSlot for Slot {
 
 impl RuleCheckSlot for Slot {
     fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        let ctx_cloned = Rc::clone(&ctx);
-        let mut ctx = ctx.borrow_mut();
-        let res = ctx.resource().name();
+        let res = ctx.borrow().resource().name().clone();
         if res.len() == 0 {
-            return ctx.result().clone();
+            return ctx.borrow().result().clone();
         }
-        if let Some(rule) = can_pass_check(ctx_cloned) {
-            ctx.set_result(TokenResult::new_blocked_with_msg(
-                BlockType::CircuitBreaking,
-                "circuit breaker check blocked".into(),
-            ));
+        if let Some(rule) = can_pass_check(&ctx, &res) {
+            ctx.borrow_mut()
+                .set_result(TokenResult::new_blocked_with_msg(
+                    BlockType::CircuitBreaking,
+                    "circuit breaker check blocked".into(),
+                ));
         }
-        return ctx.result().clone();
+        return ctx.borrow().result().clone();
     }
 }
 
 /// `None` indicates it passes
 /// `Some(rule)` indicates it is broke by the rule
-fn can_pass_check(ctx: Rc<RefCell<EntryContext>>) -> Option<Arc<Rule>> {
-    let breakers = get_breakers_of_resource(ctx.borrow().resource().name());
+fn can_pass_check(ctx: &Rc<RefCell<EntryContext>>, res: &String) -> Option<Arc<Rule>> {
+    let breakers = get_breakers_of_resource(res);
     for breaker in breakers {
-        if !breaker.try_pass(Rc::clone(&ctx)) {
+        if !breaker.try_pass(Rc::clone(ctx)) {
             return Some(Arc::clone(breaker.bound_rule()));
         }
     }
@@ -65,4 +64,97 @@ fn can_pass_check(ctx: Rc<RefCell<EntryContext>>) -> Option<Arc<Rule>> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::base::{ResourceType, ResourceWrapper, SentinelInput, TrafficType};
+
+    #[test]
+    #[ignore]
+    fn check_blocked() {
+        let rules = vec![Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::Custom(101),
+            retry_timeout_ms: 3000,
+            min_request_amount: 10,
+            stat_interval_ms: 10000,
+            max_allowed_rt_ms: 50,
+            threshold: 0.5,
+            ..Default::default()
+        })];
+        set_circuit_breaker_generator(
+            BreakerStrategy::Custom(101),
+            Box::new(
+                move |_: Arc<Rule>,
+                      _: Option<Arc<CounterLeapArray>>|
+                      -> Arc<dyn CircuitBreakerTrait> {
+                    let mut breaker = MockCircuitBreaker::new();
+                    let rule = Rule {
+                        resource: "abc".into(),
+                        strategy: BreakerStrategy::Custom(101),
+                        retry_timeout_ms: 3000,
+                        min_request_amount: 10,
+                        stat_interval_ms: 10000,
+                        max_allowed_rt_ms: 50,
+                        threshold: 0.5,
+                        ..Default::default()
+                    };
+                    breaker.expect_try_pass().return_const(false);
+                    breaker.expect_bound_rule().return_const(Arc::new(rule));
+                    Arc::new(breaker)
+                },
+            ),
+        )
+        .unwrap();
+        load_rules(rules);
+        let res_name = String::from("abc");
+        assert_eq!(get_breakers_of_resource(&res_name).len(), 1);
+
+        let slot = Slot {};
+        let mut ctx = EntryContext::new();
+        let res = ResourceWrapper::new(res_name, ResourceType::Common, TrafficType::Inbound);
+        ctx.set_resource(res);
+        let ctx = Rc::new(RefCell::new(ctx));
+        let token = slot.check(&ctx);
+        assert!(token.is_blocked());
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn check_pass() {
+        let rules = vec![Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::Custom(101),
+            retry_timeout_ms: 3000,
+            min_request_amount: 10,
+            stat_interval_ms: 10000,
+            max_allowed_rt_ms: 50,
+            threshold: 0.5,
+            ..Default::default()
+        })];
+        set_circuit_breaker_generator(
+            BreakerStrategy::Custom(101),
+            Box::new(
+                move |_: Arc<Rule>,
+                      _: Option<Arc<CounterLeapArray>>|
+                      -> Arc<dyn CircuitBreakerTrait> {
+                    let mut breaker = MockCircuitBreaker::new();
+                    breaker.expect_try_pass().return_const(true);
+                    Arc::new(breaker)
+                },
+            ),
+        )
+        .unwrap();
+        load_rules(rules);
+        let res_name = String::from("abc");
+        assert_eq!(get_breakers_of_resource(&res_name).len(), 1);
+
+        let slot = Slot {};
+        let mut ctx = EntryContext::new();
+        let res = ResourceWrapper::new(res_name, ResourceType::Common, TrafficType::Inbound);
+        ctx.set_resource(res);
+        let ctx = Rc::new(RefCell::new(ctx));
+        let token = slot.check(&ctx);
+        assert!(token.is_pass());
+        assert!(ctx.borrow().result().is_pass());
+        clear_rules();
+    }
 }

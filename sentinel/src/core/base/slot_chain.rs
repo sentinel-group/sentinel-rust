@@ -151,7 +151,7 @@ impl SlotChain {
 }
 
 #[cfg(test)]
-pub(crate) use test::aggregation::*;
+pub(crate) use test::aggregation::{MockRuleCheckSlot, MockStatPrepareSlot, MockStatSlot};
 
 #[cfg(test)]
 mod test {
@@ -281,18 +281,21 @@ mod test {
         // these signatures are necessary, don't remove them
         // because when use macro `mock!`, we have to supply the signatures expected to be mocked
         // otherwise, we cannot call `expect_xx()` on mocked objects
+        /// MockStatPrepareSlot
         mock! {
             pub(crate) StatPrepareSlot {}
             impl BaseSlot for StatPrepareSlot {}
             impl StatPrepareSlot for StatPrepareSlot { fn prepare(&self, ctx: Rc<RefCell<EntryContext>>); }
         }
 
+        /// MockRuleCheckSlot
         mock! {
             pub(crate) RuleCheckSlot {}
             impl BaseSlot for RuleCheckSlot {}
             impl RuleCheckSlot for RuleCheckSlot { fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult; }
         }
 
+        /// MockStatSlot
         mock! {
             pub(crate) StatSlot {}
             impl BaseSlot for StatSlot {}
@@ -358,7 +361,7 @@ mod test {
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
             let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(SentinelEntry::new(ctx.clone(), sc.clone()));
+            let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
             let r = sc.entry(ctx.clone());
@@ -421,7 +424,7 @@ mod test {
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
             let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(SentinelEntry::new(ctx.clone(), sc.clone()));
+            let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
             let r = sc.entry(ctx.clone());
@@ -493,7 +496,7 @@ mod test {
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
             let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(SentinelEntry::new(ctx.clone(), sc.clone()));
+            let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
             let r = sc.entry(ctx.clone());

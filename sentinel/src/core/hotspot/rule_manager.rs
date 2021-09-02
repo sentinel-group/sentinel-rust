@@ -1,4 +1,5 @@
 use super::*;
+use crate::base::ParamKey;
 use crate::{base::SentinelRule, logging, utils, Error, Result};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
@@ -7,26 +8,27 @@ use std::sync::{Arc, Mutex, RwLock};
 // todo: this module is redundant as the flow control rule managers has been implemented in the `crate::core::flow`
 
 /// ControllerGenfn represents the Traffic Controller generator function of a specific control behavior.
-pub type ControllerGenfn =
-    dyn Send + Sync + Fn(Arc<Rule>, Option<Arc<ParamsMetric>>) -> Arc<Controller>;
+pub type ControllerGenfn<C = Counter> =
+    dyn Send + Sync + Fn(Arc<Rule>, Option<Arc<ParamsMetric<C>>>) -> Arc<Controller>;
 
 pub type ControllerMap = HashMap<String, Vec<Arc<Controller>>>;
 pub type RuleMap = HashMap<String, Vec<Arc<Rule>>>;
 
 lazy_static! {
+    // we only store the Specialization with `Counter`, the MockCounter is neglected here
     static ref GEN_FUN_MAP: RwLock<HashMap<ControlStrategy, Box<ControllerGenfn>>> = {
         // Initialize the traffic shaping controller generator map for existing control behaviors.
 
-        let mut gen_fun_map:HashMap<ControlStrategy, Box<ControllerGenfn>>  = HashMap::new();
+        let mut gen_fun_map:HashMap<ControlStrategy, Box<ControllerGenfn>> = HashMap::new();
 
         gen_fun_map.insert(
             ControlStrategy::Reject,
-            Box::new(gen_reject),
+            Box::new(gen_reject::<Counter>),
         );
 
         gen_fun_map.insert(
             ControlStrategy::Throttling,
-            Box::new(gen_throttling),
+            Box::new(gen_throttling::<Counter>),
         );
 
         RwLock::new(gen_fun_map)
@@ -35,15 +37,16 @@ lazy_static! {
     static ref RULE_MAP: Mutex<RuleMap> = Mutex::new(HashMap::new());
 }
 
-use gen_fns::*;
+pub(super) use gen_fns::*;
+
 mod gen_fns {
     use super::*;
 
-    pub(super) fn gen_reject(
+    pub(in super::super) fn gen_reject<C: CounterTrait>(
         rule: Arc<Rule>,
-        metric: Option<Arc<ParamsMetric>>,
-    ) -> Arc<Controller> {
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(RejectChecker::new()));
+        metric: Option<Arc<ParamsMetric<C>>>,
+    ) -> Arc<Controller<C>> {
+        let checker: Arc<Mutex<dyn Checker<C>>> = Arc::new(Mutex::new(RejectChecker::<C>::new()));
         let mut tsc = match metric {
             None => Controller::new(rule),
             Some(metric) => Controller::new_with_metric(rule, metric),
@@ -55,11 +58,12 @@ mod gen_fns {
         tsc
     }
 
-    pub(super) fn gen_throttling(
+    pub(in super::super) fn gen_throttling<C: CounterTrait>(
         rule: Arc<Rule>,
-        metric: Option<Arc<ParamsMetric>>,
-    ) -> Arc<Controller> {
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(ThrottlingChecker::new()));
+        metric: Option<Arc<ParamsMetric<C>>>,
+    ) -> Arc<Controller<C>> {
+        let checker: Arc<Mutex<dyn Checker<C>>> =
+            Arc::new(Mutex::new(ThrottlingChecker::<C>::new()));
         let mut tsc = match metric {
             None => Controller::new(rule),
             Some(metric) => Controller::new_with_metric(rule, metric),
@@ -377,4 +381,278 @@ pub fn build_resource_traffic_shaping_controller(
         new_res_tcs.push(tc);
     }
     new_res_tcs
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn gen_without_metric() {
+        let mut specific_items = HashMap::new();
+        specific_items.insert(100.to_string(), 100);
+        let rule = Arc::new(Rule {
+            resource: "abc".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 110,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items,
+            ..Default::default()
+        });
+        let gen_fun_map = GEN_FUN_MAP.read().unwrap();
+        let generator = gen_fun_map.get(&ControlStrategy::Reject);
+        let generator = generator.unwrap();
+        let tc = generator(Arc::clone(&rule), None);
+        assert!(Arc::ptr_eq(&rule, tc.rule()));
+        assert_eq!(0, tc.param_index());
+    }
+
+    #[test]
+    fn gen_with_metric() {
+        let mut specific_items = HashMap::new();
+        specific_items.insert(100.to_string(), 100);
+        let rule = Arc::new(Rule {
+            resource: "abc".into(),
+            metric_type: MetricType::QPS,
+            control_strategy: ControlStrategy::Throttling,
+            threshold: 110,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items,
+            ..Default::default()
+        });
+
+        let capacity = std::cmp::min(
+            PARAMS_MAX_CAPACITY,
+            PARAMS_CAPACITY_BASE * rule.duration_in_sec as usize,
+        );
+
+        let metric = ParamsMetric {
+            rule_time_counter: Counter::with_capacity(capacity),
+            rule_token_counter: Counter::with_capacity(capacity),
+            ..Default::default()
+        };
+
+        let gen_fun_map = GEN_FUN_MAP.read().unwrap();
+        let generator = gen_fun_map.get(&ControlStrategy::Throttling);
+        let generator = generator.unwrap();
+        let tc = generator(Arc::clone(&rule), Some(Arc::new(metric)));
+        assert!(Arc::ptr_eq(&rule, tc.rule()));
+        assert_eq!(0, tc.param_index());
+    }
+
+    #[test]
+    #[ignore]
+    fn test_load_rules() {
+        clear_rules();
+        let mut specific_items = HashMap::new();
+        specific_items.insert(String::from("sss"), 1);
+        specific_items.insert(String::from("123"), 3);
+        let rule = Arc::new(Rule {
+            id: Some("1".into()),
+            resource: "abc".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 100,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        });
+
+        let success = load_rules(vec![rule.clone()]);
+        assert!(success);
+
+        let success = load_rules(vec![rule]);
+        assert!(!success);
+
+        let controller_map = CONTROLLER_MAP.read().unwrap();
+        let rule_map = RULE_MAP.lock().unwrap();
+
+        assert_eq!(1, rule_map["abc"].len());
+        assert_eq!(1, controller_map["abc"].len());
+        drop(controller_map);
+        drop(rule_map);
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_load_rules_of_resource() {
+        clear_rules();
+        let mut specific_items = HashMap::new();
+        specific_items.insert(String::from("sss"), 1);
+        specific_items.insert(String::from("123"), 3);
+        let r11 = Arc::new(Rule {
+            id: Some("1".into()),
+            resource: "abc1".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 100,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        });
+        let r12 = Arc::new(Rule {
+            id: Some("2".into()),
+            resource: "abc1".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 200,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        });
+        let r21 = Arc::new(Rule {
+            id: Some("3".into()),
+            resource: "abc2".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 100,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        });
+        let r22 = Arc::new(Rule {
+            id: Some("4".into()),
+            resource: "abc2".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 200,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items,
+            ..Default::default()
+        });
+
+        let success = load_rules(vec![
+            Arc::clone(&r11),
+            Arc::clone(&r12),
+            Arc::clone(&r21),
+            Arc::clone(&r22),
+        ]);
+        assert!(success);
+
+        let success = load_rules_of_resource(&"".into(), vec![Arc::clone(&r11), Arc::clone(&r12)]);
+        assert!(success.is_err());
+
+        let success =
+            load_rules_of_resource(&"abc1".into(), vec![Arc::clone(&r11), Arc::clone(&r12)]);
+        assert!(!success.unwrap());
+
+        let success = load_rules_of_resource(&"abc1".into(), vec![]);
+        assert!(success.unwrap());
+
+        let controller_map = CONTROLLER_MAP.read().unwrap();
+        let rule_map = RULE_MAP.lock().unwrap();
+
+        assert_eq!(0, rule_map.get("abc1").unwrap_or(&Vec::new()).len());
+        assert_eq!(0, controller_map.get("abc1").unwrap_or(&Vec::new()).len());
+        assert_eq!(2, rule_map.get("abc2").unwrap_or(&Vec::new()).len());
+        assert_eq!(2, controller_map.get("abc2").unwrap_or(&Vec::new()).len());
+        drop(controller_map);
+        drop(rule_map);
+        clear_rules();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_clear_rules() {
+        clear_rules();
+        let mut specific_items = HashMap::new();
+        specific_items.insert(String::from("sss"), 1);
+        specific_items.insert(String::from("123"), 3);
+        let r11 = Arc::new(Rule {
+            id: Some("1".into()),
+            resource: "abc1".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 100,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        });
+        let r12 = Arc::new(Rule {
+            id: Some("2".into()),
+            resource: "abc1".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 200,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        });
+        let r21 = Arc::new(Rule {
+            id: Some("3".into()),
+            resource: "abc2".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 100,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items.clone(),
+            ..Default::default()
+        });
+        let r22 = Arc::new(Rule {
+            id: Some("4".into()),
+            resource: "abc2".into(),
+            metric_type: MetricType::Concurrency,
+            control_strategy: ControlStrategy::Reject,
+            threshold: 200,
+            duration_in_sec: 1,
+            burst_count: 10,
+            specific_items: specific_items,
+            ..Default::default()
+        });
+
+        let success = load_rules(vec![r11, r12, r21, r22]);
+        assert!(success);
+
+        clear_rules_of_resource(&String::from("abc1"));
+
+        assert_eq!(
+            0,
+            RULE_MAP
+                .lock()
+                .unwrap()
+                .get("abc1")
+                .unwrap_or(&Vec::new())
+                .len()
+        );
+        assert_eq!(
+            0,
+            CONTROLLER_MAP
+                .read()
+                .unwrap()
+                .get("abc1")
+                .unwrap_or(&Vec::new())
+                .len()
+        );
+        assert_eq!(
+            2,
+            RULE_MAP
+                .lock()
+                .unwrap()
+                .get("abc2")
+                .unwrap_or(&Vec::new())
+                .len()
+        );
+        assert_eq!(
+            2,
+            CONTROLLER_MAP
+                .read()
+                .unwrap()
+                .get("abc2")
+                .unwrap_or(&Vec::new())
+                .len()
+        );
+        clear_rules();
+    }
 }

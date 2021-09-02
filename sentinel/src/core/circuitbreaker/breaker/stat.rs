@@ -35,3 +35,21 @@ impl CounterLeapArray {
         self.get_current_values()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::sync::atomic::AtomicU32;
+
+    use super::*;
+
+    #[test]
+    fn reset_bucket() {
+        let counter = Counter {
+            target: AtomicU64::new(5),
+            total: AtomicU64::new(10),
+        };
+        counter.reset();
+        assert_eq!(counter.target.load(Ordering::SeqCst), 0);
+        assert_eq!(counter.total.load(Ordering::SeqCst), 0);
+    }
+}

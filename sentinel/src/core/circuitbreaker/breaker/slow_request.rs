@@ -46,26 +46,12 @@ impl SlowRtBreaker {
 }
 
 impl CircuitBreakerTrait for SlowRtBreaker {
-    fn current_state(&self) -> State {
-        self.breaker.current_state()
+    fn breaker(&self) -> &BreakerBase {
+        &self.breaker
     }
 
     fn stat(&self) -> &Arc<CounterLeapArray> {
         &self.stat
-    }
-
-    fn bound_rule(&self) -> &Arc<Rule> {
-        self.breaker.bound_rule()
-    }
-
-    fn try_pass(&self, ctx: Rc<RefCell<EntryContext>>) -> bool {
-        match self.current_state() {
-            State::Closed => true,
-            State::Open => {
-                self.breaker.retry_timeout_arrived() && self.breaker.from_open_to_half_open(ctx)
-            }
-            State::HalfOpen => false,
-        }
     }
 
     fn on_request_complete(&self, rt: u64, _err: &Option<Error>) {
@@ -121,12 +107,6 @@ impl CircuitBreakerTrait for SlowRtBreaker {
                 }
             }
             State::Open => {}
-        }
-    }
-
-    fn reset_metric(&self) {
-        for c in self.stat.all_counter() {
-            c.value().reset()
         }
     }
 }
