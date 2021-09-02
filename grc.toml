@@ -3,6 +3,7 @@ emoji = true
 pre = [
     "cargo fmt",
     "cp ./README.md ./sentinel/README.md",
+    "echo 'preliminary done'",
 ]
 
 after = [
