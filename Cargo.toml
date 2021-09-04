@@ -3,6 +3,4 @@
 members = [
   "sentinel",
   "sentinel-macros",
-  # Internal
-  "examples",
 ]
