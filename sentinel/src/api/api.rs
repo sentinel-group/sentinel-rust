@@ -1,16 +1,23 @@
 use super::global_slot_chain;
 use crate::base::{
-    EntryContext, ParamsList, ParamsMap, ResourceType, ResourceWrapper, ResultStatus,
-    SentinelEntry, SentinelInput, SlotChain, TokenResult, TrafficType,
+    EntryContext, EntryStrongPtr, ParamsList, ParamsMap, ResourceType, ResourceWrapper,
+    ResultStatus, SentinelEntry, SentinelInput, SlotChain, TokenResult, TrafficType,
 };
 use crate::utils::format_time_nanos_curr;
 use crate::{Error, Result};
 use std::any::Any;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
-use std::rc::Rc;
 use std::sync::Arc;
+
+cfg_async! {
+    use std::sync::RwLock;
+}
+
+cfg_not_async! {
+    use std::rc::Rc;
+    use std::cell::RefCell;
+}
 
 // EntryBuilder is the basic API of Sentinel.
 pub struct EntryBuilder {
@@ -49,45 +56,90 @@ impl EntryBuilder {
         }
     }
 
-    /// `build()` would consume EntryBuilder
-    pub fn build(self) -> Result<Rc<RefCell<SentinelEntry>>> {
-        // get context from pool.
-        let mut ctx = EntryContext::new();
+    cfg_async! {
+        /// `build()` would consume EntryBuilder
+        pub fn build(self) -> Result<EntryStrongPtr> {
+            // get context from pool.
+            let mut ctx = EntryContext::new();
 
-        ctx.set_resource(ResourceWrapper::new(
-            self.resource_name,
-            self.resource_type,
-            self.traffic_type,
-        ));
+            ctx.set_resource(ResourceWrapper::new(
+                self.resource_name,
+                self.resource_type,
+                self.traffic_type,
+            ));
 
-        let mut input = SentinelInput::new(self.batch_count, self.flag);
-        if let Some(args) = self.args {
-            input.set_args(args);
+            let mut input = SentinelInput::new(self.batch_count, self.flag);
+            if let Some(args) = self.args {
+                input.set_args(args);
+            }
+            if let Some(attachments) = self.attachments {
+                input.set_attachments(attachments);
+            }
+            ctx.set_input(input);
+
+            let ctx = Arc::new(RwLock::new(ctx));
+            let entry =
+                Arc::new(RwLock::new(SentinelEntry::new(
+                    Arc::clone(&ctx),
+                    Arc::clone(&self.slot_chain),
+                )));
+            ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
+
+            let r = self.slot_chain.entry(Arc::clone(&ctx));
+            if *r.status() == ResultStatus::Blocked {
+                // todo: here need fix
+                // if return block_error,
+                // must deep copy the error, since Arc only clone pointer
+                let block_err = r.block_err();
+
+                entry.read().unwrap().exit();
+                Err(Error::msg(r.to_string()))
+            } else {
+                Ok(entry)
+            }
         }
-        if let Some(attachments) = self.attachments {
-            input.set_attachments(attachments);
-        }
-        ctx.set_input(input);
+    }
 
-        let ctx = Rc::new(RefCell::new(ctx));
+    cfg_not_async! {
+        /// `build()` would consume EntryBuilder
+        pub fn build(self) -> Result<EntryStrongPtr> {
+            // get context from pool.
+            let mut ctx = EntryContext::new();
 
-        let entry = Rc::new(RefCell::new(SentinelEntry::new(
-            Rc::clone(&ctx),
-            Arc::clone(&self.slot_chain),
-        )));
-        ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
+            ctx.set_resource(ResourceWrapper::new(
+                self.resource_name,
+                self.resource_type,
+                self.traffic_type,
+            ));
 
-        let r = self.slot_chain.entry(Rc::clone(&ctx));
+            let mut input = SentinelInput::new(self.batch_count, self.flag);
+            if let Some(args) = self.args {
+                input.set_args(args);
+            }
+            if let Some(attachments) = self.attachments {
+                input.set_attachments(attachments);
+            }
+            ctx.set_input(input);
 
-        if *r.status() == ResultStatus::Blocked {
-            // todo: here need fix
-            // if return block_error,
-            // must deep copy the error, since Arc only clone pointer
-            let block_err = r.block_err();
-            entry.borrow().exit();
-            Err(Error::msg(r.to_string()))
-        } else {
-            Ok(entry)
+            let ctx = Rc::new(RefCell::new(ctx));
+            let entry = Rc::new(RefCell::new(SentinelEntry::new(
+                    Rc::clone(&ctx),
+                    Arc::clone(&self.slot_chain),
+                )));
+            ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
+
+            let r = self.slot_chain.entry(Rc::clone(&ctx));
+            if *r.status() == ResultStatus::Blocked {
+                // todo: here need fix
+                // if return block_error,
+                // must deep copy the error, since Arc only clone pointer
+                let block_err = r.block_err();
+
+                entry.borrow().exit();
+                Err(Error::msg(r.to_string()))
+            } else {
+                Ok(entry)
+            }
         }
     }
 

@@ -1,20 +1,30 @@
 //! Context
 //!
-use super::{ResourceWrapper, SentinelEntry, StatNode, TokenResult};
+use super::{EntryStrongPtr, EntryWeakPtr, ResourceWrapper, StatNode, TokenResult};
 use crate::utils::time::curr_time_millis;
 use crate::Error;
 use std::any::Any;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Weak;
 use std::sync::Arc;
+
+cfg_async! {
+    use std::sync::RwLock;
+    pub type ContextPtr = Arc<RwLock<EntryContext>>;
+}
+
+cfg_not_async! {
+    use std::rc::Rc;
+    use std::cell::RefCell;
+    use std::rc::Weak;
+    pub type ContextPtr = Rc<RefCell<EntryContext>>;
+}
 
 #[derive(Default)]
 pub struct EntryContext {
     /// entry and context do not need to be `Send/Sync`
     /// entry<->context, cycled reference, so need Weak
     /// context should not change entry, so here we do not use RefCell
-    entry: Option<Weak<RefCell<SentinelEntry>>>,
+    entry: Option<EntryWeakPtr>,
     /// Use to calculate RT
     start_time: u64,
     /// The round trip time of this transaction
@@ -37,11 +47,11 @@ impl EntryContext {
         }
     }
 
-    pub fn set_entry(&mut self, entry: Weak<RefCell<SentinelEntry>>) {
+    pub fn set_entry(&mut self, entry: EntryWeakPtr) {
         self.entry = Some(entry);
     }
 
-    pub fn entry(&self) -> Option<&Weak<RefCell<SentinelEntry>>> {
+    pub fn entry(&self) -> Option<&EntryWeakPtr> {
         self.entry.as_ref()
     }
 

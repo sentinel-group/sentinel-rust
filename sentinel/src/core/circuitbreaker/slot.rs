@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     base::{
-        BaseSlot, BlockType, EntryContext, MetricEvent, ResultStatus, RuleCheckSlot, StatNode,
+        BaseSlot, BlockType, ContextPtr, MetricEvent, ResultStatus, RuleCheckSlot, StatNode,
         StatSlot, TokenResult,
     },
     logging, stat, utils,
@@ -33,28 +33,47 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        let res = ctx.borrow().resource().name().clone();
-        if res.len() == 0 {
+    cfg_async! {
+        fn check(&self, ctx: &ContextPtr) -> TokenResult {
+            let res = ctx.read().unwrap().resource().name().clone();
+            if res.len() == 0 {
+                return ctx.read().unwrap().result().clone();
+            }
+            if let Some(rule) = can_pass_check(&ctx, &res) {
+                ctx.write().unwrap()
+                    .set_result(TokenResult::new_blocked_with_msg(
+                        BlockType::CircuitBreaking,
+                        "circuit breaker check blocked".into(),
+                    ));
+            }
+            return ctx.read().unwrap().result().clone();
+        }
+    }
+
+    cfg_not_async! {
+        fn check(&self, ctx: &ContextPtr) -> TokenResult {
+            let res = ctx.borrow().resource().name().clone();
+            if res.len() == 0 {
+                return ctx.borrow().result().clone();
+            }
+            if let Some(rule) = can_pass_check(&ctx, &res) {
+                ctx.borrow_mut()
+                    .set_result(TokenResult::new_blocked_with_msg(
+                        BlockType::CircuitBreaking,
+                        "circuit breaker check blocked".into(),
+                    ));
+            }
             return ctx.borrow().result().clone();
         }
-        if let Some(rule) = can_pass_check(&ctx, &res) {
-            ctx.borrow_mut()
-                .set_result(TokenResult::new_blocked_with_msg(
-                    BlockType::CircuitBreaking,
-                    "circuit breaker check blocked".into(),
-                ));
-        }
-        return ctx.borrow().result().clone();
     }
 }
 
 /// `None` indicates it passes
 /// `Some(rule)` indicates it is broke by the rule
-fn can_pass_check(ctx: &Rc<RefCell<EntryContext>>, res: &String) -> Option<Arc<Rule>> {
+fn can_pass_check(ctx: &ContextPtr, res: &String) -> Option<Arc<Rule>> {
     let breakers = get_breakers_of_resource(res);
     for breaker in breakers {
-        if !breaker.try_pass(Rc::clone(ctx)) {
+        if !breaker.try_pass(ctx.clone()) {
             return Some(Arc::clone(breaker.bound_rule()));
         }
     }
@@ -64,7 +83,7 @@ fn can_pass_check(ctx: &Rc<RefCell<EntryContext>>, res: &String) -> Option<Arc<R
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::base::{ResourceType, ResourceWrapper, SentinelInput, TrafficType};
+    use crate::base::{EntryContext, ResourceType, ResourceWrapper, SentinelInput, TrafficType};
 
     #[test]
     #[ignore]

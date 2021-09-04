@@ -29,7 +29,7 @@ pub use stat::*;
 
 use super::*;
 use crate::{
-    base::{EntryContext, SentinelEntry, Snapshot},
+    base::{ContextPtr, EntryContext, SentinelEntry, Snapshot},
     logging,
     stat::{LeapArray, MetricTrait},
     utils, Error, Result,
@@ -111,7 +111,7 @@ pub trait CircuitBreakerTrait: Send + Sync {
 
     /// `try_pass` acquires permission of an invocation only if it is available at the time of invocation.
     /// it checks circuit breaker based on state machine of circuit breaker.
-    fn try_pass(&self, ctx: Rc<RefCell<EntryContext>>) -> bool {
+    fn try_pass(&self, ctx: ContextPtr) -> bool {
         match self.current_state() {
             State::Closed => true,
             State::Open => {
@@ -165,7 +165,7 @@ pub trait CircuitBreakerTrait: Send + Sync {
     }
 
     #[inline]
-    fn from_open_to_half_open(&self, ctx: Rc<RefCell<EntryContext>>) -> bool {
+    fn from_open_to_half_open(&self, ctx: ContextPtr) -> bool {
         self.breaker().from_open_to_half_open(ctx)
     }
 
@@ -240,53 +240,106 @@ impl BreakerBase {
         }
     }
 
+    cfg_async! {
     /// from_open_to_half_open updates circuit breaker state machine from open to half-open.
-    /// Return true only if current goroutine successfully accomplished the transformation.
-    pub fn from_open_to_half_open(&self, ctx: Rc<RefCell<EntryContext>>) -> bool {
-        let mut state = self.state.lock().unwrap();
-        if *state == State::Open {
-            *state = State::HalfOpen;
-            let listeners = state_change_listeners().lock().unwrap();
-            for listener in &*listeners {
-                listener.on_transform_to_half_open(State::Open, Arc::clone(&self.rule));
-            }
+        /// Return true only if current goroutine successfully accomplished the transformation.
+        pub fn from_open_to_half_open(&self, ctx: ContextPtr) -> bool {
+            let mut state = self.state.lock().unwrap();
+            if *state == State::Open {
+                *state = State::HalfOpen;
+                let listeners = state_change_listeners().lock().unwrap();
+                for listener in &*listeners {
+                    listener.on_transform_to_half_open(State::Open, Arc::clone(&self.rule));
+                }
 
-            let ctx = ctx.borrow();
-            let entry = ctx.entry();
-            if entry.is_none() {
-                logging::error!(
-                    "Entry is None in BreakerBase::from_open_to_half_open(), rule: {:?}",
-                    self.rule,
-                );
-            } else {
-                // add hook for entry exit
-                // if the current circuit breaker performs the probe through this entry, but the entry was blocked,
-                // this hook will guarantee current circuit breaker state machine will rollback to Open from Half-Open
-                drop(state);
-                let entry = entry.unwrap();
-                let rule = Arc::clone(&self.rule);
-                let state = Arc::clone(&self.state);
-                entry.upgrade().unwrap().borrow_mut().when_exit(Box::new(
-                    move |entry: &SentinelEntry, ctx: Rc<RefCell<EntryContext>>| -> Result<()> {
-                        let mut state = state.lock().unwrap();
-                        if ctx.borrow().is_blocked() && *state == State::HalfOpen {
-                            *state = State::Open;
-                            let listeners = state_change_listeners().lock().unwrap();
-                            for listener in &*listeners {
-                                listener.on_transform_to_open(
-                                    State::HalfOpen,
-                                    Arc::clone(&rule),
-                                    Some(Arc::new(1.0)),
-                                );
+                let ctx = ctx.read().unwrap();
+                let entry = ctx.entry();
+                if entry.is_none() {
+                    logging::error!(
+                        "Entry is None in BreakerBase::from_open_to_half_open(), rule: {:?}",
+                        self.rule,
+                    );
+                } else {
+                    // add hook for entry exit
+                    // if the current circuit breaker performs the probe through this entry, but the entry was blocked,
+                    // this hook will guarantee current circuit breaker state machine will rollback to Open from Half-Open
+                    drop(state);
+                    let entry = entry.unwrap();
+                    let rule = Arc::clone(&self.rule);
+                    let state = Arc::clone(&self.state);
+                    entry.upgrade().unwrap().write().unwrap().when_exit(Box::new(
+                        move |entry: &SentinelEntry, ctx: ContextPtr| -> Result<()> {
+                            let mut state = state.lock().unwrap();
+                            if ctx.read().unwrap().is_blocked() && *state == State::HalfOpen {
+                                *state = State::Open;
+                                let listeners = state_change_listeners().lock().unwrap();
+                                for listener in &*listeners {
+                                    listener.on_transform_to_open(
+                                        State::HalfOpen,
+                                        Arc::clone(&rule),
+                                        Some(Arc::new(1.0)),
+                                    );
+                                }
                             }
-                        }
-                        Ok(())
-                    },
-                ))
+                            Ok(())
+                        },
+                    ))
+                }
+                true
+            } else {
+                false
             }
-            true
-        } else {
-            false
+        }
+    }
+
+    cfg_not_async! {
+    /// from_open_to_half_open updates circuit breaker state machine from open to half-open.
+        /// Return true only if current goroutine successfully accomplished the transformation.
+        pub fn from_open_to_half_open(&self, ctx: ContextPtr) -> bool {
+            let mut state = self.state.lock().unwrap();
+            if *state == State::Open {
+                *state = State::HalfOpen;
+                let listeners = state_change_listeners().lock().unwrap();
+                for listener in &*listeners {
+                    listener.on_transform_to_half_open(State::Open, Arc::clone(&self.rule));
+                }
+                let ctx = ctx.borrow();
+                let entry = ctx.entry();
+                if entry.is_none() {
+                    logging::error!(
+                        "Entry is None in BreakerBase::from_open_to_half_open(), rule: {:?}",
+                        self.rule,
+                    );
+                } else {
+                    // add hook for entry exit
+                    // if the current circuit breaker performs the probe through this entry, but the entry was blocked,
+                    // this hook will guarantee current circuit breaker state machine will rollback to Open from Half-Open
+                    drop(state);
+                    let entry = entry.unwrap();
+                    let rule = Arc::clone(&self.rule);
+                    let state = Arc::clone(&self.state);
+                    entry.upgrade().unwrap().borrow_mut().when_exit(Box::new(
+                        move |entry: &SentinelEntry, ctx: ContextPtr| -> Result<()> {
+                            let mut state = state.lock().unwrap();
+                            if ctx.borrow().is_blocked() && *state == State::HalfOpen {
+                                *state = State::Open;
+                                let listeners = state_change_listeners().lock().unwrap();
+                                for listener in &*listeners {
+                                    listener.on_transform_to_open(
+                                        State::HalfOpen,
+                                        Arc::clone(&rule),
+                                        Some(Arc::new(1.0)),
+                                    );
+                                }
+                            }
+                            Ok(())
+                        },
+                    ))
+                }
+                true
+            } else {
+                false
+            }
         }
     }
 

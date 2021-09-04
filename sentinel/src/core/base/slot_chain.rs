@@ -1,4 +1,4 @@
-use super::{BlockError, EntryContext, TokenResult, SLOT_INIT};
+use super::{BlockError, ContextPtr, EntryContext, TokenResult, SLOT_INIT};
 use crate::logging;
 use crate::utils::AsAny;
 use std::any::Any;
@@ -26,7 +26,7 @@ pub trait StatPrepareSlot: BaseSlot {
     /// The result of preparing would store in EntryContext
     /// All StatPrepareSlots execute in sequence
     /// prepare fntion should not throw panic.
-    fn prepare(&self, ctx: Rc<RefCell<EntryContext>>) {}
+    fn prepare(&self, ctx: ContextPtr) {}
 }
 
 /// RuleCheckSlot is rule based checking strategy
@@ -36,8 +36,12 @@ pub trait RuleCheckSlot: BaseSlot {
     // It can break off the slot pipeline
     // Each TokenResult will return check result
     // The upper logic will control pipeline according to SlotResult.
-    fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        ctx.borrow().result().clone()
+    fn check(&self, ctx: &ContextPtr) -> TokenResult {
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
+        ctx.result().clone()
     }
 }
 
@@ -46,16 +50,16 @@ pub trait RuleCheckSlot: BaseSlot {
 pub trait StatSlot: BaseSlot {
     /// OnEntryPass fntion will be invoked when StatPrepareSlots and RuleCheckSlots execute pass
     /// StatSlots will do some statistic logic, such as QPS、log、etc
-    fn on_entry_pass(&self, ctx: Rc<RefCell<EntryContext>>) {}
+    fn on_entry_pass(&self, ctx: ContextPtr) {}
     /// on_entry_blocked fntion will be invoked when StatPrepareSlots and RuleCheckSlots fail to execute
     /// It may be inbound flow control or outbound cir
     /// StatSlots will do some statistic logic, such as QPS、log、etc
     /// blockError introduce the block detail
-    fn on_entry_blocked(&self, ctx: Rc<RefCell<EntryContext>>, block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>) {}
     /// on_completed fntion will be invoked when chain exits.
     /// The semantics of on_completed is the entry passed and completed
     /// Note: blocked entry will not call this fntion
-    fn on_completed(&self, ctx: Rc<RefCell<EntryContext>>) {}
+    fn on_completed(&self, ctx: ContextPtr) {}
 }
 
 /// SlotChain hold all system slots and customized slot.
@@ -77,17 +81,36 @@ impl SlotChain {
             stats: Vec::with_capacity(SLOT_INIT),
         }
     }
-    pub fn exit(&self, ctx: Rc<RefCell<EntryContext>>) {
-        if ctx.borrow().entry().is_none() {
-            logging::error!("SentinelEntry is nil in SlotChain.exit()");
-            return;
+
+    cfg_async! {
+        pub fn exit(&self, ctx: ContextPtr) {
+            if ctx.read().unwrap().entry().is_none() {
+                logging::error!("SentinelEntry is nil in SlotChain.exit()");
+                return;
+            }
+            if ctx.read().unwrap().is_blocked() {
+                return;
+            }
+            // The on_completed is called only when entry passed
+            for s in &self.stats {
+                s.on_completed(ctx.clone()); // Rc/Arc clone
+            }
         }
-        if ctx.borrow().is_blocked() {
-            return;
-        }
-        // The on_completed is called only when entry passed
-        for s in &self.stats {
-            s.on_completed(ctx.clone());
+    }
+
+    cfg_not_async! {
+        pub fn exit(&self, ctx: ContextPtr) {
+            if ctx.borrow().entry().is_none() {
+                logging::error!("SentinelEntry is nil in SlotChain.exit()");
+                return;
+            }
+            if ctx.borrow().is_blocked() {
+                return;
+            }
+            // The on_completed is called only when entry passed
+            for s in &self.stats {
+                s.on_completed(ctx.clone()); // Rc/Arc clone
+            }
         }
     }
 
@@ -120,33 +143,43 @@ impl SlotChain {
 
     /// The entrance of slot chain
     /// Return the TokenResult
-    pub fn entry(&self, ctx: Rc<RefCell<EntryContext>>) -> TokenResult {
+    pub fn entry(&self, ctx: ContextPtr) -> TokenResult {
         // execute prepare slot
         for s in &self.stat_pres {
-            s.prepare(ctx.clone());
+            s.prepare(ctx.clone()); // Rc/Arc clone
         }
 
         // execute rule based checking slot
-        ctx.borrow_mut().reset_result_to_pass();
+        cfg_if_async! {
+            ctx.write().unwrap().reset_result_to_pass(),
+            ctx.borrow_mut().reset_result_to_pass()
+        };
         for s in &self.rule_checks {
             let res = s.check(&ctx);
             // check slot result
             if res.is_blocked() {
-                ctx.borrow_mut().set_result(res.clone());
+                cfg_if_async! {
+                    ctx.write().unwrap().set_result(res.clone()),
+                    ctx.borrow_mut().set_result(res.clone())
+                };
             }
         }
 
+        cfg_if_async! {
+            let ctx_ptr = ctx.read().unwrap(),
+            let ctx_ptr = ctx.borrow()
+        };
         // execute statistic slot
         for s in &self.stats {
             // indicate the result of rule based checking slot.
-            if ctx.borrow().result().is_pass() {
-                s.on_entry_pass(ctx.clone())
+            if ctx_ptr.result().is_pass() {
+                s.on_entry_pass(ctx.clone()) // Rc/Arc clone
             } else {
                 // The block error should not be nil.
-                s.on_entry_blocked(ctx.clone(), ctx.borrow().result().block_err())
+                s.on_entry_blocked(ctx.clone(), ctx_ptr.result().block_err()) // Rc/Arc clone
             }
         }
-        ctx.borrow().result().clone()
+        ctx_ptr.result().clone()
     }
 }
 
@@ -285,14 +318,14 @@ mod test {
         mock! {
             pub(crate) StatPrepareSlot {}
             impl BaseSlot for StatPrepareSlot {}
-            impl StatPrepareSlot for StatPrepareSlot { fn prepare(&self, ctx: Rc<RefCell<EntryContext>>); }
+            impl StatPrepareSlot for StatPrepareSlot { fn prepare(&self, ctx: ContextPtr); }
         }
 
         /// MockRuleCheckSlot
         mock! {
             pub(crate) RuleCheckSlot {}
             impl BaseSlot for RuleCheckSlot {}
-            impl RuleCheckSlot for RuleCheckSlot { fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult; }
+            impl RuleCheckSlot for RuleCheckSlot { fn check(&self, ctx: &ContextPtr) -> TokenResult; }
         }
 
         /// MockStatSlot
@@ -300,9 +333,9 @@ mod test {
             pub(crate) StatSlot {}
             impl BaseSlot for StatSlot {}
             impl StatSlot for StatSlot {
-                fn on_entry_pass(&self, ctx: Rc<RefCell<EntryContext>>);
-                fn on_entry_blocked(&self, ctx: Rc<RefCell<EntryContext>>, block_error: Option<BlockError>);
-                fn on_completed(&self, ctx: Rc<RefCell<EntryContext>>);
+                fn on_entry_pass(&self, ctx: ContextPtr);
+                fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>);
+                fn on_completed(&self, ctx: ContextPtr);
             }
         }
 
@@ -364,9 +397,9 @@ mod test {
             let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
-            let r = sc.entry(ctx.clone());
+            let r = sc.entry(Rc::clone(&ctx));
             assert_eq!(ResultStatus::Pass, *r.status(), "should pass but blocked");
-            sc.exit(ctx.clone());
+            sc.exit(Rc::clone(&ctx));
         }
 
         #[test]
@@ -424,10 +457,13 @@ mod test {
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
             let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
+            let entry = Rc::new(RefCell::new(SentinelEntry::new(
+                Rc::clone(&ctx),
+                sc.clone(),
+            )));
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
-            let r = sc.entry(ctx.clone());
+            let r = sc.entry(Rc::clone(&ctx));
             assert_eq!(
                 ResultStatus::Blocked,
                 *r.status(),
@@ -438,7 +474,7 @@ mod test {
                 r.block_err().unwrap().block_type(),
                 "should blocked by BlockType Flow"
             );
-            sc.exit(ctx.clone());
+            sc.exit(Rc::clone(&ctx));
         }
 
         struct StatPrepareSlotBadMock {}
@@ -446,7 +482,7 @@ mod test {
         impl BaseSlot for StatPrepareSlotBadMock {}
 
         impl StatPrepareSlot for StatPrepareSlotBadMock {
-            fn prepare(&self, ctx: Rc<RefCell<EntryContext>>) {
+            fn prepare(&self, ctx: ContextPtr) {
                 panic!("sentinel internal panic for test");
             }
         }
@@ -496,10 +532,13 @@ mod test {
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
             let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
+            let entry = Rc::new(RefCell::new(SentinelEntry::new(
+                Rc::clone(&ctx),
+                sc.clone(),
+            )));
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
-            let r = sc.entry(ctx.clone());
+            let r = sc.entry(Rc::clone(&ctx));
         }
     }
 }

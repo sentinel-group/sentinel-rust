@@ -1,5 +1,5 @@
 use super::*;
-use crate::base::{BaseSlot, BlockError, EntryContext, MetricEvent, StatSlot};
+use crate::base::{BaseSlot, BlockError, ContextPtr, EntryContext, MetricEvent, StatSlot};
 use lazy_static::lazy_static;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -26,12 +26,16 @@ impl BaseSlot for MetricStatSlot {
 }
 
 impl StatSlot for MetricStatSlot {
-    fn on_entry_pass(&self, _ctx: Rc<RefCell<EntryContext>>) {}
+    fn on_entry_pass(&self, _ctx: ContextPtr) {}
 
-    fn on_entry_blocked(&self, _ctx: Rc<RefCell<EntryContext>>, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: ContextPtr, _block_error: Option<BlockError>) {}
 
-    fn on_completed(&self, ctx: Rc<RefCell<EntryContext>>) {
-        let ctx = ctx.borrow();
+    fn on_completed(&self, ctx: ContextPtr) {
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
+
         let res = ctx.resource().name();
         let rt = ctx.round_trip();
         for cb in get_breakers_of_resource(res) {

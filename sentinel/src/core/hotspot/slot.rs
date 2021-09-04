@@ -1,8 +1,8 @@
 use super::*;
 use crate::{
     base::{
-        BaseSlot, EntryContext, MetricEvent, ResultStatus, RuleCheckSlot, StatNode, StatSlot,
-        TokenResult,
+        BaseSlot, ContextPtr, EntryContext, MetricEvent, ResultStatus, RuleCheckSlot, StatNode,
+        StatSlot, TokenResult,
     },
     logging, stat, utils,
     utils::AsAny,
@@ -33,9 +33,12 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        let ctx_cloned = Rc::clone(&ctx);
-        let mut ctx = ctx.borrow_mut();
+    fn check(&self, ctx: &ContextPtr) -> TokenResult {
+        let ctx_cloned = ctx.clone(); // Rc/Arc clone
+        cfg_if_async! {
+            let mut ctx = ctx.write().unwrap(),
+            let mut ctx = ctx.borrow_mut()
+        };
         let res = ctx.resource().name();
         let input = ctx.input();
         let batch = input.batch_count();

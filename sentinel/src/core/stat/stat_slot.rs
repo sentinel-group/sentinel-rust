@@ -1,6 +1,9 @@
 use super::inbound_node;
 use crate::{
-    base::{BaseSlot, BlockError, EntryContext, MetricEvent, StatNode, StatSlot, TrafficType},
+    base::{
+        BaseSlot, BlockError, ContextPtr, EntryContext, MetricEvent, StatNode, StatSlot,
+        TrafficType,
+    },
     utils::curr_time_millis,
 };
 use lazy_static::lazy_static;
@@ -46,8 +49,11 @@ impl BaseSlot for ResourceNodeStatSlot {
 }
 
 impl StatSlot for ResourceNodeStatSlot {
-    fn on_entry_pass(&self, ctx: Rc<RefCell<EntryContext>>) {
-        let ctx = ctx.borrow();
+    fn on_entry_pass(&self, ctx: ContextPtr) {
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
         let res = ctx.resource();
         let input = ctx.input();
         if let Some(stat_node) = ctx.stat_node().clone() {
@@ -58,8 +64,11 @@ impl StatSlot for ResourceNodeStatSlot {
         }
     }
 
-    fn on_entry_blocked(&self, ctx: Rc<RefCell<EntryContext>>, block_error: Option<BlockError>) {
-        let ctx = ctx.borrow();
+    fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>) {
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
         let res = ctx.resource();
         let input = ctx.input();
         if let Some(stat_node) = ctx.stat_node().clone() {
@@ -70,13 +79,28 @@ impl StatSlot for ResourceNodeStatSlot {
         }
     }
 
-    fn on_completed(&self, ctx: Rc<RefCell<EntryContext>>) {
-        let mut round_trip = curr_time_millis() - ctx.borrow().start_time();
-        ctx.borrow_mut().set_round_trip(round_trip);
-        if let Some(stat_node) = ctx.borrow().stat_node().clone() {
-            self.record_complete_for(stat_node, ctx.borrow().input().batch_count(), round_trip);
-            if *ctx.borrow().resource().traffic_type() == TrafficType::Inbound {
-                self.record_block_for(inbound_node(), ctx.borrow().input().batch_count());
+    cfg_async! {
+        fn on_completed(&self, ctx: ContextPtr) {
+            let mut round_trip = curr_time_millis() - ctx.read().unwrap().start_time();
+            ctx.write().unwrap().set_round_trip(round_trip);
+            if let Some(stat_node) = ctx.read().unwrap().stat_node().clone() {
+                self.record_complete_for(stat_node, ctx.read().unwrap().input().batch_count(), round_trip);
+                if *ctx.read().unwrap().resource().traffic_type() == TrafficType::Inbound {
+                    self.record_block_for(inbound_node(), ctx.read().unwrap().input().batch_count());
+                }
+            }
+        }
+    }
+
+    cfg_not_async! {
+        fn on_completed(&self, ctx: ContextPtr) {
+            let round_trip = curr_time_millis() - ctx.borrow().start_time();
+            ctx.borrow_mut().set_round_trip(round_trip);
+            if let Some(stat_node) = ctx.borrow().stat_node().clone() {
+                self.record_complete_for(stat_node, ctx.borrow().input().batch_count(), round_trip);
+                if *ctx.borrow().resource().traffic_type() == TrafficType::Inbound {
+                    self.record_block_for(inbound_node(), ctx.borrow().input().batch_count());
+                }
             }
         }
     }

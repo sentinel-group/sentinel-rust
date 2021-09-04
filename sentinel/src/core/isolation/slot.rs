@@ -1,8 +1,9 @@
 use super::*;
 use crate::{
     base::{
-        BaseSlot, BlockType, ConcurrencyStat, EntryContext, MetricEvent, ReadStat, ResultStatus,
-        RuleCheckSlot, SentinelRule, Snapshot, StatNode, StatSlot, TokenResult, TrafficType,
+        BaseSlot, BlockType, ConcurrencyStat, ContextPtr, EntryContext, MetricEvent, ReadStat,
+        ResultStatus, RuleCheckSlot, SentinelRule, Snapshot, StatNode, StatSlot, TokenResult,
+        TrafficType,
     },
     logging, stat, system_metric, utils,
 };
@@ -32,31 +33,57 @@ impl BaseSlot for AdaptiveSlot {
 }
 
 impl RuleCheckSlot for AdaptiveSlot {
-    fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        let res_name = ctx.borrow().resource().name().clone();
-        if res_name.len() == 0 {
+    cfg_async! {
+        fn check(&self, ctx: &ContextPtr) -> TokenResult {
+            let res_name = ctx.read().unwrap().resource().name().clone();
+            if res_name.len() == 0 {
+                return ctx.read().unwrap().result().clone();
+            }
+            let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
+            if !passed {
+                // never panic
+                ctx.write().unwrap()
+                    .set_result(TokenResult::new_blocked_with_cause(
+                        BlockType::SystemFlow,
+                        "concurrency exceeds threshold".into(),
+                        rule.unwrap(),
+                        snapshot.unwrap(),
+                    ));
+            }
+            return ctx.read().unwrap().result().clone();
+        }
+    }
+
+    cfg_not_async! {
+        fn check(&self, ctx: &ContextPtr) -> TokenResult {
+            let res_name = ctx.borrow().resource().name().clone();
+            if res_name.len() == 0 {
+                return ctx.borrow().result().clone();
+            }
+            let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
+            if !passed {
+                // never panic
+                ctx.borrow_mut()
+                    .set_result(TokenResult::new_blocked_with_cause(
+                        BlockType::SystemFlow,
+                        "concurrency exceeds threshold".into(),
+                        rule.unwrap(),
+                        snapshot.unwrap(),
+                    ));
+            }
             return ctx.borrow().result().clone();
         }
-        let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
-        if !passed {
-            // never panic
-            ctx.borrow_mut()
-                .set_result(TokenResult::new_blocked_with_cause(
-                    BlockType::SystemFlow,
-                    "concurrency exceeds threshold".into(),
-                    rule.unwrap(),
-                    snapshot.unwrap(),
-                ));
-        }
-        return ctx.borrow().result().clone();
     }
 }
 
 fn can_pass_check(
-    ctx: &Rc<RefCell<EntryContext>>,
+    ctx: &ContextPtr,
     res: &String,
 ) -> (bool, Option<Arc<Rule>>, Option<Arc<Snapshot>>) {
-    let ctx = ctx.borrow();
+    cfg_if_async! {
+        let ctx = ctx.read().unwrap(),
+        let ctx = ctx.borrow()
+    };
     let stat_node = ctx.stat_node().unwrap();
     let batch_count = ctx.input().batch_count();
     for rule in get_rules_of_resource(res) {

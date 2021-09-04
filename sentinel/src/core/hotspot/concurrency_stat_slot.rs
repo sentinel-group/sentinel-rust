@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    base::{BaseSlot, BlockError, EntryContext, MetricEvent, StatNode, StatSlot},
+    base::{BaseSlot, BlockError, ContextPtr, EntryContext, MetricEvent, StatNode, StatSlot},
     logging,
 };
 use lazy_static::lazy_static;
@@ -29,9 +29,12 @@ impl BaseSlot for ConcurrencyStatSlot {
 }
 
 impl StatSlot for ConcurrencyStatSlot {
-    fn on_entry_pass(&self, ctx: Rc<RefCell<EntryContext>>) {
+    fn on_entry_pass(&self, ctx: ContextPtr) {
         let ctx_ref = &ctx;
-        let ctx = ctx.borrow();
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
         let res = ctx.resource().name();
         let input = ctx.input();
         let tcs = get_traffic_controller_list_for(res);
@@ -53,11 +56,14 @@ impl StatSlot for ConcurrencyStatSlot {
         }
     }
 
-    fn on_entry_blocked(&self, _ctx: Rc<RefCell<EntryContext>>, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: ContextPtr, _block_error: Option<BlockError>) {}
 
-    fn on_completed(&self, ctx: Rc<RefCell<EntryContext>>) {
+    fn on_completed(&self, ctx: ContextPtr) {
         let ctx_ref = &ctx;
-        let ctx = ctx.borrow();
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
         let res = ctx.resource().name();
         let tcs = get_traffic_controller_list_for(res);
         for tc in tcs {

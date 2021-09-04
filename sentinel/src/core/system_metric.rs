@@ -1,4 +1,7 @@
-use crate::{logging, metrics, utils, Error, Result};
+use crate::{logging, utils, Error, Result};
+cfg_monitor! {
+    use crate::monitor;
+}
 use lazy_static::lazy_static;
 use psutil::{host, memory, process::Process};
 use std::sync::{
@@ -40,7 +43,8 @@ pub fn init_memory_collector(cpu_interval: u32) {
                 logging::error!("Fail to retrieve and update cpu statistic");
                 0
             });
-            metrics::set_process_memory_size(memory_used_bytes);
+            #[cfg(feature = "monitor")]
+            monitor::set_process_memory_size(memory_used_bytes);
             CURRENT_MEMORY.store(memory_used_bytes, Ordering::SeqCst);
             utils::sleep_for_ms(cpu_interval as u64);
         });
@@ -67,7 +71,8 @@ pub fn init_cpu_collector(cpu_interval: u32) {
                 logging::error!("Fail to retrieve and update cpu statistic");
                 0.0
             });
-            metrics::set_cpu_ratio(cpu_percent);
+            #[cfg(feature = "monitor")]
+            monitor::set_cpu_ratio(cpu_percent);
             *CURRENT_CPU.lock().unwrap() = cpu_percent;
             utils::sleep_for_ms(cpu_interval as u64);
         });

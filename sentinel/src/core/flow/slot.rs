@@ -1,8 +1,8 @@
 use super::*;
 use crate::{
     base::{
-        BaseSlot, EntryContext, MetricEvent, ResultStatus, RuleCheckSlot, StatNode, StatSlot,
-        TokenResult,
+        BaseSlot, ContextPtr, EntryContext, MetricEvent, ResultStatus, RuleCheckSlot, StatNode,
+        StatSlot, TokenResult,
     },
     logging, stat, utils,
     utils::AsAny,
@@ -33,27 +33,54 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        let mut ctx = ctx.borrow_mut();
-        let res = ctx.resource().name();
-        let stat_node = ctx.stat_node();
-        let input = ctx.input();
-        let tcs = get_traffic_controller_list_for(res);
-        for tc in tcs {
-            let r = can_pass_check(tc, stat_node.clone(), input.batch_count());
-            match r.status() {
-                ResultStatus::Pass => {}
-                ResultStatus::Blocked => {
-                    ctx.set_result(r);
-                    return ctx.result().clone();
-                }
-                ResultStatus::ShouldWait => {
-                    let nanos_to_wait = r.nanos_to_wait();
-                    utils::sleep_for_ns(nanos_to_wait);
+    cfg_async! {
+        fn check(&self, ctx: &ContextPtr) -> TokenResult {
+            let mut ctx = ctx.write().unwrap();
+            let res = ctx.resource().name();
+            let stat_node = ctx.stat_node();
+            let input = ctx.input();
+            let tcs = get_traffic_controller_list_for(res);
+            for tc in tcs {
+                let r = can_pass_check(tc, stat_node.clone(), input.batch_count());
+                match r.status() {
+                    ResultStatus::Pass => {}
+                    ResultStatus::Blocked => {
+                        ctx.set_result(r);
+                        return ctx.result().clone();
+                    }
+                    ResultStatus::ShouldWait => {
+                        let nanos_to_wait = r.nanos_to_wait();
+                        utils::sleep_for_ns(nanos_to_wait);
+                    }
                 }
             }
+            ctx.result().clone()
         }
-        ctx.result().clone()
+    }
+
+    cfg_not_async! {
+        fn check(&self, ctx: &ContextPtr) -> TokenResult {
+            let mut ctx = ctx.borrow_mut();
+            let res = ctx.resource().name();
+            let stat_node = ctx.stat_node();
+            let input = ctx.input();
+            let tcs = get_traffic_controller_list_for(res);
+            for tc in tcs {
+                let r = can_pass_check(tc, stat_node.clone(), input.batch_count());
+                match r.status() {
+                    ResultStatus::Pass => {}
+                    ResultStatus::Blocked => {
+                        ctx.set_result(r);
+                        return ctx.result().clone();
+                    }
+                    ResultStatus::ShouldWait => {
+                        let nanos_to_wait = r.nanos_to_wait();
+                        utils::sleep_for_ns(nanos_to_wait);
+                    }
+                }
+            }
+            ctx.result().clone()
+        }
     }
 }
 

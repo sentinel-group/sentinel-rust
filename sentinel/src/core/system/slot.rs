@@ -1,8 +1,9 @@
 use super::*;
 use crate::{
     base::{
-        BaseSlot, BlockType, ConcurrencyStat, EntryContext, MetricEvent, ReadStat, ResultStatus,
-        RuleCheckSlot, SentinelRule, Snapshot, StatNode, StatSlot, TokenResult, TrafficType,
+        BaseSlot, BlockType, ConcurrencyStat, ContextPtr, EntryContext, MetricEvent, ReadStat,
+        ResultStatus, RuleCheckSlot, SentinelRule, Snapshot, StatNode, StatSlot, TokenResult,
+        TrafficType,
     },
     logging, stat, system_metric, utils,
 };
@@ -32,8 +33,11 @@ impl BaseSlot for AdaptiveSlot {
 }
 
 impl RuleCheckSlot for AdaptiveSlot {
-    fn check(&self, ctx: &Rc<RefCell<EntryContext>>) -> TokenResult {
-        let mut ctx = ctx.borrow_mut();
+    fn check(&self, ctx: &ContextPtr) -> TokenResult {
+        cfg_if_async! {
+            let mut ctx = ctx.write().unwrap(),
+            let mut ctx = ctx.borrow_mut()
+        };
         let res = ctx.resource();
         let traffic_type = res.traffic_type();
         if *traffic_type == TrafficType::Outbound {

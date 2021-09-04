@@ -1,5 +1,5 @@
 use super::get_or_create_resource_node;
-use crate::base::{BaseSlot, EntryContext, StatPrepareSlot};
+use crate::base::{BaseSlot, ContextPtr, EntryContext, StatPrepareSlot};
 use lazy_static::lazy_static;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -25,11 +25,23 @@ impl BaseSlot for ResourceNodePrepareSlot {
 }
 
 impl StatPrepareSlot for ResourceNodePrepareSlot {
-    fn prepare(&self, ctx: Rc<RefCell<EntryContext>>) {
-        let node = get_or_create_resource_node(
-            ctx.borrow().resource().name(),
-            ctx.borrow().resource().resource_type(),
-        );
-        ctx.borrow_mut().set_stat_node(node);
+    cfg_async! {
+        fn prepare(&self, ctx: ContextPtr) {
+            let node = get_or_create_resource_node(
+                ctx.read().unwrap().resource().name(),
+                ctx.read().unwrap().resource().resource_type(),
+            );
+            ctx.write().unwrap().set_stat_node(node);
+        }
+    }
+
+    cfg_not_async! {
+        fn prepare(&self, ctx: ContextPtr) {
+            let node = get_or_create_resource_node(
+                ctx.borrow().resource().name(),
+                ctx.borrow().resource().resource_type(),
+            );
+            ctx.borrow_mut().set_stat_node(node);
+        }
     }
 }

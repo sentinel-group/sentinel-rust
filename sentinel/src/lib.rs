@@ -3,10 +3,18 @@
 //!
 #![allow(warnings)]
 
+// This module is not intended to be part of the public API. In general, any
+// `doc(hidden)` code is not part of Sentinel's public and stable API.
+#[macro_use]
+#[doc(hidden)]
+pub mod macros;
+
 pub mod api;
 pub mod core;
 pub mod logging;
-pub mod metrics;
+cfg_monitor! {
+    pub mod monitor;
+}
 pub mod utils;
 
 pub use crate::core::*;

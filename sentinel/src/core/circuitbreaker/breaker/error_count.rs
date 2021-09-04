@@ -1,6 +1,6 @@
 use super::*;
 use crate::Result;
-use crate::{base::EntryContext, logging};
+use crate::{base::ContextPtr, logging};
 use lazy_static::lazy_static;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -53,7 +53,7 @@ impl CircuitBreakerTrait for ErrorCountBreaker {
         &self.stat
     }
 
-    fn try_pass(&self, ctx: Rc<RefCell<EntryContext>>) -> bool {
+    fn try_pass(&self, ctx: ContextPtr) -> bool {
         match self.current_state() {
             State::Closed => true,
             State::Open => {

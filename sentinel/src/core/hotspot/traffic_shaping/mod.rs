@@ -6,7 +6,7 @@ pub use throttling::*;
 
 use super::*;
 use crate::{
-    base::{BlockType, EntryContext, ParamKey, TokenResult},
+    base::{BlockType, ContextPtr, EntryContext, ParamKey, TokenResult},
     logging, utils, Error, Result,
 };
 use lazy_static::lazy_static;
@@ -153,7 +153,7 @@ where
     }
 
     /// ExtractArgs matches the arg from ctx based on Controller
-    pub fn extract_args(&self, ctx: &Rc<RefCell<EntryContext>>) -> Option<ParamKey> {
+    pub fn extract_args(&self, ctx: &ContextPtr) -> Option<ParamKey> {
         if let Some(args) = self.extract_kv_args(ctx) {
             Some(args)
         } else if let Some(args) = self.extract_list_args(ctx) {
@@ -163,8 +163,11 @@ where
         }
     }
 
-    fn extract_list_args(&self, ctx: &Rc<RefCell<EntryContext>>) -> Option<ParamKey> {
-        let ctx = ctx.borrow();
+    fn extract_list_args(&self, ctx: &ContextPtr) -> Option<ParamKey> {
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
         let args = ctx.input().args();
         match args {
             Some(args) => {
@@ -189,8 +192,11 @@ where
         }
     }
 
-    fn extract_kv_args(&self, ctx: &Rc<RefCell<EntryContext>>) -> Option<ParamKey> {
-        let ctx = ctx.borrow();
+    fn extract_kv_args(&self, ctx: &ContextPtr) -> Option<ParamKey> {
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
         let attachments = ctx.input().attachments();
         match attachments {
             Some(attachments) => {

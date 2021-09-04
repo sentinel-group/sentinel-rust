@@ -1,5 +1,5 @@
 use super::*;
-use crate::base::{BaseSlot, BlockError, EntryContext, MetricEvent, StatNode, StatSlot};
+use crate::base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot};
 use lazy_static::lazy_static;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -25,8 +25,12 @@ impl BaseSlot for StandaloneStatSlot {
 }
 
 impl StatSlot for StandaloneStatSlot {
-    fn on_entry_pass(&self, ctx: Rc<RefCell<EntryContext>>) {
-        let ctx = ctx.borrow();
+    fn on_entry_pass(&self, ctx: ContextPtr) {
+        cfg_if_async! {
+            let ctx = ctx.read().unwrap(),
+            let ctx = ctx.borrow()
+        };
+
         let res = ctx.resource().name();
         let input = ctx.input();
         let tcs = get_traffic_controller_list_for(res);
@@ -40,7 +44,7 @@ impl StatSlot for StandaloneStatSlot {
         }
     }
 
-    fn on_entry_blocked(&self, _ctx: Rc<RefCell<EntryContext>>, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: ContextPtr, _block_error: Option<BlockError>) {}
 
-    fn on_completed(&self, _ctx: Rc<RefCell<EntryContext>>) {}
+    fn on_completed(&self, _ctx: ContextPtr) {}
 }

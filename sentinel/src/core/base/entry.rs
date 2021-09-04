@@ -1,20 +1,30 @@
-use super::{EntryContext, ResourceWrapper, SlotChain};
+use super::{ContextPtr, EntryContext, ResourceWrapper, SlotChain};
 use crate::logging;
 use crate::{Error, Result};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::vec::Vec;
 
-type ExitHandler =
-    Box<dyn Send + Sync + Fn(&SentinelEntry, Rc<RefCell<EntryContext>>) -> Result<()>>;
+type ExitHandler = Box<dyn Send + Sync + Fn(&SentinelEntry, ContextPtr) -> Result<()>>;
+
+cfg_async! {
+    use std::sync::{RwLock, Weak};
+    pub type EntryStrongPtr = Arc<RwLock<SentinelEntry>>;
+    pub type EntryWeakPtr = Weak<RwLock<SentinelEntry>>;
+}
+
+cfg_not_async! {
+    use std::rc::{Rc,Weak};
+    use std::cell::RefCell;
+    pub type EntryStrongPtr = Rc<RefCell<SentinelEntry>>;
+    pub type EntryWeakPtr = Weak<RefCell<SentinelEntry>>;
+}
 
 pub struct SentinelEntry {
     // todo: it is assumed that entry and context is visited in a single thread,
     // is it neccessary to consider concurrency?
     // Then Rc and RefCell is not suitable...
     /// inner context may need mutability in ExitHandlers, thus, RefCell is used
-    ctx: Rc<RefCell<EntryContext>>,
+    ctx: ContextPtr,
     exit_handlers: Vec<ExitHandler>,
     /// each entry traverses a slot chain,
     /// global slot chain is wrapped by Arc, thus here we use Arc
@@ -22,7 +32,7 @@ pub struct SentinelEntry {
 }
 
 impl SentinelEntry {
-    pub fn new(ctx: Rc<RefCell<EntryContext>>, sc: Arc<SlotChain>) -> Self {
+    pub fn new(ctx: ContextPtr, sc: Arc<SlotChain>) -> Self {
         SentinelEntry {
             ctx,
             exit_handlers: Vec::new(),
@@ -34,20 +44,20 @@ impl SentinelEntry {
         self.exit_handlers.push(exit_handler);
     }
 
-    pub fn context(&self) -> Rc<RefCell<EntryContext>> {
-        self.ctx.clone()
+    pub fn context(&self) -> &ContextPtr {
+        &self.ctx
     }
 
     // todo: cleanup
     pub fn exit(&self) {
         for handler in &self.exit_handlers {
-            handler(&self, self.ctx.clone())
+            handler(&self, self.ctx.clone()) // Rc/Arc clone
                 .map_err(|err: Error| {
                     logging::error!("ERROR: {}", err);
                 })
                 .unwrap();
         }
-        self.sc.exit(self.ctx.clone());
+        self.sc.exit(self.ctx.clone()); // Rc/Arc clone
     }
 }
 
