@@ -10,8 +10,11 @@ pub struct DirectCalculator {
 }
 
 impl DirectCalculator {
-    pub fn new(owner: Weak<Controller>, threshold: f64) -> Self {
-        DirectCalculator { owner, threshold }
+    pub fn new(owner: Weak<Controller>, rule: Arc<Rule>) -> Self {
+        DirectCalculator {
+            owner,
+            threshold: rule.threshold,
+        }
     }
 }
 

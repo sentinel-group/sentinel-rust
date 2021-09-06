@@ -8,7 +8,7 @@ use tokio::time::{sleep, Duration};
 async fn main() {
     // Init sentienl configurations
     sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
-    let resource_name = String::from("direct_reject_flow_control_example_on_sentinel");
+    let resource_name = String::from("direct_reject_flow_control_example_on_tokio");
 
     // Load sentinel rules
     flow::load_rules(vec![Arc::new(flow::Rule {

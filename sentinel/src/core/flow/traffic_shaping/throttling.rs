@@ -1,7 +1,7 @@
 //! Throttling indicates that pending requests will be throttled,
 //! wait in queue (until free capacity is available)
 
-use super::{Calculator, Checker, Controller};
+use super::{Calculator, Checker, Controller, Rule};
 use crate::base::{BlockType, MetricEvent, StatNode, TokenResult};
 use crate::utils;
 use std::convert::TryInto;
@@ -21,7 +21,10 @@ pub struct ThrottlingChecker {
 }
 
 impl ThrottlingChecker {
-    pub fn new(owner: Weak<Controller>, timeout_ms: u32, stat_interval_ms: u32) -> Self {
+    pub fn new(owner: Weak<Controller>, rule: Arc<Rule>) -> Self {
+        let timeout_ms = rule.max_queueing_time_ms;
+        let stat_interval_ms = rule.stat_interval_ms;
+
         let stat_interval_ns = {
             if stat_interval_ms == 0 {
                 utils::milli2nano(1000)
@@ -176,8 +179,13 @@ mod test {
         let interval_ms = 10000;
         let threshold = 50.0;
         let timeout_ms = 0;
+        let rule = Arc::new(Rule {
+            max_queueing_time_ms: timeout_ms,
+            stat_interval_ms: interval_ms,
+            ..Default::default()
+        });
 
-        let tc = ThrottlingChecker::new(Weak::new(), timeout_ms, interval_ms);
+        let tc = ThrottlingChecker::new(Weak::new(), rule);
 
         // Should block when batchCount > threshold.
         let res = tc.do_check(None, (threshold + 1.0) as u32, threshold);
@@ -202,8 +210,13 @@ mod test {
         let interval_ms = 10000;
         let threshold = 50.0;
         let timeout_ms = 2000;
+        let rule = Arc::new(Rule {
+            max_queueing_time_ms: timeout_ms,
+            stat_interval_ms: interval_ms,
+            ..Default::default()
+        });
 
-        let tc = ThrottlingChecker::new(Weak::new(), timeout_ms, interval_ms);
+        let tc = ThrottlingChecker::new(Weak::new(), rule);
 
         // Should block when batchCount > threshold.
         let res = tc.do_check(None, (threshold + 1.0) as u32, threshold);
@@ -240,8 +253,13 @@ mod test {
         let interval_ms = 10000;
         let threshold = 50.0;
         let timeout_ms = 2000;
+        let rule = Arc::new(Rule {
+            max_queueing_time_ms: timeout_ms,
+            stat_interval_ms: interval_ms,
+            ..Default::default()
+        });
 
-        let tc = Arc::new(ThrottlingChecker::new(Weak::new(), timeout_ms, interval_ms));
+        let tc = Arc::new(ThrottlingChecker::new(Weak::new(), rule));
 
         assert!(tc.do_check(None, 1, threshold).is_pass());
         let thread_num: u32 = 24;
@@ -287,8 +305,13 @@ mod test {
         let interval_ms = 10000;
         let threshold = 50.0;
         let timeout_ms = 0;
+        let rule = Arc::new(Rule {
+            max_queueing_time_ms: timeout_ms,
+            stat_interval_ms: interval_ms,
+            ..Default::default()
+        });
 
-        let tc = Arc::new(ThrottlingChecker::new(Weak::new(), timeout_ms, interval_ms));
+        let tc = Arc::new(ThrottlingChecker::new(Weak::new(), rule));
 
         let thread_num: u32 = 512;
         let mut handles = Vec::with_capacity(thread_num as usize);

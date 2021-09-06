@@ -10,7 +10,7 @@ use crate::{
     logging, utils, Error, Result,
 };
 use lazy_static::lazy_static;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Mutex, RwLock, Weak};
 
@@ -36,55 +36,55 @@ impl ControllerGenKey {
 /// ControllerMap represents the map storage for Controller.
 pub type ControllerMap = HashMap<String, Vec<Arc<Controller>>>;
 pub type RuleMap = HashMap<String, Vec<Arc<Rule>>>;
+pub type RuleSet = HashSet<Id>;
 
 lazy_static! {
     static ref GEN_FUN_MAP: RwLock<HashMap<ControllerGenKey, Box<ControllerGenfn>>> = {
-        // Initialize the traffic shaping controller generator map for existing control behaviors.
+        let mut gen_fun_map: HashMap<ControllerGenKey, Box<ControllerGenfn>> = HashMap::new();
 
-        /* todo:
-        use macro to generate `Controller`?
-        let key = ControllerGenKey::new(
+        insert_flow_generator!(
+            gen_fun_map,
             CalculateStrategy::Direct,
-            ControlStrategy::Reject
+            ControlStrategy::Reject,
+            DirectCalculator,
+            RejectChecker
         );
-        let gen_fn = meta_gen_fn();
-
-        gen_fun_map.insert(key,gen_fn);*/
-
-        let mut gen_fun_map:HashMap<ControllerGenKey, Box<ControllerGenfn>>  = HashMap::new();
-
-        gen_fun_map.insert(
-            ControllerGenKey::new(CalculateStrategy::Direct, ControlStrategy::Reject),
-            Box::new(gen_direct_reject),
+        insert_flow_generator!(
+            gen_fun_map,
+            CalculateStrategy::Direct,
+            ControlStrategy::Throttling,
+            DirectCalculator,
+            ThrottlingChecker
+        );
+        insert_flow_generator!(
+            gen_fun_map,
+            CalculateStrategy::WarmUp,
+            ControlStrategy::Reject,
+            WarmUpCalculator,
+            RejectChecker
+        );
+        insert_flow_generator!(
+            gen_fun_map,
+            CalculateStrategy::WarmUp,
+            ControlStrategy::Throttling,
+            WarmUpCalculator,
+            ThrottlingChecker
+        );
+        insert_flow_generator!(
+            gen_fun_map,
+            CalculateStrategy::MemoryAdaptive,
+            ControlStrategy::Reject,
+            MemoryAdaptiveCalculator,
+            RejectChecker
+        );
+        insert_flow_generator!(
+            gen_fun_map,
+            CalculateStrategy::MemoryAdaptive,
+            ControlStrategy::Throttling,
+            MemoryAdaptiveCalculator,
+            ThrottlingChecker
         );
 
-        gen_fun_map.insert(
-            ControllerGenKey::new(CalculateStrategy::Direct, ControlStrategy::Throttling),
-            Box::new(gen_direct_throttling),
-        );
-
-        gen_fun_map.insert(
-            ControllerGenKey::new(CalculateStrategy::WarmUp, ControlStrategy::Reject),
-            Box::new(gen_warmup_reject),
-        );
-
-        gen_fun_map.insert(
-            ControllerGenKey::new(CalculateStrategy::WarmUp, ControlStrategy::Throttling),
-            Box::new(gen_warmup_throttling),
-        );
-
-        gen_fun_map.insert(
-            ControllerGenKey::new(CalculateStrategy::MemoryAdaptive, ControlStrategy::Reject),
-            Box::new(gen_adaptive_reject),
-        );
-
-        gen_fun_map.insert(
-            ControllerGenKey::new(
-                CalculateStrategy::MemoryAdaptive,
-                ControlStrategy::Throttling,
-            ),
-            Box::new(gen_adaptive_throttling),
-        );
         RwLock::new(gen_fun_map)
     };
     static ref CONTROLLER_MAP: Mutex<ControllerMap> = Mutex::new(HashMap::new());
@@ -94,170 +94,6 @@ lazy_static! {
         Some(nop_write_stat())
     ));
     static ref RULE_MAP: Mutex<RuleMap> = Mutex::new(HashMap::new());
-}
-
-use gen_fns::*;
-mod gen_fns {
-    use super::*;
-
-    pub(super) fn gen_direct_reject(
-        rule: Arc<Rule>,
-        stat: Option<Arc<StandaloneStat>>,
-    ) -> Result<Arc<Controller>> {
-        let stat = match stat {
-            None => generate_stat_for(&rule)?,
-            Some(stat) => stat,
-        };
-        let calculator: Arc<Mutex<dyn Calculator>> = Arc::new(Mutex::new(DirectCalculator::new(
-            Weak::new(),
-            rule.threshold,
-        )));
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(RejectChecker::new(
-            Weak::new(),
-            Arc::clone(&rule),
-        )));
-        let mut tsc = Controller::new(Arc::clone(&rule), stat);
-        tsc.set_calculator(Arc::clone(&calculator));
-        tsc.set_checker(Arc::clone(&checker));
-        let tsc = Arc::new(tsc);
-        let mut calculator = calculator.lock().unwrap();
-        let mut checker = checker.lock().unwrap();
-        calculator.set_owner(Arc::downgrade(&tsc));
-        checker.set_owner(Arc::downgrade(&tsc));
-        Ok(tsc)
-    }
-
-    pub(super) fn gen_direct_throttling(
-        rule: Arc<Rule>,
-        _stat: Option<Arc<StandaloneStat>>,
-    ) -> Result<Arc<Controller>> {
-        // CalculateStrategy::Direct token calculate strategy and throttling control behavior don't use stat, so we just give a nop stat.
-        let stat = NOP_STAT.clone();
-        let calculator: Arc<Mutex<dyn Calculator>> = Arc::new(Mutex::new(DirectCalculator::new(
-            Weak::new(),
-            rule.threshold,
-        )));
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(ThrottlingChecker::new(
-            Weak::new(),
-            rule.max_queueing_time_ms,
-            rule.stat_interval_ms,
-        )));
-        let mut tsc = Controller::new(Arc::clone(&rule), stat);
-        tsc.set_calculator(Arc::clone(&calculator));
-        tsc.set_checker(Arc::clone(&checker));
-        let tsc = Arc::new(tsc);
-        let mut calculator = calculator.lock().unwrap();
-        let mut checker = checker.lock().unwrap();
-        calculator.set_owner(Arc::downgrade(&tsc));
-        checker.set_owner(Arc::downgrade(&tsc));
-        Ok(tsc)
-    }
-
-    pub(super) fn gen_warmup_reject(
-        rule: Arc<Rule>,
-        stat: Option<Arc<StandaloneStat>>,
-    ) -> Result<Arc<Controller>> {
-        let stat = match stat {
-            None => generate_stat_for(&rule)?,
-            Some(stat) => stat,
-        };
-        let calculator: Arc<Mutex<dyn Calculator>> = Arc::new(Mutex::new(WarmUpCalculator::new(
-            Weak::new(),
-            Arc::clone(&rule),
-        )));
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(RejectChecker::new(
-            Weak::new(),
-            Arc::clone(&rule),
-        )));
-        let mut tsc = Controller::new(Arc::clone(&rule), stat);
-        tsc.set_calculator(Arc::clone(&calculator));
-        tsc.set_checker(Arc::clone(&checker));
-        let tsc = Arc::new(tsc);
-        let mut calculator = calculator.lock().unwrap();
-        let mut checker = checker.lock().unwrap();
-        calculator.set_owner(Arc::downgrade(&tsc));
-        checker.set_owner(Arc::downgrade(&tsc));
-        Ok(tsc)
-    }
-
-    pub(super) fn gen_warmup_throttling(
-        rule: Arc<Rule>,
-        stat: Option<Arc<StandaloneStat>>,
-    ) -> Result<Arc<Controller>> {
-        let stat = match stat {
-            None => generate_stat_for(&rule)?,
-            Some(stat) => stat,
-        };
-        let calculator: Arc<Mutex<dyn Calculator>> = Arc::new(Mutex::new(WarmUpCalculator::new(
-            Weak::new(),
-            Arc::clone(&rule),
-        )));
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(ThrottlingChecker::new(
-            Weak::new(),
-            rule.max_queueing_time_ms,
-            rule.stat_interval_ms,
-        )));
-        let mut tsc = Controller::new(Arc::clone(&rule), stat);
-        tsc.set_calculator(Arc::clone(&calculator));
-        tsc.set_checker(Arc::clone(&checker));
-        let tsc = Arc::new(tsc);
-        let mut calculator = calculator.lock().unwrap();
-        let mut checker = checker.lock().unwrap();
-        calculator.set_owner(Arc::downgrade(&tsc));
-        checker.set_owner(Arc::downgrade(&tsc));
-        Ok(tsc)
-    }
-
-    pub(super) fn gen_adaptive_reject(
-        rule: Arc<Rule>,
-        stat: Option<Arc<StandaloneStat>>,
-    ) -> Result<Arc<Controller>> {
-        let stat = match stat {
-            None => generate_stat_for(&rule)?,
-            Some(stat) => stat,
-        };
-        let calculator: Arc<Mutex<dyn Calculator>> = Arc::new(Mutex::new(
-            MemoryAdaptiveCalculator::new(Weak::new(), Arc::clone(&rule)),
-        ));
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(RejectChecker::new(
-            Weak::new(),
-            Arc::clone(&rule),
-        )));
-        let mut tsc = Controller::new(Arc::clone(&rule), stat);
-        tsc.set_calculator(Arc::clone(&calculator));
-        tsc.set_checker(Arc::clone(&checker));
-        let tsc = Arc::new(tsc);
-        let mut calculator = calculator.lock().unwrap();
-        let mut checker = checker.lock().unwrap();
-        calculator.set_owner(Arc::downgrade(&tsc));
-        checker.set_owner(Arc::downgrade(&tsc));
-        Ok(tsc)
-    }
-
-    pub(super) fn gen_adaptive_throttling(
-        rule: Arc<Rule>,
-        _stat: Option<Arc<StandaloneStat>>,
-    ) -> Result<Arc<Controller>> {
-        // MemoryAdaptive token calculate strategy and throttling control behavior don't use stat, so we just give a nop stat.
-        let stat = NOP_STAT.clone();
-        let calculator: Arc<Mutex<dyn Calculator>> = Arc::new(Mutex::new(
-            MemoryAdaptiveCalculator::new(Weak::new(), Arc::clone(&rule)),
-        ));
-        let checker: Arc<Mutex<dyn Checker>> = Arc::new(Mutex::new(ThrottlingChecker::new(
-            Weak::new(),
-            rule.max_queueing_time_ms,
-            rule.stat_interval_ms,
-        )));
-        let mut tsc = Controller::new(Arc::clone(&rule), stat);
-        tsc.set_calculator(Arc::clone(&calculator));
-        tsc.set_checker(Arc::clone(&checker));
-        let tsc = Arc::new(tsc);
-        let mut calculator = calculator.lock().unwrap();
-        let mut checker = checker.lock().unwrap();
-        calculator.set_owner(Arc::downgrade(&tsc));
-        checker.set_owner(Arc::downgrade(&tsc));
-        Ok(tsc)
-    }
 }
 
 fn log_rule_update(map: &RuleMap) {

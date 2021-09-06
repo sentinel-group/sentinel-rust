@@ -20,7 +20,8 @@ pub mod utils;
 pub use crate::core::*;
 pub use api::*;
 
-use anyhow::{Error, Result};
+pub type Result<T> = anyhow::Result<T>;
+pub type Error = anyhow::Error;
 
 // todo: replace useless Arc by ref
 // returning of getter of Arc should be replaced to ref of Arc, too

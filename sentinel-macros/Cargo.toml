@@ -3,13 +3,27 @@ name = "sentinel-macros"
 version = "0.1.0"
 authors = ["Forsworns <378974295@qq.com>"]
 edition = "2018"
+license = "Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/sentinel-rs/latest"
+repository = "https://github.com/sentinel-group/sentinel-rust"
+homepage = "https://sentinelguard.io/en-us/"
+description = """
+Out-of-the-box attribute macors to ease sentinel usage.
+"""
+categories = ["concurrency", "network-programming", "development-tools"]
+keywords = ["microservices", "flow-control", "sentinel", "reliability"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
 
 [dependencies]
 proc-macro2 = "1.0.28"
 quote = "1.0.9"
 syn = { version = "1.0.74", features = ["full"] }
+darling = "0.13.0"
 
 [dev-dependencies]
 sentinel-rs = { version = "0.1.0", path = "../sentinel", features = ["full"] }

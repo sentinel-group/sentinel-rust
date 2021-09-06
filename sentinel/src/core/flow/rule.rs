@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
 
+pub type Id = String;
+
 /// RelationStrategy indicates the flow control strategy based on the relation of invocations.
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum RelationStrategy {
@@ -48,11 +50,11 @@ impl Default for ControlStrategy {
     }
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Rule describes the strategy of flow control, the flow control strategy is based on QPS statistic metric
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
-    pub id: Option<String>,
+    pub id: Id,
     /// `resource` represents the resource name.
     pub resource: String,
     pub ref_resource: String,
@@ -83,6 +85,28 @@ pub struct Rule {
     pub high_mem_usage_threshold: u64,
     pub mem_low_water_mark: u64,
     pub mem_high_water_mark: u64,
+}
+
+impl Default for Rule {
+    fn default() -> Self {
+        Rule {
+            id: uuid::Uuid::new_v4().to_string(),
+            resource: String::default(),
+            ref_resource: String::default(),
+            calculate_strategy: CalculateStrategy::default(),
+            control_strategy: ControlStrategy::default(),
+            relation_strategy: RelationStrategy::default(),
+            threshold: 0.0,
+            warm_up_period_sec: 0,
+            warm_up_cold_factor: 0,
+            max_queueing_time_ms: 0,
+            stat_interval_ms: 0,
+            low_mem_usage_threshold: 0,
+            high_mem_usage_threshold: 0,
+            mem_low_water_mark: 0,
+            mem_high_water_mark: 0,
+        }
+    }
 }
 
 impl Rule {
