@@ -23,7 +23,7 @@ We are very glad to accept improvements for these aspects.
 
 ### GitHub workflow
 
-We use the `master` branch as the development branch, which indicates that this is a unstable branch.
+We use the `main` branch as the development branch, which indicates that this is a unstable branch.
 
 Here are the workflow for contributors:
 
