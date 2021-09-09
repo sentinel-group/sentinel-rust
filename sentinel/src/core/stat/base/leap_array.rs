@@ -50,7 +50,7 @@ impl<T: MetricTrait> BucketWrap<T> {
 
     pub fn is_deprecated(&self, now: u64, interval: u64) -> bool {
         let start = self.start_stamp.load(Ordering::SeqCst);
-        now - start > interval
+        now > start && now - start > interval
     }
 }
 

@@ -10,7 +10,8 @@ use syn::{parse_macro_input, AttributeArgs, ItemFn, ReturnType};
 // Refer to crate `rocket_codegen::http_codegen`.
 #[derive(Debug, FromMeta)]
 pub(crate) struct Rule {
-    pub threshold: f64,
+    #[darling(default)]
+    pub threshold: Option<f64>,
     #[darling(default)]
     pub traffic_type: Option<String>,
     #[darling(default)]
@@ -111,7 +112,6 @@ fn wrap_sentinel(rule: Rule, func: ItemFn) -> TokenStream {
             }
         }
     };
-    println!("{:?}", expanded.to_string());
     expanded.into()
 }
 
@@ -132,6 +132,7 @@ fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 {
     } = rule;
     let strategy = parse_strategy(calculate_strategy, control_strategy);
     let optional_params = expand_attribute!(
+        threshold,
         warm_up_period_sec,
         warm_up_cold_factor,
         max_queueing_time_ms,
@@ -147,9 +148,6 @@ fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 {
             resource: String::from(#resource_name),
             ref_resource: String::from(#resource_name),
             relation_strategy: flow::RelationStrategy::CurrentResource,
-            // #calculate_strategy,
-            // #control_strategy,
-            threshold: #threshold,
             #strategy
             #optional_params
             ..Default::default()

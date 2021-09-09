@@ -24,10 +24,12 @@ fn main() {
 }
 
 #[flow(
-    traffic_type = "Outbound",
-    threshold = 10.0,
-    warm_up_period_sec = 10,
-    warm_up_cold_factor = 3
+    traffic_type = "Inbound",
+    calculate_strategy = "MemoryAdaptive",
+    mem_low_water_mark = 128,
+    mem_high_water_mark = 512,
+    low_mem_usage_threshold = 5,
+    high_mem_usage_threshold = 1
 )]
 fn task() {
     println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");

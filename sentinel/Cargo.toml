@@ -78,18 +78,33 @@ doctest = false
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-
+# flow control related examples
 [[example]]
 name = "hello_world"
-path = "../examples/hello_world.rs"
+path = "../examples/flow/hello_world.rs"
+required-features = ["full"]
+
+[[example]]
+name = "direct"
+path = "../examples/flow/hello_world.rs"
 required-features = ["full"]
 
 [[example]]
 name = "tokio"
-path = "../examples/tokio.rs"
-required-features = ["full","async"]
+path = "../examples/flow/tokio.rs"
+required-features = ["full", "async"]
 
 [[example]]
 name = "macro"
-path = "../examples/macro.rs"
-required-features = ["full", "macros"]
+path = "../examples/flow/macro.rs"
+required-features = ["full"]
+
+[[example]]
+name = "warmup"
+path = "../examples/flow/macro.rs"
+required-features = ["full"]
+
+[[example]]
+name = "memory_adaptive"
+path = "../examples/flow/memory_adaptive.rs"
+required-features = ["full"]

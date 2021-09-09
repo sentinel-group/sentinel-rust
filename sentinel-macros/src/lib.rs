@@ -10,8 +10,8 @@ mod macros;
 
 mod flow;
 
-/// Use this macro by attribute `#[flow()]`.
-/// By default, it simply neglect the blocked task.
+/// Use this macro by attribute `#[flow()]` to create flow control sentinel.
+/// It wraps the task's ReturnType with `Result` to indicate whether the task is blocked
 #[proc_macro_attribute]
 pub fn flow(attr: TokenStream, item: TokenStream) -> TokenStream {
     flow::build(attr, item)
