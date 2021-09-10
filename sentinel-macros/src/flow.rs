@@ -92,6 +92,7 @@ fn wrap_sentinel(rule: Rule, func: ItemFn) -> TokenStream {
         #(#attrs)* #vis #sig {
             use sentinel_rs::{base, flow, EntryBuilder};
             use std::sync::Arc;
+            use sentinel_rs::cfg_if_async;
 
             // Load sentinel rules
             flow::load_rules(vec![Arc::new(#rule)]);
@@ -103,7 +104,7 @@ fn wrap_sentinel(rule: Rule, func: ItemFn) -> TokenStream {
                     // Passed, wrap the logic here.
                     let result = {#(#stmts)*};
                     // Be sure the entry is exited finally.
-                    entry.borrow().exit();
+                    cfg_if_async!(entry.read().unwrap().exit(), entry.borrow().exit());
                     Ok(result)
                 },
                 Err(err) => {
@@ -185,6 +186,8 @@ fn parse_traffic(rule: &Rule) -> TokenStream2 {
             "Outbound" => quote! {base::TrafficType::Outbound},
             _ => quote! {base::TrafficType::Inbound},
         })
+    } else {
+        traffic.extend(quote! {base::TrafficType::Inbound})
     }
     traffic
 }

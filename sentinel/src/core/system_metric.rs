@@ -189,6 +189,7 @@ mod test {
             }
         });
 
+        set_cpu_usage(0.0);
         let got = get_process_cpu_stat().unwrap();
 
         assert_eq!(got, 0.0);
