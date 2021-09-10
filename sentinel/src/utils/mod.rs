@@ -1,4 +1,6 @@
 use std::any::Any;
+use std::collections::HashSet;
+use std::hash::Hash;
 use std::sync::Arc;
 
 pub mod time;
@@ -33,4 +35,12 @@ impl<T: Any + Send + Sync> AsAny for T {
     fn as_any_arc(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
         self
     }
+}
+
+pub(crate) fn vec2set<T: Hash + Eq>(vec: Vec<T>) -> HashSet<T> {
+    let mut set = HashSet::with_capacity(vec.len());
+    for item in vec {
+        set.insert(item);
+    }
+    set
 }

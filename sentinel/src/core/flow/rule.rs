@@ -3,6 +3,7 @@ use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 pub type Id = String;
 
@@ -85,6 +86,14 @@ pub struct Rule {
     pub high_mem_usage_threshold: u64,
     pub mem_low_water_mark: u64,
     pub mem_high_water_mark: u64,
+}
+
+impl Hash for Rule {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.resource.hash(state);
+        self.ref_resource.hash(state);
+    }
 }
 
 impl Default for Rule {
@@ -203,6 +212,8 @@ impl PartialEq for Rule {
             && self.mem_high_water_mark == other.mem_high_water_mark
     }
 }
+
+impl Eq for Rule {}
 
 impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
