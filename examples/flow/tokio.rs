@@ -1,10 +1,8 @@
 use sentinel_macros::flow;
 use sentinel_rs;
-use sentinel_rs::{base, flow, EntryBuilder};
-use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 
-/// a "hello-world" example on async functions with explicit Sentinel entry builders
+/// an example on async functions
 #[tokio::main]
 async fn main() {
     // Init sentienl configurations

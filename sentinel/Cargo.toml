@@ -108,3 +108,8 @@ required-features = ["full"]
 name = "memory_adaptive"
 path = "../examples/flow/memory_adaptive.rs"
 required-features = ["full"]
+
+[[example]]
+name = "throttling"
+path = "../examples/flow/throttling.rs"
+required-features = ["full"]

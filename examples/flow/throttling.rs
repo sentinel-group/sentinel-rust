@@ -2,7 +2,7 @@ use sentinel_macros::flow;
 use sentinel_rs;
 use sentinel_rs::utils::sleep_for_ms;
 
-/// an example on `flow::CalculateStrategy::MemoryAdaptive`
+/// an example on `flow::ControlStrategy::Throttling`
 fn main() {
     // Init sentienl configurations
     sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
@@ -23,14 +23,7 @@ fn main() {
     }
 }
 
-#[flow(
-    traffic_type = "Inbound",
-    calculate_strategy = "MemoryAdaptive",
-    mem_low_water_mark = 128,
-    mem_high_water_mark = 512,
-    low_mem_usage_threshold = 5,
-    high_mem_usage_threshold = 1
-)]
+#[flow(control_strategy = "Throttling", threshold = 10.0)]
 fn task() {
     println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
     sleep_for_ms(10);
