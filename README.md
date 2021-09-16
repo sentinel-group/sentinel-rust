@@ -4,6 +4,7 @@
 
 [![Crates.io][crates-badge]][crates-url]
 [![Sentinel CI][ci-badge]][ci-url]
+[![Codecov][codecov-badge]][codecov-url]
 [![Apache licensed][apache-badge]][apache-url]
 [![Gitter chat][gitter-badge]][gitter-url]
 
@@ -12,6 +13,8 @@
 [crates-url]: https://crates.io/crates/sentinel-rs
 [ci-badge]: https://github.com/sentinel-group/sentinel-rust/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/sentinel-group/sentinel-rust/actions/workflows/ci.yml
+[codecov-badge]: https://codecov.io/gh/sentinel-group/sentinel-rust/branch/main/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/sentinel-group/sentinel-rust
 [apache-badge]: https://img.shields.io/badge/license-Apache%202-4EB1BA.svg
 [apache-url]: https://www.apache.org/licenses/LICENSE-2.0.html
 [gitter-badge]: https://badges.gitter.im/alibaba/Sentinel.svg
