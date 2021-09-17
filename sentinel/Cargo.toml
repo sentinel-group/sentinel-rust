@@ -113,3 +113,29 @@ required-features = ["full"]
 name = "throttling"
 path = "../examples/flow/throttling.rs"
 required-features = ["full"]
+
+# system metrics related examples
+[[example]]
+name = "inbound_qps"
+path = "../examples/system/inbound_qps.rs"
+required-features = ["full"]
+
+[[example]]
+name = "avg_rt"
+path = "../examples/system/avg_rt.rs"
+required-features = ["full"]
+
+[[example]]
+name = "cpu_usage"
+path = "../examples/system/cpu_usage.rs"
+required-features = ["full"]
+
+[[example]]
+name = "concurrency"
+path = "../examples/system/concurrency.rs"
+required-features = ["full"]
+
+[[example]]
+name = "load"
+path = "../examples/system/load.rs"
+required-features = ["full"]

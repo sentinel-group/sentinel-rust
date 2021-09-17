@@ -2,7 +2,7 @@ use darling::FromMeta;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::{parse_macro_input, AttributeArgs, ItemFn, ReturnType};
+use syn::ItemFn;
 
 // macro_todo: Maybe impl `darling::FromMeta` for Enum is better?
 // macro_todo: Maybe refactor the `sentinel-rs` crate, elimnate cyclic dependcies,
@@ -38,46 +38,8 @@ pub(crate) struct Rule {
     pub mem_high_water_mark: Option<u64>,
 }
 
-pub(crate) fn build(attr: TokenStream, func: TokenStream) -> TokenStream {
-    let attr = parse_macro_input!(attr as AttributeArgs);
-    let rule = match Rule::from_list(&attr) {
-        Ok(v) => v,
-        Err(e) => {
-            return TokenStream::from(e.write_errors());
-        }
-    };
-
-    let func = parse_macro_input!(func as ItemFn);
-    let func = process_func(func);
-    wrap_sentinel(rule, func)
-}
-
-/// Extract the original ReturnType and wrap it with Result<T,E>
-fn process_func(mut func: ItemFn) -> ItemFn {
-    let return_type = func.sig.output;
-    // Currently, use quote/syn to automatically generate it,
-    // don't know if there is a better way.
-    // Seems hard to parse new ReturnType only or construct ReturnType by hand.
-    let dummy_func = match return_type {
-        ReturnType::Default => {
-            quote! {
-                fn dummy() -> Result<(), String> {}
-            }
-        }
-        _ => {
-            quote! {
-                fn dummy() -> Result<#return_type, String> {}
-            }
-        }
-    };
-    let dummy_func: ItemFn = syn::parse2(dummy_func).unwrap();
-    // replace the old ReturnType to the dummy function ReturnType
-    func.sig.output = dummy_func.sig.output;
-    func
-}
-
 /// build the sentinel entry
-fn wrap_sentinel(rule: Rule, func: ItemFn) -> TokenStream {
+pub(crate) fn wrap_sentinel(rule: Rule, func: ItemFn) -> TokenStream {
     let ItemFn {
         attrs,
         vis,

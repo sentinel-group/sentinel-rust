@@ -107,7 +107,7 @@ mod test {
             MetricType::InboundQPS,
             vec![Arc::new(Rule {
                 metric_type: MetricType::InboundQPS,
-                trigger_count: 1.0,
+                threshold: 1.0,
                 ..Default::default()
             })],
         );
@@ -115,7 +115,7 @@ mod test {
             MetricType::Concurrency,
             vec![Arc::new(Rule {
                 metric_type: MetricType::Concurrency,
-                trigger_count: 1.0,
+                threshold: 1.0,
                 ..Default::default()
             })],
         );
@@ -128,7 +128,7 @@ mod test {
 
         let rule = Arc::new(Rule {
             metric_type: MetricType::InboundQPS,
-            trigger_count: 2.0,
+            threshold: 2.0,
             ..Default::default()
         });
         map.get_mut(&MetricType::InboundQPS).unwrap().push(rule);
@@ -147,12 +147,12 @@ mod test {
         let rules = vec![
             Arc::new(Rule {
                 metric_type: MetricType::InboundQPS,
-                trigger_count: 1.0,
+                threshold: 1.0,
                 ..Default::default()
             }),
             Arc::new(Rule {
                 metric_type: MetricType::Concurrency,
-                trigger_count: 2.0,
+                threshold: 2.0,
                 ..Default::default()
             }),
         ];
@@ -167,7 +167,7 @@ mod test {
     fn invalid_build_map() {
         let rules = vec![Arc::new(Rule {
             metric_type: MetricType::InboundQPS,
-            trigger_count: -1.0,
+            threshold: -1.0,
             ..Default::default()
         })];
         let map = build_rule_map(rules);
@@ -179,12 +179,12 @@ mod test {
         let rules = vec![
             Arc::new(Rule {
                 metric_type: MetricType::InboundQPS,
-                trigger_count: 1.0,
+                threshold: 1.0,
                 ..Default::default()
             }),
             Arc::new(Rule {
                 metric_type: MetricType::Concurrency,
-                trigger_count: 2.0,
+                threshold: 2.0,
                 ..Default::default()
             }),
         ];
@@ -197,12 +197,12 @@ mod test {
         let rules = vec![
             Arc::new(Rule {
                 metric_type: MetricType::InboundQPS,
-                trigger_count: 1.0,
+                threshold: 1.0,
                 ..Default::default()
             }),
             Arc::new(Rule {
                 metric_type: MetricType::InboundQPS,
-                trigger_count: 2.0,
+                threshold: 2.0,
                 ..Default::default()
             }),
         ];

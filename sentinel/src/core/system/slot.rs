@@ -63,7 +63,7 @@ impl RuleCheckSlot for AdaptiveSlot {
 }
 
 fn can_pass_check(rule: &Arc<Rule>) -> (bool, String, Option<Arc<Snapshot>>) {
-    let threshold = rule.trigger_count;
+    let threshold = rule.threshold;
     let mut res = true;
     let mut msg = String::new();
     let mut snapshot = None;
@@ -171,7 +171,7 @@ mod test {
     fn valid_concurrency() {
         let rule = Arc::new(Rule {
             metric_type: MetricType::Concurrency,
-            trigger_count: 0.5,
+            threshold: 0.5,
             ..Default::default()
         });
         let (r, _, v) = can_pass_check(&rule);
@@ -184,7 +184,7 @@ mod test {
     fn invalid_concurrency() {
         let rule = Arc::new(Rule {
             metric_type: MetricType::Concurrency,
-            trigger_count: 0.5,
+            threshold: 0.5,
             ..Default::default()
         });
         stat::inbound_node().increase_concurrency();
@@ -199,7 +199,7 @@ mod test {
     fn valid_load() {
         let rule = Arc::new(Rule {
             metric_type: MetricType::Load,
-            trigger_count: 0.5,
+            threshold: 0.5,
             ..Default::default()
         });
         system_metric::set_system_load(1.0);
@@ -214,7 +214,7 @@ mod test {
     fn bbr_valid_load() {
         let rule = Arc::new(Rule {
             metric_type: MetricType::Load,
-            trigger_count: 0.5,
+            threshold: 0.5,
             strategy: AdaptiveStrategy::BBR,
             ..Default::default()
         });
@@ -232,7 +232,7 @@ mod test {
     fn valid_cpu() {
         let rule = Arc::new(Rule {
             metric_type: MetricType::CpuUsage,
-            trigger_count: 0.5,
+            threshold: 0.5,
             ..Default::default()
         });
         system_metric::set_cpu_usage(0.0);
@@ -245,7 +245,7 @@ mod test {
     fn bbr_valid_cpu() {
         let rule = Arc::new(Rule {
             metric_type: MetricType::CpuUsage,
-            trigger_count: 0.5,
+            threshold: 0.5,
             strategy: AdaptiveStrategy::BBR,
             ..Default::default()
         });

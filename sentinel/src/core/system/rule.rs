@@ -41,12 +41,12 @@ impl Default for AdaptiveStrategy {
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
-    pub id: Option<String>,
+    pub id: String,
     /// `metric_type` indicates the type of the trigger metric.
     pub metric_type: MetricType,
-    /// `trigger_count` represents the lower bound trigger of the adaptive strategy.
+    /// `threshold` represents the lower bound trigger of the adaptive strategy.
     /// Adaptive strategies will not be activated until target metric has reached the trigger count.
-    pub trigger_count: f64,
+    pub threshold: f64,
     /// `strategy` represents the adaptive strategy.
     pub strategy: AdaptiveStrategy,
 }
@@ -57,11 +57,11 @@ impl SentinelRule for Rule {
     }
 
     fn is_valid(&self) -> Result<()> {
-        if self.trigger_count < 0.0 {
+        if self.threshold < 0.0 {
             return Err(Error::msg("negative threshold"));
         }
 
-        if self.metric_type == MetricType::CpuUsage && self.trigger_count > 1.0 {
+        if self.metric_type == MetricType::CpuUsage && self.threshold > 1.0 {
             return Err(Error::msg("invalid CPU usage, valid range is [0.0, 1.0]"));
         }
         Ok(())
@@ -84,7 +84,7 @@ mod test {
     fn invalid_threshold() {
         let rule = Rule {
             metric_type: MetricType::InboundQPS,
-            trigger_count: -1.0,
+            threshold: -1.0,
             ..Default::default()
         };
         rule.is_valid().unwrap();
@@ -95,7 +95,7 @@ mod test {
     fn invalid_cpu_usage() {
         let rule = Rule {
             metric_type: MetricType::CpuUsage,
-            trigger_count: 75.0,
+            threshold: 75.0,
             ..Default::default()
         };
         rule.is_valid().unwrap();
