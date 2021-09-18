@@ -5,7 +5,8 @@ use sentinel_rs::utils::sleep_for_ms;
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
 fn main() {
     // Init sentienl configurations
-    sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    // sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    sentinel_rs::init_default().unwrap();
 
     let mut handlers = Vec::new();
     for _ in 0..20 {
@@ -24,7 +25,7 @@ fn main() {
 }
 
 #[system(
-    threshold = 0.2,
+    threshold = 55.0,
     metric_type = "CpuUsage",
     adaptive_strategy = "NoAdaptive"
 )]

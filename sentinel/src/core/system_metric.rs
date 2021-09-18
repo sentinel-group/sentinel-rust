@@ -33,12 +33,12 @@ pub fn get_total_memory_size() -> u64 {
     }
 }
 
-pub fn init_memory_collector(cpu_interval: u32) {
-    if cpu_interval == 0 {
+pub fn init_memory_collector(mem_interval: u32) {
+    if mem_interval == 0 {
         return;
     }
     MEMORY_ONCE.call_once(move || {
-        std::thread::spawn(move || {
+        std::thread::spawn(move || loop {
             let memory_used_bytes = get_process_memory_stat().unwrap_or_else(|_| {
                 logging::error!("Fail to retrieve and update cpu statistic");
                 0
@@ -46,7 +46,7 @@ pub fn init_memory_collector(cpu_interval: u32) {
             #[cfg(feature = "monitor")]
             monitor::set_process_memory_size(memory_used_bytes);
             CURRENT_MEMORY.store(memory_used_bytes, Ordering::SeqCst);
-            utils::sleep_for_ms(cpu_interval as u64);
+            utils::sleep_for_ms(mem_interval as u64);
         });
     })
 }
@@ -66,7 +66,7 @@ pub fn init_cpu_collector(cpu_interval: u32) {
         return;
     }
     CPU_ONCE.call_once(move || {
-        std::thread::spawn(move || {
+        std::thread::spawn(move || loop {
             let mut cpu_percent = get_process_cpu_stat().unwrap_or_else(|_| {
                 logging::error!("Fail to retrieve and update cpu statistic");
                 0.0
@@ -92,7 +92,7 @@ pub fn init_load_collector(load_interval: u32) {
         return;
     }
     LOAD_ONCE.call_once(move || {
-        std::thread::spawn(move || {
+        std::thread::spawn(move || loop {
             let mut load = get_system_load().unwrap_or_else(|_| {
                 logging::error!(
                     "[retrieveAndUpdateSystemStat] Failed to retrieve current system load"
@@ -151,6 +151,7 @@ mod test {
     #[test]
     #[ignore]
     fn system_load() {
+        set_system_load(0.0);
         let load = current_load();
         assert_eq!(0.0, load);
         set_system_load(1.0);

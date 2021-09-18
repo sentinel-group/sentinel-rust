@@ -25,6 +25,7 @@ jobs:
         - uses: actions-rs/toolchain@v1
           with:
             toolchain: nightly
+            default: true
         - name: install grcov
           run: cargo install grcov
         - name: install llvm tools

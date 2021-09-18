@@ -86,7 +86,7 @@ impl StatSlot for ResourceNodeStatSlot {
             if let Some(stat_node) = ctx.read().unwrap().stat_node().clone() {
                 self.record_complete_for(stat_node, ctx.read().unwrap().input().batch_count(), round_trip);
                 if *ctx.read().unwrap().resource().traffic_type() == TrafficType::Inbound {
-                    self.record_block_for(inbound_node(), ctx.read().unwrap().input().batch_count());
+                    self.record_complete_for(inbound_node(), ctx.read().unwrap().input().batch_count(), round_trip);
                 }
             }
         }
@@ -99,7 +99,7 @@ impl StatSlot for ResourceNodeStatSlot {
             if let Some(stat_node) = ctx.borrow().stat_node().clone() {
                 self.record_complete_for(stat_node, ctx.borrow().input().batch_count(), round_trip);
                 if *ctx.borrow().resource().traffic_type() == TrafficType::Inbound {
-                    self.record_block_for(inbound_node(), ctx.borrow().input().batch_count());
+                    self.record_complete_for(inbound_node(), ctx.borrow().input().batch_count(), round_trip);
                 }
             }
         }

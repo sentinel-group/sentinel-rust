@@ -60,9 +60,15 @@ impl SentinelRule for Rule {
         if self.threshold < 0.0 {
             return Err(Error::msg("negative threshold"));
         }
-
-        if self.metric_type == MetricType::CpuUsage && self.threshold > 1.0 {
-            return Err(Error::msg("invalid CPU usage, valid range is [0.0, 1.0]"));
+        if self.metric_type == MetricType::CpuUsage
+            && (self.threshold > 100.0 || self.threshold < 0.0)
+        {
+            return Err(Error::msg("invalid CPU usage, valid range is [0.0, 100.0]"));
+        }
+        if self.metric_type == MetricType::Load && (self.threshold > 1.0 || self.threshold < 0.0) {
+            return Err(Error::msg(
+                "invalid average load, valid range is [0.0, 1.0]",
+            ));
         }
         Ok(())
     }
@@ -91,11 +97,11 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "invalid CPU usage, valid range is [0.0, 1.0]")]
+    #[should_panic(expected = "invalid CPU usage, valid range is [0.0, 100.0]")]
     fn invalid_cpu_usage() {
         let rule = Rule {
             metric_type: MetricType::CpuUsage,
-            threshold: 75.0,
+            threshold: 115.0,
             ..Default::default()
         };
         rule.is_valid().unwrap();

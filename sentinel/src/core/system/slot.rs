@@ -96,6 +96,7 @@ fn can_pass_check(rule: &Arc<Rule>) -> (bool, String, Option<Arc<Snapshot>>) {
             let l = system_metric::current_load();
             if l > threshold {
                 if rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple() {
+                    res = false;
                     msg = "system load check blocked".into();
                 }
             }
@@ -105,6 +106,7 @@ fn can_pass_check(rule: &Arc<Rule>) -> (bool, String, Option<Arc<Snapshot>>) {
             let c = system_metric::current_cpu_usage() as f64;
             if c > threshold {
                 if rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple() {
+                    res = false;
                     msg = "system cpu usage check blocked".into();
                 }
             }
@@ -202,10 +204,10 @@ mod test {
             threshold: 0.5,
             ..Default::default()
         });
-        system_metric::set_system_load(1.0);
+        system_metric::set_system_load(0.2);
         let (r, _, v) = can_pass_check(&rule);
         assert!(r);
-        assert_eq!(1.0, *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap());
+        assert_eq!(0.2, *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap());
         system_metric::set_system_load(0.0);
     }
 

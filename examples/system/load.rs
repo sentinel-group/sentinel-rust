@@ -24,7 +24,7 @@ fn main() {
 }
 
 #[system(
-    threshold = 0.2,
+    threshold = 0.8,
     metric_type = "Load",
     adaptive_strategy = "NoAdaptive"
 )]
