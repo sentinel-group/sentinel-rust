@@ -24,6 +24,7 @@ pub(crate) fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 
     quote! {
         isolation::Rule {
             id: String::from(#resource_name), // incase of duplication
+            resource: String::from(#resource_name),
             #metric_type
             #optional_params
             ..Default::default()

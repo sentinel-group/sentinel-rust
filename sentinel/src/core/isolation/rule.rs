@@ -41,7 +41,6 @@ impl SentinelRule for Rule {
         if self.threshold == 0 {
             return Err(Error::msg("zero threshold"));
         }
-
         Ok(())
     }
 }
