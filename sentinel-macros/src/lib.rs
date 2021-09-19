@@ -11,7 +11,9 @@ mod utils;
 use utils::*;
 
 mod flow;
+mod isolation;
 mod system;
 
 build!(flow);
 build!(system);
+build!(isolation);

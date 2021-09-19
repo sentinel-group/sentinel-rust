@@ -10,6 +10,66 @@ macro_rules! expand_attribute {
     };
 }
 
+macro_rules! parse_traffic {
+    // fn $name::parse_traffic(rule: $name::Rule) -> base::TrafficType
+    ($name:ident,$rule:expr) => {{
+        let $name::Rule { traffic_type, .. } = $rule;
+        let mut traffic = proc_macro2::TokenStream::new();
+        if let Some(val) = traffic_type {
+            traffic.extend(match &val[..] {
+                "Inbound" => quote::quote! {base::TrafficType::Inbound},
+                _ => quote::quote! {base::TrafficType::Inbound},
+            })
+        } else {
+            traffic.extend(quote::quote! {base::TrafficType::Inbound})
+        }
+        traffic
+    }};
+}
+
+/// build the sentinel entry
+macro_rules! wrap_sentinel {
+    // fn $name::wrap_sentinel(rule: $name::Rule, func: ItemFn) -> TokenStream
+    ($name:ident,$rule:expr,$func:expr) => {{
+        let ItemFn {
+            attrs,
+            vis,
+            sig,
+            block,
+        } = $func;
+        let stmts = &block.stmts;
+        let resource_name = sig.ident.to_string();
+        let traffic_type = parse_traffic!($name, &$rule);
+        let rule = $name::process_rule(&resource_name, &$rule);
+        let expanded = quote::quote! {
+            #(#attrs)* #vis #sig {
+                use sentinel_rs::{base, $name, EntryBuilder};
+                use std::sync::Arc;
+                use sentinel_rs::cfg_if_async;
+
+                // Load sentinel rules
+                $name::load_rules(vec![Arc::new(#rule)]);
+
+                let entry_builder = EntryBuilder::new(String::from(#resource_name))
+                    .with_traffic_type(#traffic_type);
+                match entry_builder.build() {
+                    Ok(entry) => {
+                        // Passed, wrap the logic here.
+                        let result = {#(#stmts)*};
+                        // Be sure the entry is exited finally.
+                        cfg_if_async!(entry.read().unwrap().exit(), entry.borrow().exit());
+                        Ok(result)
+                    },
+                    Err(err) => {
+                        Err(format!("{:?}", err))
+                    }
+                }
+            }
+        };
+        expanded.into()
+    }};
+}
+
 macro_rules! build {
     ($name:ident) => {
         /// Use this attribute macro to create the sentinel on your functions/methods.
@@ -28,7 +88,7 @@ macro_rules! build {
             };
             let func = parse_macro_input!(func as ItemFn);
             let func = process_func(func);
-            $name::wrap_sentinel(rule, func)
+            wrap_sentinel!($name, rule, func)
         }
     };
 }

@@ -1,8 +1,6 @@
 use darling::FromMeta;
-use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::ItemFn;
 
 // macro_todo: Maybe impl `darling::FromMeta` for Enum is better?
 // macro_todo: Maybe refactor the `sentinel-rs` crate, elimnate cyclic dependcies,
@@ -38,47 +36,7 @@ pub(crate) struct Rule {
     pub mem_high_water_mark: Option<u64>,
 }
 
-/// build the sentinel entry
-pub(crate) fn wrap_sentinel(rule: Rule, func: ItemFn) -> TokenStream {
-    let ItemFn {
-        attrs,
-        vis,
-        sig,
-        block,
-    } = func;
-    let stmts = &block.stmts;
-    let resource_name = sig.ident.to_string();
-    let traffic_type = parse_traffic(&rule);
-    let rule = process_rule(&resource_name, &rule);
-    let expanded = quote! {
-        #(#attrs)* #vis #sig {
-            use sentinel_rs::{base, flow, EntryBuilder};
-            use std::sync::Arc;
-            use sentinel_rs::cfg_if_async;
-
-            // Load sentinel rules
-            flow::load_rules(vec![Arc::new(#rule)]);
-
-            let entry_builder = EntryBuilder::new(String::from(#resource_name))
-                .with_traffic_type(#traffic_type);
-            match entry_builder.build() {
-                Ok(entry) => {
-                    // Passed, wrap the logic here.
-                    let result = {#(#stmts)*};
-                    // Be sure the entry is exited finally.
-                    cfg_if_async!(entry.read().unwrap().exit(), entry.borrow().exit());
-                    Ok(result)
-                },
-                Err(err) => {
-                    Err(format!("{:?}", err))
-                }
-            }
-        }
-    };
-    expanded.into()
-}
-
-fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 {
+pub(crate) fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 {
     let Rule {
         calculate_strategy,
         control_strategy,
@@ -138,18 +96,4 @@ fn parse_strategy(cal: &Option<String>, ctrl: &Option<String>) -> TokenStream2 {
         })
     }
     strategy
-}
-
-fn parse_traffic(rule: &Rule) -> TokenStream2 {
-    let Rule { traffic_type, .. } = rule;
-    let mut traffic = TokenStream2::new();
-    if let Some(val) = traffic_type {
-        traffic.extend(match &val[..] {
-            "Outbound" => quote! {base::TrafficType::Outbound},
-            _ => quote! {base::TrafficType::Inbound},
-        })
-    } else {
-        traffic.extend(quote! {base::TrafficType::Inbound})
-    }
-    traffic
 }

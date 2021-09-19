@@ -16,24 +16,11 @@ impl Default for MetricType {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Eq)]
-pub enum AdaptiveStrategy {
-    NoAdaptive,
-    /// BBR represents the adaptive strategy based on ideas of TCP BBR.
-    BBR,
-}
-
-impl Default for AdaptiveStrategy {
-    fn default() -> AdaptiveStrategy {
-        AdaptiveStrategy::NoAdaptive
-    }
-}
-
 /// `Rule` describes the policy for system resiliency.
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
-    pub id: Option<String>,
+    pub id: String,
     /// `resource` represents the target resource definition
     pub resource: String,
     /// `metric_type` indicates the type of the trigger metric.
