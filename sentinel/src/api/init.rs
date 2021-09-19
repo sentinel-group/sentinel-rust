@@ -33,7 +33,7 @@ pub fn init_with_config_file(config_path: &mut String) -> Result<()> {
 #[inline]
 fn init_sentinel(config_path: &mut String) -> Result<()> {
     // Initialize general config and logging module.
-    if config_path.len() > 0 {
+    if !utils::is_blank(&config_path) {
         config::init_config_with_yaml(config_path)?;
     }
     init_core_compoents()

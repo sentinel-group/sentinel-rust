@@ -77,7 +77,7 @@ pub mod ticker {
     /// which may provide better performance in high-concurrency scenarios.
     pub fn start_time_ticker() {
         update_time();
-        std::thread::spawn(move || {
+        std::thread::spawn(move || loop {
             update_time();
             std::thread::sleep(std::time::Duration::from_millis(1));
         });
