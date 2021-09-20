@@ -98,17 +98,17 @@ use syn::{ItemFn, ReturnType};
 
 /// Extract the original ReturnType and wrap it with Result<T,E>
 pub(crate) fn process_func(mut func: ItemFn) -> ItemFn {
-    let return_type = func.sig.output;
+    let output = func.sig.output;
     // Currently, use quote/syn to automatically generate it,
     // don't know if there is a better way.
     // Seems hard to parse new ReturnType only or construct ReturnType by hand.
-    let dummy_func = match return_type {
+    let dummy_func = match output {
         ReturnType::Default => {
             quote! {
                 fn dummy() -> Result<(), String> {}
             }
         }
-        _ => {
+        ReturnType::Type(_, return_type) => {
             quote! {
                 fn dummy() -> Result<#return_type, String> {}
             }

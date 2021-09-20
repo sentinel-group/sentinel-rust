@@ -114,6 +114,11 @@ name = "throttling"
 path = "../examples/flow/throttling.rs"
 required-features = ["full"]
 
+[[example]]
+name = "method"
+path = "../examples/flow/method.rs"
+required-features = ["full"]
+
 # system metrics related examples
 [[example]]
 name = "inbound_qps"
