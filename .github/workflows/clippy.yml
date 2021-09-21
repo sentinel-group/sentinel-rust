@@ -21,4 +21,4 @@ jobs:
       - name: Install clippy
         run: rustup component add clippy
       - name: "clippy --all"
-        run: cargo clippy --all --tests --all-features
+        run: cargo clippy --all-targets

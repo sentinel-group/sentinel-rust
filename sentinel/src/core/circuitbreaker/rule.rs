@@ -8,7 +8,7 @@ use std::fmt;
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Rule {
     /// unique id
-    pub id: Option<String>,
+    pub id: String,
     /// resource name
     pub resource: String,
     pub strategy: BreakerStrategy,

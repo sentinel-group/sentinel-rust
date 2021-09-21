@@ -153,10 +153,10 @@ mod test {
     fn system_load() {
         set_system_load(0.0);
         let load = current_load();
-        assert_eq!(0.0, load);
+        assert!((0.0 - load).abs() < f64::EPSILON);
         set_system_load(1.0);
         let load = current_load();
-        assert_eq!(1.0, load);
+        assert!((1.0 - load).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -164,10 +164,10 @@ mod test {
     fn cpu_usage() {
         set_cpu_usage(0.0);
         let usage = current_cpu_usage();
-        assert_eq!(0.0, usage);
+        assert!((0.0 - usage).abs() < f32::EPSILON);
         set_cpu_usage(0.3);
         let usage = current_cpu_usage();
-        assert_eq!(0.3, usage);
+        assert!((0.3 - usage).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -193,14 +193,14 @@ mod test {
         set_cpu_usage(0.0);
         let got = get_process_cpu_stat().unwrap();
 
-        assert_eq!(got, 0.0);
+        assert!((got - 0.0).abs() < f32::EPSILON);
         utils::sleep_for_ms(20);
         let got = get_process_cpu_stat().unwrap();
 
-        assert!(got > 0.0);
+        assert!((got - 0.0).abs() < f32::EPSILON);
         utils::sleep_for_ms(20);
 
         let got = get_process_cpu_stat().unwrap();
-        assert!(got > 0.0);
+        assert!((got - 0.0).abs() < f32::EPSILON);
     }
 }

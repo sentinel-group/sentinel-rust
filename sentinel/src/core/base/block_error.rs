@@ -83,6 +83,8 @@ impl fmt::Display for BlockError {
 
 #[cfg(test)]
 mod test {
+    #![allow(clippy::vtable_address_comparisons)]
+
     use super::*;
     #[derive(Debug, Default)]
     struct MockRule {

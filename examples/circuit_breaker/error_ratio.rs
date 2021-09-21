@@ -1,5 +1,4 @@
 use sentinel_macros::circuitbreaker;
-use sentinel_rs;
 use sentinel_rs::utils::sleep_for_ms;
 
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
@@ -25,6 +24,6 @@ fn main() {
 
 #[circuitbreaker(threshold = 0.2, strategy = "ErrorRatio")]
 fn task() {
-    println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
+    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
     sleep_for_ms(10);
 }

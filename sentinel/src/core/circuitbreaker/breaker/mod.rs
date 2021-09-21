@@ -102,11 +102,10 @@ pub trait StateChangeListener: Sync + Send {
 // todo: consider removing BreakerBase struct. Or keep it for simpler trait implementations
 pub trait CircuitBreakerTrait: Send + Sync {
     /// `breaker` returns the associated inner breaker.
-    #[inline]
+
     fn breaker(&self) -> &BreakerBase;
 
     /// `stat` returns the associated statistic data structure.
-    #[inline]
     fn stat(&self) -> &Arc<CounterLeapArray>;
 
     /// `try_pass` acquires permission of an invocation only if it is available at the time of invocation.
@@ -399,13 +398,13 @@ pub(crate) mod test {
             fn stat(&self) -> &Arc<CounterLeapArray>;
             fn bound_rule(&self) -> &Arc<Rule>;
             fn next_retry_timestamp_ms(&self)->u64;
-            fn try_pass(&self, ctx: Rc<RefCell<EntryContext>>) -> bool;
+            fn try_pass(&self, ctx: ContextPtr) -> bool;
             fn set_state(&self, state:State);
             fn current_state(&self) -> State;
             fn on_request_complete(&self, rt: u64, error: &Option<Error>);
             fn reset_metric(&self);
             fn from_closed_to_open(&self, snapshot: Arc<Snapshot>) -> bool;
-            fn from_open_to_half_open(&self, ctx: Rc<RefCell<EntryContext>>) -> bool;
+            fn from_open_to_half_open(&self, ctx: ContextPtr) -> bool;
             fn from_half_open_to_open(&self, snapshot: Arc<Snapshot>) -> bool;
             fn from_half_open_to_closed(&self) -> bool;
         }

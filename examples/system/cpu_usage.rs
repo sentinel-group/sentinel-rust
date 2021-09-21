@@ -1,5 +1,5 @@
+#![allow(clippy::needless_update)]
 use sentinel_macros::system;
-use sentinel_rs;
 use sentinel_rs::utils::sleep_for_ms;
 
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
@@ -30,6 +30,6 @@ fn main() {
     adaptive_strategy = "NoAdaptive"
 )]
 fn task() {
-    println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
+    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
     sleep_for_ms(10);
 }

@@ -36,7 +36,7 @@ pub(crate) struct Rule {
     pub mem_high_water_mark: Option<u64>,
 }
 
-pub(crate) fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 {
+pub(crate) fn process_rule(resource_name: &str, rule: &Rule) -> TokenStream2 {
     let Rule {
         calculate_strategy,
         control_strategy,

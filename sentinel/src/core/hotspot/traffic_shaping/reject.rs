@@ -94,9 +94,9 @@ impl<C: CounterTrait> Checker<C> for RejectChecker<C> {
                     pass_time as u64 * token_count / (owner.rule().duration_in_sec * 1000);
                 let mut new_qps = {
                     if to_add_token_num + rest_qps > max_count {
-                        max_count - batch_count as u64
+                        max_count as i64 - batch_count as i64
                     } else {
-                        to_add_token_num + rest_qps - batch_count as u64
+                        to_add_token_num as i64 + rest_qps as i64 - batch_count as i64
                     }
                 };
 
@@ -110,7 +110,12 @@ impl<C: CounterTrait> Checker<C> for RejectChecker<C> {
                     );
                 }
                 if old_qps_arc
-                    .compare_exchange(rest_qps, new_qps, Ordering::SeqCst, Ordering::Relaxed)
+                    .compare_exchange(
+                        rest_qps,
+                        new_qps as u64,
+                        Ordering::SeqCst,
+                        Ordering::Relaxed,
+                    )
                     .is_ok()
                 {
                     last_add_token_time_arc.store(current_time_in_ms, Ordering::SeqCst);

@@ -1,5 +1,5 @@
 use sentinel_macros::flow;
-use sentinel_rs;
+
 use tokio::time::{sleep, Duration};
 
 /// an example on async functions
@@ -25,6 +25,6 @@ async fn main() {
 
 #[flow(threshold = 10.0)]
 async fn task() {
-    println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
+    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
     sleep(Duration::from_millis(100)).await;
 }

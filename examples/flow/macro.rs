@@ -1,5 +1,5 @@
 use sentinel_macros::flow;
-use sentinel_rs;
+
 use sentinel_rs::utils::sleep_for_ms;
 
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
@@ -31,6 +31,6 @@ fn main() {
     warm_up_cold_factor = 3
 )]
 fn task() {
-    println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
+    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
     sleep_for_ms(10);
 }

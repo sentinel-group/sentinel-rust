@@ -22,7 +22,7 @@ pub(crate) struct Rule {
     pub max_allowed_rt_ms: Option<u64>,
 }
 
-pub(crate) fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 {
+pub(crate) fn process_rule(resource_name: &str, rule: &Rule) -> TokenStream2 {
     let Rule {
         threshold,
         strategy,
@@ -36,16 +36,15 @@ pub(crate) fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 
     let strategy = parse_strategy(strategy);
     let optional_params = expand_attribute!(
         threshold,
-        strategy,
         retry_timeout_ms,
         min_request_amount,
         stat_interval_ms,
         stat_sliding_window_bucket_count,
-        max_allowed_rt_ms,
+        max_allowed_rt_ms
     );
     quote! {
-        flow::Rule {
-            id: String::from(#resource_name), 
+        circuitbreaker::Rule {
+            id: String::from(#resource_name),
             resource: String::from(#resource_name),
             #strategy
             #optional_params
@@ -54,11 +53,13 @@ pub(crate) fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 
     }
 }
 
-fn parse_strategy(cal: &Option<String>, ctrl: &Option<String>) -> TokenStream2 {
+fn parse_strategy(input: &Option<String>) -> TokenStream2 {
     let mut strategy = TokenStream2::new();
-    if let Some(val) = cal {
+    if let Some(val) = input {
         strategy.extend(match &val[..] {
-            "SlowRequestRatio" => quote! {strategy: circuitbreaker::BreakerStrategy::SlowRequestRatio,},
+            "SlowRequestRatio" => {
+                quote! {strategy: circuitbreaker::BreakerStrategy::SlowRequestRatio,}
+            }
             "ErrorRatio" => quote! {strategy: circuitbreaker::BreakerStrategy::ErrorRatio,},
             "ErrorCount" => {
                 quote! {strategy: circuitbreaker::BreakerStrategy::ErrorCount,}

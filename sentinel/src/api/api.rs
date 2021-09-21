@@ -188,6 +188,8 @@ mod test {
     };
     use mockall::predicate::*;
     use mockall::*;
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     #[test]
     fn pass() {

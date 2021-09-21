@@ -193,7 +193,9 @@ mod test {
         let (r, _, v) = can_pass_check(&rule);
         stat::inbound_node().decrease_concurrency();
         assert_eq!(false, r);
-        assert_eq!(1.0, *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap());
+        assert!(
+            (1.0 - *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap()).abs() < f64::EPSILON
+        );
     }
 
     #[test]
@@ -207,7 +209,9 @@ mod test {
         system_metric::set_system_load(0.2);
         let (r, _, v) = can_pass_check(&rule);
         assert!(r);
-        assert_eq!(0.2, *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap());
+        assert!(
+            (0.2 - *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap()).abs() < f64::EPSILON
+        );
         system_metric::set_system_load(0.0);
     }
 
@@ -225,7 +229,9 @@ mod test {
         let (r, _, v) = can_pass_check(&rule);
         stat::inbound_node().decrease_concurrency();
         assert!(r);
-        assert_eq!(1.0, *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap());
+        assert!(
+            (1.0 - *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap()).abs() < f64::EPSILON
+        );
         system_metric::set_system_load(0.0);
     }
 

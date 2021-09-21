@@ -1,5 +1,5 @@
 use sentinel_macros::flow;
-use sentinel_rs;
+
 use sentinel_rs::utils::sleep_for_ms;
 use std::sync::Arc;
 
@@ -18,7 +18,7 @@ fn main() {
                     let val = db_ptr.query().unwrap_or_else(|_| {
                         // blocked
                         sleep_for_ms(10);
-                        return 0u32;
+                        0u32
                     });
                     println!("The value in DB is: {:?}", val);
                 }

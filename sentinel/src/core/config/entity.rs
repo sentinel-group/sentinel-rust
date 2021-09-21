@@ -159,12 +159,12 @@ impl ConfigEntity {
         if self.config.app.app_name.len() == 0 {
             return Err(Error::msg("empty app name"));
         }
-        if self.config.log.metric.max_file_count <= 0 {
+        if self.config.log.metric.max_file_count == 0 {
             return Err(Error::msg(
                 "illegal metric log configuration: max_file_count < 0",
             ));
         }
-        if self.config.log.metric.single_file_max_size <= 0 {
+        if self.config.log.metric.single_file_max_size == 0 {
             return Err(Error::msg(
                 "illegal metric log configuration: single_file_max_size < 0",
             ));

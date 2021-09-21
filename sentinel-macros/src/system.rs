@@ -13,7 +13,7 @@ pub(crate) struct Rule {
     #[darling(default)]
     pub adaptive_strategy: Option<String>,
 }
-pub(crate) fn process_rule(resource_name: &String, rule: &Rule) -> TokenStream2 {
+pub(crate) fn process_rule(resource_name: &str, rule: &Rule) -> TokenStream2 {
     let Rule {
         metric_type,
         threshold,

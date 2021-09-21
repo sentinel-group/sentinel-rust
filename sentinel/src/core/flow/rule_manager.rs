@@ -541,6 +541,8 @@ pub fn build_resource_traffic_shaping_controller(
 mod test {
     //! Some tests cannot run in parallel, since we cannot promise that
     //! the global data structs are not modified before assertion.
+    #![allow(clippy::vtable_address_comparisons)]
+
     use super::*;
     use crate::core::base::ReadStat;
     use crate::utils::AsAny;

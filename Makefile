@@ -2,7 +2,7 @@ check:
 	cargo check
 
 clippy:
-	cargo clippy --all-targets --all-features
+	cargo clippy --all-targets
 
 doc: clean
 	cargo doc --no-deps 

@@ -192,7 +192,7 @@ impl ReadStat for SlidingWindowMetric {
 
     fn avg_rt(&self) -> f64 {
         let completed = self.sum(MetricEvent::Complete);
-        if completed <= 0 {
+        if completed == 0 {
             0f64
         } else {
             self.sum(MetricEvent::Rt) as f64 / completed as f64
@@ -377,7 +377,7 @@ mod test {
         let arr = Arc::new(BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap());
         let (sample_count, interval_ms) = (2, 2000);
         let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr.clone()).unwrap();
-        assert_eq!(swm.min_rt(), DEFAULT_STATISTIC_MAX_RT as f64);
+        assert!((swm.min_rt() - DEFAULT_STATISTIC_MAX_RT as f64).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -398,7 +398,7 @@ mod test {
         let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr.clone()).unwrap();
         arr.add_count(MetricEvent::Rt, 100);
         arr.add_count(MetricEvent::Complete, 100);
-        assert_eq!(swm.avg_rt(), 1.0);
+        assert!((swm.avg_rt() - 1.0).abs() < f64::EPSILON);
     }
 
     #[test]

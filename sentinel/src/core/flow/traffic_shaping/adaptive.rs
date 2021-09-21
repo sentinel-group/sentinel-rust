@@ -76,20 +76,20 @@ mod test {
             high_mem_usage_threshold: 100.0,
         };
         system_metric::set_memory_usage(100);
-        assert_eq!(
-            tc.calculate_allowed_threshold(0, 0),
-            tc.low_mem_usage_threshold
+        assert!(
+            (tc.calculate_allowed_threshold(0, 0) - tc.low_mem_usage_threshold).abs()
+                < f64::EPSILON
         );
         system_metric::set_memory_usage(1024);
-        assert_eq!(
-            tc.calculate_allowed_threshold(0, 0),
-            tc.low_mem_usage_threshold
+        assert!(
+            (tc.calculate_allowed_threshold(0, 0) - tc.low_mem_usage_threshold).abs()
+                < f64::EPSILON
         );
         system_metric::set_memory_usage(1536);
-        assert_eq!(tc.calculate_allowed_threshold(0, 0), 550.0);
+        assert!((tc.calculate_allowed_threshold(0, 0) - 550.0).abs() < f64::EPSILON);
         system_metric::set_memory_usage(2048);
-        assert_eq!(tc.calculate_allowed_threshold(0, 0), 100.0);
+        assert!((tc.calculate_allowed_threshold(0, 0) - 100.0).abs() < f64::EPSILON);
         system_metric::set_memory_usage(3072);
-        assert_eq!(tc.calculate_allowed_threshold(0, 0), 100.0);
+        assert!((tc.calculate_allowed_threshold(0, 0) - 100.0).abs() < f64::EPSILON);
     }
 }

@@ -64,6 +64,9 @@ impl SentinelEntry {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
     std::thread_local! {
         static EXIT_FLAG: RefCell<u8> = RefCell::new(0);
     }

@@ -1,5 +1,3 @@
-use rand;
-use sentinel_rs;
 use sentinel_rs::utils::sleep_for_ms;
 use sentinel_rs::{base, flow, EntryBuilder};
 use std::sync::Arc;
@@ -27,7 +25,7 @@ fn main() {
                     .with_traffic_type(base::TrafficType::Inbound);
                 if let Ok(entry) = entry_builder.build() {
                     // Passed, wrap the logic here.
-                    println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
+                    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
                     sleep_for_ms(rand::random::<u64>() % 10);
                     // Be sure the entry is exited finally.
                     entry.borrow().exit()

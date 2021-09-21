@@ -1,5 +1,5 @@
+#![allow(clippy::needless_update)]
 use sentinel_macros::isolation;
-use sentinel_rs;
 use sentinel_rs::utils::sleep_for_ms;
 
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
@@ -25,6 +25,6 @@ fn main() {
 
 #[isolation(threshold = 3.0, metric_type = "Concurrency")]
 fn task() {
-    println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
+    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
     sleep_for_ms(10);
 }

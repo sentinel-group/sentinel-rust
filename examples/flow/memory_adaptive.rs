@@ -1,5 +1,5 @@
 use sentinel_macros::flow;
-use sentinel_rs;
+
 use sentinel_rs::utils::sleep_for_ms;
 
 /// an example on `flow::CalculateStrategy::MemoryAdaptive`
@@ -32,6 +32,6 @@ fn main() {
     high_mem_usage_threshold = 1
 )]
 fn task() {
-    println!("{}: {}", sentinel_rs::utils::curr_time_millis(), "passed");
+    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
     sleep_for_ms(10);
 }
