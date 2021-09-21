@@ -1,7 +1,7 @@
 use super::{config, constant::*};
 use crate::{
     base::{check_validity_for_reuse_statistic, constant::*, ResourceType},
-    logging::{Logger, DEFAULT_LOG_LEVEL},
+    logging::Logger,
     Error, Result,
 };
 use serde::{Deserialize, Serialize};

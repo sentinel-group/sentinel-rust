@@ -1,3 +1,4 @@
+use crate::config::DEFAULT_LOG_LEVEL;
 use env_logger;
 use lazy_static::lazy_static;
 pub use log::{debug, error, info, trace, warn};
@@ -10,10 +11,6 @@ use std::sync::Once;
 
 // todo: use feature attr for conditional compiling
 // currently, it simply loads all of supported loggers
-
-pub const DEFAULT_LOG_LEVEL: &str = "trace";
-// or set log level via `RUST_LOG=debug ./main`
-pub const DEFAULT_DIR_NAME: &str = "logs";
 
 lazy_static! {
     static ref LOG_FILE_NAME: String = String::from("sentinel-record.log");
@@ -33,7 +30,7 @@ pub enum Logger {
 pub fn logger_init(logger: Logger) {
     match logger {
         Logger::None => {
-            default_logger_init();
+            // user must explicitly disable the logger by Logger::None
         }
         Logger::EnvLogger(level) => {
             env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(level))

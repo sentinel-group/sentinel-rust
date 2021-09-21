@@ -20,3 +20,7 @@ pub const LOAD_INTERVAL_MS: u32 = 1000;
 pub const CPU_INTERVAL_MS: u32 = 1000;
 pub const MEMORY_INTERVAL_MS: u32 = 150;
 pub const WARM_UP_COLD_FACTOR: u32 = 3;
+
+// default log settings
+pub const DEFAULT_LOG_LEVEL: &str = "warn";
+pub const DEFAULT_DIR_NAME: &str = "logs";

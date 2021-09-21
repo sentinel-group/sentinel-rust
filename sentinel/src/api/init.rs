@@ -35,6 +35,8 @@ fn init_sentinel(config_path: &mut String) -> Result<()> {
     // Initialize general config and logging module.
     if !utils::is_blank(&config_path) {
         config::init_config_with_yaml(config_path)?;
+    } else {
+        config::override_config_from_env_and_init_log()?;
     }
     init_core_compoents()
 }
