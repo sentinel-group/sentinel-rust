@@ -145,7 +145,24 @@ name = "load"
 path = "../examples/system/load.rs"
 required-features = ["full"]
 
+# isolation related examples
 [[example]]
 name = "isolation"
 path = "../examples/isolation/concurrency.rs"
+required-features = ["full"]
+
+# circuit breaker related examples
+[[example]]
+name = "error_count"
+path = "../examples/circuit_breaker/error_count.rs"
+required-features = ["full"]
+
+[[example]]
+name = "error_ratio"
+path = "../examples/circuit_breaker/error_ratio.rs"
+required-features = ["full"]
+
+[[example]]
+name = "slow_request"
+path = "../examples/circuit_breaker/slow_request.rs"
 required-features = ["full"]
