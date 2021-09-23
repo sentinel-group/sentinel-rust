@@ -7,11 +7,15 @@ use quote::quote;
 // can reduce this redundant definition?
 // Refer to crate `rocket_codegen::http_codegen`.
 #[derive(Debug, FromMeta)]
-pub(crate) struct Rule {
-    #[darling(default)]
-    pub threshold: Option<f64>,
+pub(crate) struct Params {
+    // sentinel
     #[darling(default)]
     pub traffic_type: Option<String>,
+    #[darling(default)]
+    pub args: Option<String>,
+    // rule
+    #[darling(default)]
+    pub threshold: Option<f64>,
     #[darling(default)]
     pub calculate_strategy: Option<String>,
     #[darling(default)]
@@ -36,23 +40,10 @@ pub(crate) struct Rule {
     pub mem_high_water_mark: Option<u64>,
 }
 
-pub(crate) fn process_rule(resource_name: &str, rule: &Rule) -> TokenStream2 {
-    let Rule {
-        calculate_strategy,
-        control_strategy,
-        threshold,
-        warm_up_period_sec,
-        warm_up_cold_factor,
-        max_queueing_time_ms,
-        stat_interval_ms,
-        low_mem_usage_threshold,
-        high_mem_usage_threshold,
-        mem_low_water_mark,
-        mem_high_water_mark,
-        ..
-    } = rule;
-    let strategy = parse_strategy(calculate_strategy, control_strategy);
-    let optional_params = expand_attribute!(
+pub(crate) fn process_rule(resource_name: &str, rule: &Params) -> TokenStream2 {
+    let strategy = parse_strategy(&rule.calculate_strategy, &rule.control_strategy);
+    let optional_params = expand_optional_params!(
+        rule,
         threshold,
         warm_up_period_sec,
         warm_up_cold_factor,

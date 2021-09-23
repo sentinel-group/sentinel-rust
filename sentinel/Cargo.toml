@@ -166,3 +166,19 @@ required-features = ["full"]
 name = "slow_request"
 path = "../examples/circuit_breaker/slow_request.rs"
 required-features = ["full"]
+
+# hotspot related examples
+[[example]]
+name = "hotspot_qps_reject"
+path = "../examples/hotspot/qps_reject.rs"
+required-features = ["full"]
+
+[[example]]
+name = "hotspot_qps_throttling"
+path = "../examples/hotspot/qps_throttling.rs"
+required-features = ["full"]
+
+[[example]]
+name = "hotspot_concurrency"
+path = "../examples/hotspot/concurrency.rs"
+required-features = ["full"]

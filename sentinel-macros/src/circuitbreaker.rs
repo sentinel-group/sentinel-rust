@@ -3,11 +3,15 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 #[derive(Debug, FromMeta)]
-pub(crate) struct Rule {
-    #[darling(default)]
-    pub threshold: Option<f64>,
+pub(crate) struct Params {
+    // sentinel
     #[darling(default)]
     pub traffic_type: Option<String>,
+    #[darling(default)]
+    pub args: Option<String>,
+    // rule
+    #[darling(default)]
+    pub threshold: Option<f64>,
     #[darling(default)]
     pub strategy: Option<String>,
     #[darling(default)]
@@ -22,19 +26,10 @@ pub(crate) struct Rule {
     pub max_allowed_rt_ms: Option<u64>,
 }
 
-pub(crate) fn process_rule(resource_name: &str, rule: &Rule) -> TokenStream2 {
-    let Rule {
-        threshold,
-        strategy,
-        retry_timeout_ms,
-        min_request_amount,
-        stat_interval_ms,
-        stat_sliding_window_bucket_count,
-        max_allowed_rt_ms,
-        ..
-    } = rule;
-    let strategy = parse_strategy(strategy);
-    let optional_params = expand_attribute!(
+pub(crate) fn process_rule(resource_name: &str, rule: &Params) -> TokenStream2 {
+    let strategy = parse_strategy(&rule.strategy);
+    let optional_params = expand_optional_params!(
+        rule,
         threshold,
         retry_timeout_ms,
         min_request_amount,

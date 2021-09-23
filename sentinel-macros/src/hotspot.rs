@@ -11,21 +11,41 @@ pub(crate) struct Params {
     pub args: Option<String>,
     // rule
     #[darling(default)]
-    pub threshold: Option<f64>,
+    pub threshold: Option<u64>,
     #[darling(default)]
     pub metric_type: Option<String>,
     #[darling(default)]
-    pub adaptive_strategy: Option<String>,
+    pub control_strategy: Option<String>,
+    #[darling(default)]
+    pub param_index: Option<isize>,
+    #[darling(default)]
+    pub max_queueing_time_ms: Option<u64>,
+    #[darling(default)]
+    pub burst_count: Option<u64>,
+    #[darling(default)]
+    pub duration_in_sec: Option<u64>,
+    #[darling(default)]
+    pub param_max_capacity: Option<usize>,
 }
+
 pub(crate) fn process_rule(resource_name: &str, rule: &Params) -> TokenStream2 {
-    let adaptive_strategy = parse_strategy(&rule.adaptive_strategy);
+    let control_strategy = parse_strategy(&rule.control_strategy);
     let metric_type = parse_metric(&rule.metric_type);
-    let optional_params = expand_optional_params!(rule, threshold);
+    let optional_params = expand_optional_params!(
+        rule,
+        threshold,
+        param_index,
+        max_queueing_time_ms,
+        burst_count,
+        duration_in_sec,
+        param_max_capacity
+    );
     quote! {
-        system::Rule {
+        hotspot::Rule {
             id: String::from(#resource_name), // incase of duplication
+            resource: String::from(#resource_name),
+            #control_strategy
             #metric_type
-            #adaptive_strategy
             #optional_params
             ..Default::default()
         }
@@ -36,11 +56,8 @@ fn parse_metric(input: &Option<String>) -> TokenStream2 {
     let mut metric = TokenStream2::new();
     if let Some(val) = input {
         metric.extend(match &val[..] {
-            "Load" => quote! {metric_type: system::MetricType::Load,},
-            "AvgRT" => quote! {metric_type: system::MetricType::AvgRT,},
-            "Concurrency" => quote! {metric_type: system::MetricType::Concurrency,},
-            "InboundQPS" => quote! {metric_type: system::MetricType::InboundQPS,},
-            "CpuUsage" => quote! {metric_type: system::MetricType::CpuUsage,},
+            "Concurrency" => quote! {metric_type: hotspot::MetricType::Concurrency,},
+            "QPS" => quote! {metric_type: hotspot::MetricType::QPS,},
             _ => quote! {},
         })
     }
@@ -51,8 +68,8 @@ fn parse_strategy(input: &Option<String>) -> TokenStream2 {
     let mut strategy = TokenStream2::new();
     if let Some(val) = input {
         strategy.extend(match &val[..] {
-            "NoAdaptive" => quote! {strategy: system::AdaptiveStrategy::NoAdaptive,},
-            "BBR" => quote! {strategy: system::AdaptiveStrategy::BBR,},
+            "Reject" => quote! {control_strategy: hotspot::ControlStrategy::Reject,},
+            "Throttling" => quote! {control_strategy: hotspot::ControlStrategy::Throttling,},
             _ => quote! {},
         })
     }

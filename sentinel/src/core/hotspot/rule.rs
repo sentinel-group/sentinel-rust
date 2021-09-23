@@ -41,7 +41,7 @@ impl Default for MetricType {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Rule {
     /// `id` is the unique id
-    pub id: Option<String>,
+    pub id: String,
     /// `resource` is the resource name
     pub resource: String,
     /// `metric_type` indicates the metric type for checking logic.
@@ -177,7 +177,7 @@ mod test {
         specific_items.insert("sss".into(), 1);
         specific_items.insert("1123".into(), 3);
         let rule1 = Rule {
-            id: Some("abc".into()),
+            id: "abc".into(),
             resource: "abc".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -192,7 +192,7 @@ mod test {
             ..Default::default()
         };
         let rule2 = Rule {
-            id: Some("abc".into()),
+            id: "abc".into(),
             resource: "abc".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,

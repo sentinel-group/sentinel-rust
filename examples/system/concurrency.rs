@@ -1,5 +1,7 @@
 #![allow(clippy::needless_update)]
 use sentinel_macros::system;
+use sentinel_rs::base::{ConcurrencyStat, ResourceType};
+use sentinel_rs::stat::get_or_create_resource_node;
 use sentinel_rs::utils::sleep_for_ms;
 
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
@@ -18,6 +20,16 @@ fn main() {
             }
         }));
     }
+    handlers.push(std::thread::spawn(|| {
+        let node = get_or_create_resource_node(&"task".into(), &ResourceType::Common);
+        loop {
+            println!(
+                "[System Concurrency] currentConcurrency: {:?}",
+                node.current_concurrency()
+            );
+            sleep_for_ms(100);
+        }
+    }));
     for h in handlers {
         h.join().expect("Couldn't join on the associated thread");
     }

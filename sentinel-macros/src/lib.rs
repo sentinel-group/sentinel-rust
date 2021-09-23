@@ -13,6 +13,7 @@ use utils::*;
 
 mod circuitbreaker;
 mod flow;
+mod hotspot;
 mod isolation;
 mod system;
 
@@ -20,3 +21,4 @@ build!(flow);
 build!(system);
 build!(isolation);
 build!(circuitbreaker);
+build!(hotspot);

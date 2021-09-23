@@ -32,7 +32,7 @@ pub struct EntryBuilder {
 }
 
 // or set all items in builder to None by default?
-// then use builder to chagne `Default` ctx and initialize Entry seems better
+// then use builder to change `Default` ctx and initialize Entry seems better
 impl Default for EntryBuilder {
     fn default() -> Self {
         EntryBuilder {
@@ -168,13 +168,13 @@ impl EntryBuilder {
         self
     }
 
-    pub fn with_args(mut self, args: ParamsList) -> Self {
-        self.args = Some(args);
+    pub fn with_args(mut self, args: Option<ParamsList>) -> Self {
+        self.args = args;
         self
     }
 
-    pub fn with_attachment(mut self, attachments: ParamsMap) -> Self {
-        self.attachments = Some(attachments);
+    pub fn with_attachments(mut self, attachments: Option<ParamsMap>) -> Self {
+        self.attachments = attachments;
         self
     }
 }

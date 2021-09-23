@@ -451,7 +451,7 @@ mod test {
         specific_items.insert(String::from("sss"), 1);
         specific_items.insert(String::from("123"), 3);
         let rule = Arc::new(Rule {
-            id: Some("1".into()),
+            id: "1".into(),
             resource: "abc".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -486,7 +486,7 @@ mod test {
         specific_items.insert(String::from("sss"), 1);
         specific_items.insert(String::from("123"), 3);
         let r11 = Arc::new(Rule {
-            id: Some("1".into()),
+            id: "1".into(),
             resource: "abc1".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -497,7 +497,7 @@ mod test {
             ..Default::default()
         });
         let r12 = Arc::new(Rule {
-            id: Some("2".into()),
+            id: "2".into(),
             resource: "abc1".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -508,7 +508,7 @@ mod test {
             ..Default::default()
         });
         let r21 = Arc::new(Rule {
-            id: Some("3".into()),
+            id: "3".into(),
             resource: "abc2".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -519,7 +519,7 @@ mod test {
             ..Default::default()
         });
         let r22 = Arc::new(Rule {
-            id: Some("4".into()),
+            id: "4".into(),
             resource: "abc2".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -568,7 +568,7 @@ mod test {
         specific_items.insert(String::from("sss"), 1);
         specific_items.insert(String::from("123"), 3);
         let r11 = Arc::new(Rule {
-            id: Some("1".into()),
+            id: "1".into(),
             resource: "abc1".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -579,7 +579,7 @@ mod test {
             ..Default::default()
         });
         let r12 = Arc::new(Rule {
-            id: Some("2".into()),
+            id: "2".into(),
             resource: "abc1".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -590,7 +590,7 @@ mod test {
             ..Default::default()
         });
         let r21 = Arc::new(Rule {
-            id: Some("3".into()),
+            id: "3".into(),
             resource: "abc2".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,
@@ -601,7 +601,7 @@ mod test {
             ..Default::default()
         });
         let r22 = Arc::new(Rule {
-            id: Some("4".into()),
+            id: "4".into(),
             resource: "abc2".into(),
             metric_type: MetricType::Concurrency,
             control_strategy: ControlStrategy::Reject,

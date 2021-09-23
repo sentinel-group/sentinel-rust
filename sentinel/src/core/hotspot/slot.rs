@@ -33,25 +33,30 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    fn check(&self, ctx: &ContextPtr) -> TokenResult {
-        let ctx_cloned = ctx.clone(); // Rc/Arc clone
+    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
         cfg_if_async! {
-            let mut ctx = ctx.write().unwrap(),
-            let mut ctx = ctx.borrow_mut()
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow()
         };
         let res = ctx.resource().name();
-        let input = ctx.input();
-        let batch = input.batch_count();
-
+        let batch = ctx.input().batch_count();
         let tcs = get_traffic_controller_list_for(res);
+        drop(ctx);
         for tc in tcs {
-            if let Some(arg) = tc.extract_args(&ctx_cloned) {
+            let extracted = tc.extract_args(&ctx_ptr);
+            if let Some(arg) = extracted {
                 let r = tc.perform_checking(arg, batch);
                 match r.status() {
                     ResultStatus::Pass => {}
                     ResultStatus::Blocked => {
-                        ctx.set_result(r);
-                        return ctx.result().clone();
+                        cfg_if_async! {
+                            ctx_ptr.write().unwrap().set_result(r),
+                            ctx_ptr.borrow_mut().set_result(r)
+                        };
+                        cfg_if_async! {
+                            return ctx_ptr.read().unwrap().result().clone(),
+                            return ctx_ptr.borrow().result().clone()
+                        }
                     }
                     ResultStatus::ShouldWait => {
                         let nanos_to_wait = r.nanos_to_wait();
@@ -60,6 +65,9 @@ impl RuleCheckSlot for Slot {
                 }
             }
         }
-        ctx.result().clone()
+        cfg_if_async! {
+            return ctx_ptr.read().unwrap().result().clone(),
+            return ctx_ptr.borrow().result().clone()
+        }
     }
 }
