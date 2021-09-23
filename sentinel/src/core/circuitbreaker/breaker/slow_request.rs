@@ -68,7 +68,7 @@ impl CircuitBreakerTrait for SlowRtBreaker {
         if rt > self.max_allowed_rt {
             counter.value().target.fetch_add(1, Ordering::SeqCst);
         }
-        counter.value().target.fetch_add(1, Ordering::SeqCst);
+        counter.value().total.fetch_add(1, Ordering::SeqCst);
 
         let mut slow_count = 0;
         let mut total_count = 0;

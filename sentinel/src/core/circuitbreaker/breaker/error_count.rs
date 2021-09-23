@@ -53,16 +53,6 @@ impl CircuitBreakerTrait for ErrorCountBreaker {
         &self.stat
     }
 
-    fn try_pass(&self, ctx: ContextPtr) -> bool {
-        match self.current_state() {
-            State::Closed => true,
-            State::Open => {
-                self.breaker.retry_timeout_arrived() && self.breaker.from_open_to_half_open(ctx)
-            }
-            State::HalfOpen => false,
-        }
-    }
-
     fn on_request_complete(&self, _rt: u64, err: &Option<Error>) {
         let counter = self.stat.current_counter();
         if counter.is_err() {

@@ -197,10 +197,10 @@ mod test {
         utils::sleep_for_ms(20);
         let got = get_process_cpu_stat().unwrap();
 
-        assert!((got - 0.0).abs() < f32::EPSILON);
+        assert!(got > 0.0);
         utils::sleep_for_ms(20);
 
         let got = get_process_cpu_stat().unwrap();
-        assert!((got - 0.0).abs() < f32::EPSILON);
+        assert!(got > 0.0);
     }
 }

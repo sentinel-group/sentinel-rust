@@ -48,6 +48,10 @@ impl SentinelEntry {
         &self.ctx
     }
 
+    pub fn set_err(&self, err: Error) {
+        self.ctx.borrow_mut().set_err(err);
+    }
+
     // todo: cleanup
     pub fn exit(&self) {
         for handler in &self.exit_handlers {

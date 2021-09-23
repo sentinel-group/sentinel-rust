@@ -179,6 +179,13 @@ impl EntryBuilder {
     }
 }
 
+pub fn trace_error(entry: &EntryStrongPtr, err: Error) {
+    cfg_if_async!(
+        entry.read().unlock().set_err(err),
+        entry.borrow().set_err(err)
+    );
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
