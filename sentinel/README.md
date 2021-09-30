@@ -35,11 +35,11 @@ Sentinel has the following features:
 
 ## Documentation
 
+See the [**Wiki**](https://github.com/sentinel-group/sentinel-rust/wiki) for **Rust version** full documentation, examples, blog posts, operational details and other information.
+
 See the [Sentinel](https://sentinelguard.io/en-us/) for the document website.
 
 See the [中文文档](https://sentinelguard.io/zh-cn/) for document in Chinese.
-
-See the [Wiki](https://github.com/alibaba/Sentinel/wiki) for full documentation, examples, blog posts, operational details and other information.
 
 The [Rust API documentation](https://docs.rs/sentinel-rs/latest) is working in progress.
 
