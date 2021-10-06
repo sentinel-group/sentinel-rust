@@ -36,11 +36,3 @@ impl<T: Any + Send + Sync> AsAny for T {
         self
     }
 }
-
-pub(crate) fn vec2set<T: Hash + Eq>(vec: Vec<T>) -> HashSet<T> {
-    let mut set = HashSet::with_capacity(vec.len());
-    for item in vec {
-        set.insert(item);
-    }
-    set
-}

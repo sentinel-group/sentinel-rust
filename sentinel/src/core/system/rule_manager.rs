@@ -7,11 +7,11 @@ use crate::{
     system_metric, utils,
 };
 use lazy_static::lazy_static;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Mutex, RwLock, Weak};
 
-pub type RuleMap = HashMap<MetricType, Vec<Arc<Rule>>>;
+pub type RuleMap = HashMap<MetricType, HashSet<Arc<Rule>>>;
 
 lazy_static! {
     static ref RULE_MAP: RwLock<RuleMap> = RwLock::new(RuleMap::new());
@@ -23,11 +23,41 @@ lazy_static! {
 // please release the lock before calling this func
 pub fn get_rules() -> Vec<Arc<Rule>> {
     let rule_map = RULE_MAP.read().unwrap();
-    let mut rules = Vec::with_capacity(rule_map.len());
+    let mut rules: Vec<Arc<Rule>> = Vec::with_capacity(rule_map.len());
     for r in rule_map.values() {
-        rules.append(&mut r.clone());
+        rules.append(&mut r.clone().into_iter().collect());
     }
     rules
+}
+
+pub fn append_rule(rule: Arc<Rule>) -> bool {
+    if RULE_MAP
+        .read()
+        .unwrap()
+        .get(&rule.metric_type)
+        .unwrap_or(&HashSet::new())
+        .contains(&rule)
+    {
+        return false;
+    }
+
+    match rule.is_valid() {
+        Ok(_) => {
+            RULE_MAP
+                .write()
+                .unwrap()
+                .entry(rule.metric_type.clone())
+                .or_insert(HashSet::new())
+                .insert(Arc::clone(&rule));
+            CURRENT_RULES.lock().unwrap().push(rule);
+        }
+        Err(err) => logging::warn!(
+            "[System append_rule] Ignoring invalid rule {:?}, reason: {:?}",
+            rule,
+            err
+        ),
+    };
+    true
 }
 
 /// `load_rules` loads given system rules to the rule manager, while all previous rules will be replaced.
@@ -80,8 +110,8 @@ fn build_rule_map(rules: Vec<Arc<Rule>>) -> RuleMap {
             );
             continue;
         }
-        let mut value = m.entry(rule.metric_type.clone()).or_insert(Vec::new());
-        value.push(rule);
+        let mut value = m.entry(rule.metric_type.clone()).or_insert(HashSet::new());
+        value.insert(rule);
     }
     return m;
 }
@@ -103,22 +133,22 @@ mod test {
     #[ignore]
     fn get_updated_rules() {
         let mut map = RuleMap::new();
-        map.insert(
-            MetricType::InboundQPS,
-            vec![Arc::new(Rule {
+        map.insert(MetricType::InboundQPS, HashSet::new());
+        map.get_mut(&MetricType::InboundQPS)
+            .unwrap()
+            .insert(Arc::new(Rule {
                 metric_type: MetricType::InboundQPS,
                 threshold: 1.0,
                 ..Default::default()
-            })],
-        );
-        map.insert(
-            MetricType::Concurrency,
-            vec![Arc::new(Rule {
+            }));
+        map.insert(MetricType::Concurrency, HashSet::new());
+        map.get_mut(&MetricType::Concurrency)
+            .unwrap()
+            .insert(Arc::new(Rule {
                 metric_type: MetricType::Concurrency,
                 threshold: 1.0,
                 ..Default::default()
-            })],
-        );
+            }));
 
         let mut rule_map = RULE_MAP.write().unwrap();
         *rule_map = map.clone();
@@ -131,7 +161,7 @@ mod test {
             threshold: 2.0,
             ..Default::default()
         });
-        map.get_mut(&MetricType::InboundQPS).unwrap().push(rule);
+        map.get_mut(&MetricType::InboundQPS).unwrap().insert(rule);
         let mut rule_map = RULE_MAP.write().unwrap();
         *rule_map = map;
         drop(rule_map);

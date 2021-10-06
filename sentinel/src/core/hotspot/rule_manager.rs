@@ -2,7 +2,7 @@ use super::*;
 use crate::base::ParamKey;
 use crate::{base::SentinelRule, logging, utils, Error, Result};
 use lazy_static::lazy_static;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, RwLock};
 
 // todo: this module is redundant as the flow control rule managers has been implemented in the `crate::core::flow`
@@ -12,7 +12,7 @@ pub type ControllerGenfn<C = Counter> =
     dyn Send + Sync + Fn(Arc<Rule>, Option<Arc<ParamsMetric<C>>>) -> Arc<Controller>;
 
 pub type ControllerMap = HashMap<String, Vec<Arc<Controller>>>;
-pub type RuleMap = HashMap<String, Vec<Arc<Rule>>>;
+pub type RuleMap = HashMap<String, HashSet<Arc<Rule>>>;
 
 lazy_static! {
     // we only store the Specialization with `Counter`, the MockCounter is neglected here
@@ -96,6 +96,52 @@ fn log_rule_update(map: &RuleMap) {
     }
 }
 
+pub fn append_rule(rule: Arc<Rule>) -> bool {
+    if RULE_MAP
+        .lock()
+        .unwrap()
+        .get(&rule.resource)
+        .unwrap_or(&HashSet::new())
+        .contains(&rule)
+    {
+        return false;
+    }
+    match rule.is_valid() {
+        Ok(_) => {
+            RULE_MAP
+                .lock()
+                .unwrap()
+                .entry(rule.resource.clone())
+                .or_insert(HashSet::new())
+                .insert(Arc::clone(&rule));
+        }
+        Err(err) => logging::warn!(
+            "[Hot Spot append_rule] Ignoring invalid flow rule {:?}, reason: {:?}",
+            rule,
+            err
+        ),
+    }
+    let mut placeholder = Vec::new();
+    let new_tcs_of_res = build_resource_traffic_shaping_controller(
+        &rule.resource,
+        RULE_MAP.lock().unwrap().get(&rule.resource).unwrap(),
+        CONTROLLER_MAP
+            .write()
+            .unwrap()
+            .get_mut(&rule.resource)
+            .unwrap_or(&mut placeholder),
+    );
+    if new_tcs_of_res.len() > 0 {
+        CONTROLLER_MAP
+            .write()
+            .unwrap()
+            .entry(rule.resource.clone())
+            .or_insert(Vec::new())
+            .push(Arc::clone(&new_tcs_of_res[0]));
+    }
+    true
+}
+
 /// `load_rules` loads the given hotspot param flow rules to the rule manager, while all previous rules will be replaced.
 /// The returned `bool` indicates whether do real load operation, if the rules is the same with previous rules, return false
 // This func acquires locks on global `RULE_MAP` and `CONTROLLER_MAP`,
@@ -103,8 +149,10 @@ fn log_rule_update(map: &RuleMap) {
 pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
     let mut rule_map: RuleMap = HashMap::new();
     for rule in rules {
-        let entry = rule_map.entry(rule.resource.clone()).or_insert(Vec::new());
-        entry.push(rule);
+        let entry = rule_map
+            .entry(rule.resource.clone())
+            .or_insert(HashSet::new());
+        entry.insert(rule);
     }
 
     let mut global_rule_map = RULE_MAP.lock().unwrap();
@@ -118,10 +166,10 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
     // ignore invalid rules
     let mut valid_rules_map = HashMap::with_capacity(rule_map.len());
     for (res, rules) in &rule_map {
-        let mut valid_rules = Vec::new();
+        let mut valid_rules = HashSet::new();
         for rule in rules {
             match rule.is_valid() {
-                Ok(_) => valid_rules.push(Arc::clone(&rule)),
+                Ok(_) => {valid_rules.insert(Arc::clone(&rule));},
                 Err(err) => logging::warn!(
                     "[HotSpot onRuleUpdate] Ignoring invalid hotspot param flow rule {:?}, reason: {:?}",
                     rule,
@@ -143,7 +191,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
         let mut placeholder = Vec::new();
         let new_tcs_of_res = build_resource_traffic_shaping_controller(
             res,
-            rules.clone(),
+            &rules,
             controller_map.get_mut(res).unwrap_or(&mut placeholder),
         );
         if new_tcs_of_res.len() > 0 {
@@ -171,6 +219,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     if res.len() == 0 {
         return Err(Error::msg("empty resource"));
     }
+    let rules: HashSet<_> = rules.into_iter().collect();
     let mut global_rule_map = RULE_MAP.lock().unwrap();
     let mut global_controller_map = CONTROLLER_MAP.write().unwrap();
     // clear resource rules
@@ -181,15 +230,17 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
         return Ok(true);
     }
     // load resource level rules
-    if global_rule_map.get(res).unwrap_or(&Vec::new()) == &rules {
+    if global_rule_map.get(res).unwrap_or(&HashSet::new()) == &rules {
         logging::info!("[HotSpot] Load resource level rules is the same with current resource level rules, so ignore load operation.");
         return Ok(false);
     }
 
-    let mut valid_res_rules = Vec::with_capacity(res.len());
+    let mut valid_res_rules = HashSet::with_capacity(res.len());
     for rule in &rules {
         match rule.is_valid() {
-            Ok(_) => valid_res_rules.push(Arc::clone(&rule)),
+            Ok(_) => {
+                valid_res_rules.insert(Arc::clone(&rule));
+            }
             Err(err) => logging::warn!(
                 "[HotSpot load_rules_of_resource] Ignoring invalid flow rule {:?}, reason: {:?}",
                 rule,
@@ -206,7 +257,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
 
     let valid_res_rules_string = format!("{:?}", &valid_res_rules);
     let new_res_tcs =
-        build_resource_traffic_shaping_controller(res, valid_res_rules, &mut old_res_tcs);
+        build_resource_traffic_shaping_controller(res, &valid_res_rules, &mut old_res_tcs);
 
     if new_res_tcs.len() == 0 {
         global_controller_map.remove(res);
@@ -333,7 +384,7 @@ fn calculate_reuse_index_for(r: &Arc<Rule>, old_res_tcs: &Vec<Arc<Controller>>) 
 /// build_resource_traffic_shaping_controller builds Controller slice from rules. the resource of rules must be equals to res
 pub fn build_resource_traffic_shaping_controller(
     res: &String,
-    rules_of_res: Vec<Arc<Rule>>,
+    rules_of_res: &HashSet<Arc<Rule>>,
     old_res_tcs: &mut Vec<Arc<Controller>>,
 ) -> Vec<Arc<Controller>> {
     let mut new_res_tcs = Vec::with_capacity(rules_of_res.len());
@@ -551,9 +602,9 @@ mod test {
         let controller_map = CONTROLLER_MAP.read().unwrap();
         let rule_map = RULE_MAP.lock().unwrap();
 
-        assert_eq!(0, rule_map.get("abc1").unwrap_or(&Vec::new()).len());
+        assert_eq!(0, rule_map.get("abc1").unwrap_or(&HashSet::new()).len());
         assert_eq!(0, controller_map.get("abc1").unwrap_or(&Vec::new()).len());
-        assert_eq!(2, rule_map.get("abc2").unwrap_or(&Vec::new()).len());
+        assert_eq!(2, rule_map.get("abc2").unwrap_or(&HashSet::new()).len());
         assert_eq!(2, controller_map.get("abc2").unwrap_or(&Vec::new()).len());
         drop(controller_map);
         drop(rule_map);
@@ -623,7 +674,7 @@ mod test {
                 .lock()
                 .unwrap()
                 .get("abc1")
-                .unwrap_or(&Vec::new())
+                .unwrap_or(&HashSet::new())
                 .len()
         );
         assert_eq!(
@@ -641,7 +692,7 @@ mod test {
                 .lock()
                 .unwrap()
                 .get("abc2")
-                .unwrap_or(&Vec::new())
+                .unwrap_or(&HashSet::new())
                 .len()
         );
         assert_eq!(

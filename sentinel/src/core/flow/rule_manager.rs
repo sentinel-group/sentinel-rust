@@ -235,7 +235,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     if res.len() == 0 {
         return Err(Error::msg("empty resource"));
     }
-    let rules = utils::vec2set(rules);
+    let rules: HashSet<_> = rules.into_iter().collect();
     let mut global_rule_map = RULE_MAP.lock().unwrap();
     let mut global_controller_map = CONTROLLER_MAP.lock().unwrap();
     // clear resource rules

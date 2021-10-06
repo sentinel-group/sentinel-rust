@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 
 /// ControlStrategy indicates the traffic shaping strategy.
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
@@ -38,7 +38,7 @@ impl Default for MetricType {
 }
 
 /// Rule represents the hotspot(frequent) parameter flow control rule
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rule {
     /// `id` is the unique id
     pub id: String,
@@ -76,6 +76,25 @@ pub struct Rule {
     pub specific_items: HashMap<ParamKey, u64>,
 }
 
+impl Default for Rule {
+    fn default() -> Self {
+        Rule {
+            id: uuid::Uuid::new_v4().to_string(),
+            resource: String::default(),
+            metric_type: MetricType::default(),
+            control_strategy: ControlStrategy::default(),
+            param_index: 0,
+            param_key: String::default(),
+            threshold: 0,
+            max_queueing_time_ms: 0,
+            burst_count: 0,
+            duration_in_sec: 0,
+            params_max_capacity: 0,
+            specific_items: HashMap::default(),
+        }
+    }
+}
+
 impl Rule {
     pub fn is_stat_reusable(&self, other: &Self) -> bool {
         self.resource == other.resource
@@ -83,6 +102,15 @@ impl Rule {
             && self.params_max_capacity == other.params_max_capacity
             && self.duration_in_sec == other.duration_in_sec
             && self.metric_type == other.metric_type
+    }
+}
+
+impl Eq for Rule {}
+
+impl Hash for Rule {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.resource.hash(state);
     }
 }
 

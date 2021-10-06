@@ -1,14 +1,14 @@
 use super::*;
 use crate::{base::rule::SentinelRule, logging, utils, Error, Result};
 use lazy_static::lazy_static;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Mutex, RwLock};
 
 pub type BreakerGenFn =
     dyn Send + Sync + Fn(Arc<Rule>, Option<Arc<CounterLeapArray>>) -> Arc<dyn CircuitBreakerTrait>;
 
-pub type RuleMap = HashMap<String, Vec<Arc<Rule>>>;
+pub type RuleMap = HashMap<String, HashSet<Arc<Rule>>>;
 
 lazy_static! {
     pub static ref GEN_FUN_MAP: RwLock<HashMap<BreakerStrategy, Box<BreakerGenFn>>> = {
@@ -82,7 +82,7 @@ mod gen_fns {
 // please release your write locks on them before calling this func
 pub fn get_rules_of_resource(res: &String) -> Vec<Arc<Rule>> {
     let breaker_rules = BREAKER_RULES.read().unwrap();
-    let placeholder = Vec::new();
+    let placeholder = HashSet::new();
     let res_rules = breaker_rules.get(res).unwrap_or(&placeholder);
     let mut rules = Vec::with_capacity(res_rules.len());
     for r in res_rules {
@@ -114,15 +114,56 @@ pub fn clear_rules() {
     BREAKER_MAP.write().unwrap().clear();
 }
 
-fn log_rule_update(map: &RuleMap) {
-    if map.len() == 0 {
-        logging::info!("[Circuit Breaker] Circuit breaking rules were cleared")
-    } else {
-        logging::info!(
-            "[Circuit Breaker] Circuit breaking rules were loaded: {:?}",
-            map.values()
-        )
+pub fn append_rule(rule: Arc<Rule>) -> bool {
+    if CURRENT_RULES
+        .lock()
+        .unwrap()
+        .get(&rule.resource)
+        .unwrap_or(&HashSet::new())
+        .contains(&rule)
+    {
+        return false;
     }
+    match rule.is_valid() {
+        Ok(_) => {
+            CURRENT_RULES
+                .lock()
+                .unwrap()
+                .entry(rule.resource.clone())
+                .or_insert(HashSet::new())
+                .insert(Arc::clone(&rule));
+            BREAKER_RULES
+                .write()
+                .unwrap()
+                .entry(rule.resource.clone())
+                .or_insert(HashSet::new())
+                .insert(Arc::clone(&rule));
+        }
+        Err(err) => logging::warn!(
+            "[Hot Spot append_rule] Ignoring invalid flow rule {:?}, reason: {:?}",
+            rule,
+            err
+        ),
+    }
+    let mut placeholder = Vec::new();
+    let new_tcs_of_res = build_resource_circuit_breaker(
+        &rule.resource,
+        &BREAKER_RULES.read().unwrap().get(&rule.resource).unwrap(),
+        BREAKER_MAP
+            .write()
+            .unwrap()
+            .get_mut(&rule.resource)
+            .unwrap_or(&mut placeholder),
+    );
+    if new_tcs_of_res.len() > 0 {
+        BREAKER_MAP
+            .write()
+            .unwrap()
+            .entry(rule.resource.clone())
+            .or_insert(Vec::new())
+            .push(Arc::clone(&new_tcs_of_res[0]));
+    }
+    true
 }
 
 /// load_rules replaces old rules with the given circuit breaking rules.
@@ -136,8 +177,10 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
     // instead of dealing with them in
     // `on_rule_update`
     for rule in rules {
-        let entry = rule_map.entry(rule.resource.clone()).or_insert(Vec::new());
-        entry.push(rule);
+        let entry = rule_map
+            .entry(rule.resource.clone())
+            .or_insert(HashSet::new());
+        entry.insert(rule);
     }
 
     let mut global_rule_map = CURRENT_RULES.lock().unwrap();
@@ -152,10 +195,12 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
     // ignore invalid rules
     let mut valid_rules_map = HashMap::with_capacity(rule_map.len());
     for (res, rules) in &rule_map {
-        let mut valid_rules = Vec::new();
+        let mut valid_rules = HashSet::new();
         for rule in rules {
             match rule.is_valid() {
-                Ok(_) => valid_rules.push(Arc::clone(&rule)),
+                Ok(_) => {
+                    valid_rules.insert(Arc::clone(&rule));
+                }
                 Err(err) => logging::warn!(
                     "[Flow load_rules] Ignoring invalid flow rule {:?}, reason: {:?}",
                     rule,
@@ -184,7 +229,16 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
             valid_breaker_map.insert(res.clone(), new_cbs_of_res);
         }
     }
-    log_rule_update(&valid_rules_map);
+
+    if valid_rules_map.len() == 0 {
+        logging::info!("[Circuit Breaker] Circuit breaking rules were cleared")
+    } else {
+        logging::info!(
+            "[Circuit Breaker] Circuit breaking rules were loaded: {:?}",
+            valid_rules_map.values()
+        )
+    }
+
     *BREAKER_RULES.write().unwrap() = valid_rules_map;
     *global_breaker_map = valid_breaker_map;
     *global_rule_map = rule_map;
@@ -206,6 +260,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     if res.len() == 0 {
         return Err(Error::msg("empty resource"));
     }
+    let rules: HashSet<_> = rules.into_iter().collect();
     let mut global_rule_map = CURRENT_RULES.lock().unwrap();
     let mut global_breaker_map = BREAKER_MAP.write().unwrap();
     // clear resource rules
@@ -220,15 +275,15 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
         return Ok(true);
     }
     // load resource level rules
-    if global_rule_map.get(res).unwrap_or(&Vec::new()) == &rules {
+    if global_rule_map.get(res).unwrap_or(&HashSet::new()) == &rules {
         logging::info!("[CircuitBreakerTrait] Load resource level rules is the same with current resource level rules, so ignore load operation.");
         return Ok(false);
     }
 
-    let mut valid_res_rules = Vec::with_capacity(res.len());
+    let mut valid_res_rules = HashSet::with_capacity(res.len());
     for rule in &rules {
         match rule.is_valid() {
-            Ok(_) => valid_res_rules.push(Arc::clone(&rule)),
+            Ok(_) => {valid_res_rules.insert(Arc::clone(&rule));},
             Err(err) => logging::warn!(
                 "CircuitBreakerTrait onResourceRuleUpdate] Ignoring invalid circuitBreaker rule {:?}, reason: {:?}",
                 rule,
@@ -361,7 +416,7 @@ pub fn calculate_reuse_index_for(
 /// build_resource_circuit_breaker builds CircuitBreakerTrait slice from rules. the resource of rules must be equals to res
 pub fn build_resource_circuit_breaker(
     res: &String,
-    rules_of_res: &Vec<Arc<Rule>>,
+    rules_of_res: &HashSet<Arc<Rule>>,
     old_res_cbs: &mut Vec<Arc<dyn CircuitBreakerTrait>>,
 ) -> Vec<Arc<dyn CircuitBreakerTrait>> {
     let mut new_res_cbs = Vec::with_capacity(rules_of_res.len());
@@ -511,9 +566,6 @@ mod test {
         let b2 = &breaker_map["abc"][1];
         assert_eq!(breaker_map.len(), 1);
         assert_eq!(breaker_map["abc"].len(), 3);
-        assert_eq!(breaker_map["abc"][0].bound_rule(), &r0);
-        assert_eq!(breaker_map["abc"][1].bound_rule(), &r1);
-        assert_eq!(breaker_map["abc"][2].bound_rule(), &r2);
         drop(breaker_map);
 
         let r3 = Arc::new(Rule {
@@ -565,10 +617,6 @@ mod test {
         let b2 = &breaker_map["abc"][1];
         assert_eq!(breaker_map.len(), 1);
         assert_eq!(breaker_map["abc"].len(), 4);
-        assert_eq!(breaker_map["abc"][0].bound_rule(), &r0);
-        assert!(Arc::ptr_eq(breaker_map["abc"][1].stat(), b2.stat()));
-        assert_eq!(breaker_map["abc"][2].bound_rule(), &r5);
-        assert_eq!(breaker_map["abc"][3].bound_rule(), &r6);
         drop(breaker_map);
         clear_rules();
     }
@@ -760,8 +808,14 @@ mod test {
         let breaker_rules = BREAKER_RULES.read().unwrap();
         let current_rules = CURRENT_RULES.lock().unwrap();
         assert_eq!(0, breaker_map.get("abc1").unwrap_or(&Vec::new()).len());
-        assert_eq!(0, breaker_rules.get("abc1").unwrap_or(&Vec::new()).len());
-        assert_eq!(0, current_rules.get("abc1").unwrap_or(&Vec::new()).len());
+        assert_eq!(
+            0,
+            breaker_rules.get("abc1").unwrap_or(&HashSet::new()).len()
+        );
+        assert_eq!(
+            0,
+            current_rules.get("abc1").unwrap_or(&HashSet::new()).len()
+        );
         assert_eq!(1, breaker_map["abc2"].len());
         assert_eq!(1, breaker_rules["abc2"].len());
         assert_eq!(1, current_rules["abc2"].len());

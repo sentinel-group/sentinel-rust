@@ -2,11 +2,11 @@ use super::*;
 use crate::{base::SentinelRule, logging, utils};
 use crate::{Error, Result};
 use lazy_static::lazy_static;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::{Arc, Mutex, RwLock, Weak};
 
-pub type RuleMap = HashMap<String, Vec<Arc<Rule>>>;
+pub type RuleMap = HashMap<String, HashSet<Arc<Rule>>>;
 
 lazy_static! {
     static ref RULE_MAP: RwLock<RuleMap> = RwLock::new(RuleMap::new());
@@ -20,20 +20,55 @@ pub fn get_rules() -> Vec<Arc<Rule>> {
     let rule_map = RULE_MAP.read().unwrap();
     let mut rules = Vec::with_capacity(rule_map.len());
     for r in rule_map.values() {
-        rules.append(&mut r.clone());
+        rules.append(&mut r.clone().into_iter().collect());
     }
     rules
 }
 
-// `get_rules_of_resource` returns specific resource's rules
+/// `get_rules_of_resource` returns specific resource's rules
 // This func acquires a read lock on global `RULE_MAP`,
 // please release the lock before calling this func
 pub fn get_rules_of_resource(res: &String) -> Vec<Arc<Rule>> {
-    let mut placeholder = Vec::new();
+    let mut placeholder = HashSet::new();
     let rule_map = RULE_MAP.read().unwrap();
     let res_rules = rule_map.get(res).unwrap_or(&mut placeholder);
-    let mut rules = res_rules.clone();
+    let mut rules = res_rules.clone().into_iter().collect();
     rules
+}
+
+pub fn append_rule(rule: Arc<Rule>) -> bool {
+    if RULE_MAP
+        .read()
+        .unwrap()
+        .get(&rule.resource)
+        .unwrap_or(&HashSet::new())
+        .contains(&rule)
+    {
+        return false;
+    }
+
+    match rule.is_valid() {
+        Ok(_) => {
+            RULE_MAP
+                .write()
+                .unwrap()
+                .entry(rule.resource.clone())
+                .or_insert(HashSet::new())
+                .insert(Arc::clone(&rule));
+            CURRENT_RULES
+                .lock()
+                .unwrap()
+                .entry(rule.resource.clone())
+                .or_insert(HashSet::new())
+                .insert(rule);
+        }
+        Err(err) => logging::warn!(
+            "[System append_rule] Ignoring invalid rule {:?}, reason: {:?}",
+            rule,
+            err
+        ),
+    };
+    true
 }
 
 /// `load_rules` loads given isolation rules to the rule manager, while all previous rules will be replaced.
@@ -44,8 +79,8 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) {
     for rule in rules {
         let mut val = res_rules_map
             .entry(rule.resource.clone())
-            .or_insert(Vec::new());
-        val.push(rule);
+            .or_insert(HashSet::new());
+        val.insert(rule);
     }
     let mut current_rules = CURRENT_RULES.lock().unwrap();
     if &*current_rules == &res_rules_map {
@@ -59,10 +94,12 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) {
     // ignore invalid rules
     let mut valid_res_rule_map = RuleMap::with_capacity(res_rules_map.len());
     for (res, rules) in &res_rules_map {
-        let mut valid_res_rules = Vec::with_capacity(rules.len());
+        let mut valid_res_rules = HashSet::with_capacity(rules.len());
         for rule in rules {
             match rule.is_valid() {
-                Ok(_) => valid_res_rules.push(Arc::clone(&rule)),
+                Ok(_) => {
+                    valid_res_rules.insert(Arc::clone(&rule));
+                }
                 Err(err) => logging::warn!(
                     "[Isolation load_rules] Ignoring invalid flow rule {:?}, reason: {:?}",
                     rule,
@@ -97,6 +134,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     if res.len() == 0 {
         return Err(Error::msg("empty resource"));
     }
+    let rules: HashSet<_> = rules.into_iter().collect();
 
     if rules.len() == 0 {
         clear_rules_of_resource(res);
@@ -108,7 +146,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
         .lock()
         .unwrap()
         .get(res)
-        .unwrap_or(&Vec::new())
+        .unwrap_or(&HashSet::new())
         == &rules
     {
         logging::info!(
@@ -119,10 +157,12 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
 
     // when rule_map is different with global one, update the global one
     // ignore invalid rules
-    let mut valid_res_rules = Vec::with_capacity(rules.len());
+    let mut valid_res_rules = HashSet::with_capacity(rules.len());
     for rule in &rules {
         match rule.is_valid() {
-            Ok(_) => valid_res_rules.push(Arc::clone(&rule)),
+            Ok(_) => {
+                valid_res_rules.insert(Arc::clone(&rule));
+            }
             Err(err) => logging::warn!(
                 "[Isolation load_rules_of_resource] Ignoring invalid flow rule {:?}, reason: {:?}",
                 rule,
@@ -226,9 +266,6 @@ mod test {
         assert_eq!(1, rule_map["abc3"].len());
         assert_eq!(2, current_rules["abc1"].len());
         assert_eq!(2, current_rules["abc3"].len());
-        assert!(Arc::ptr_eq(&r1, &rule_map["abc1"][0]));
-        assert!(Arc::ptr_eq(&r2, &rule_map["abc1"][1]));
-        assert!(Arc::ptr_eq(&r5, &rule_map["abc3"][0]));
         drop(rule_map);
         drop(current_rules);
 
@@ -287,9 +324,6 @@ mod test {
         assert_eq!(1, rule_map["abc3"].len());
         assert_eq!(2, current_rules["abc1"].len());
         assert_eq!(2, current_rules["abc3"].len());
-        assert!(Arc::ptr_eq(&r1, &rule_map["abc1"][0]));
-        assert!(Arc::ptr_eq(&r2, &rule_map["abc1"][1]));
-        assert!(Arc::ptr_eq(&r3, &rule_map["abc3"][0]));
         drop(rule_map);
         drop(current_rules);
 

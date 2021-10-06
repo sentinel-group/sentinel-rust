@@ -3,9 +3,10 @@ use crate::{base::SentinelRule, logging, system_metric, Error, Result};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 /// Rule encompasses the fields of circuit breaking rule.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rule {
     /// unique id
     pub id: String,
@@ -37,6 +38,22 @@ pub struct Rule {
     /// for `ErrorRatio`, it represents the max error request ratio
     /// for `ErrorCount`, it represents the max error request count
     pub threshold: f64,
+}
+
+impl Default for Rule {
+    fn default() -> Self {
+        Rule {
+            id: uuid::Uuid::new_v4().to_string(),
+            resource: String::default(),
+            strategy: BreakerStrategy::default(),
+            retry_timeout_ms: 0,
+            min_request_amount: 0,
+            stat_interval_ms: 0,
+            stat_sliding_window_bucket_count: 0,
+            max_allowed_rt_ms: 0,
+            threshold: 0.0,
+        }
+    }
 }
 
 impl Rule {
@@ -106,6 +123,15 @@ impl PartialEq for Rule {
             }
     }
 }
+
+impl Hash for Rule {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.resource.hash(state);
+    }
+}
+
+impl Eq for Rule {}
 
 impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

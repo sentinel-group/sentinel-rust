@@ -69,7 +69,7 @@ macro_rules! wrap_sentinel {
                 use sentinel_rs::cfg_if_async;
 
                 // Load sentinel rules
-                $name::load_rules(vec![Arc::new(#rule)]);
+                $name::append_rule(Arc::new(#rule));
 
                 let entry_builder = EntryBuilder::new(String::from(#resource_name))
                     .with_traffic_type(#traffic_type)

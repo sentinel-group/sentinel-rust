@@ -3,6 +3,7 @@ use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub enum MetricType {
@@ -38,7 +39,7 @@ impl Default for AdaptiveStrategy {
 }
 
 /// `Rule` describes the policy for system resiliency.
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
     pub id: String,
@@ -49,6 +50,17 @@ pub struct Rule {
     pub threshold: f64,
     /// `strategy` represents the adaptive strategy.
     pub strategy: AdaptiveStrategy,
+}
+
+impl Default for Rule {
+    fn default() -> Self {
+        Rule {
+            id: uuid::Uuid::new_v4().to_string(),
+            metric_type: MetricType::default(),
+            threshold: 0.0,
+            strategy: AdaptiveStrategy::default(),
+        }
+    }
 }
 
 impl SentinelRule for Rule {
@@ -73,6 +85,15 @@ impl SentinelRule for Rule {
         Ok(())
     }
 }
+
+impl Hash for Rule {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.metric_type.hash(state);
+    }
+}
+
+impl Eq for Rule {}
 
 impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
