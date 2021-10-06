@@ -18,7 +18,7 @@ impl Default for MetricType {
 }
 
 /// `Rule` describes the policy for system resiliency.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
     pub id: String,
@@ -37,6 +37,14 @@ impl Default for Rule {
             metric_type: MetricType::default(),
             threshold: 0,
         }
+    }
+}
+
+impl PartialEq for Rule {
+    fn eq(&self, other: &Self) -> bool {
+        self.resource == other.resource
+            && self.metric_type == other.metric_type
+            && self.threshold == other.threshold
     }
 }
 
