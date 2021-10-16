@@ -182,3 +182,14 @@ required-features = ["full"]
 name = "hotspot_concurrency"
 path = "../examples/hotspot/concurrency.rs"
 required-features = ["full"]
+
+[[example]]
+name = "config_yaml"
+path = "../examples/config/from_yaml/from_yaml.rs"
+required-features = ["full"]
+
+
+[[example]]
+name = "config_entity"
+path = "../examples/config/from_entity/from_entity.rs"
+required-features = ["full"]

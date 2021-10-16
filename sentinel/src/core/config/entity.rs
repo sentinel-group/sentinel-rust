@@ -10,11 +10,11 @@ use std::fmt;
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(super) struct AppConfig {
+pub struct AppConfig {
     // app_name represents the name of current running service.
-    pub(super) app_name: String,
+    pub app_name: String,
     // app_type indicates the resource_type of the service (e.g. web service, API gateway).
-    pub(super) app_type: ResourceType,
+    pub app_type: ResourceType,
 }
 
 impl Default for AppConfig {
@@ -28,10 +28,10 @@ impl Default for AppConfig {
 
 // LogMetricConfig represents the configuration items of the metric log.
 #[derive(Serialize, Deserialize, Debug)]
-pub(super) struct LogMetricConfig {
-    pub(super) single_file_max_size: u64,
-    pub(super) max_file_count: u32,
-    pub(super) flush_interval_sec: u32,
+pub struct LogMetricConfig {
+    pub single_file_max_size: u64,
+    pub max_file_count: u32,
+    pub flush_interval_sec: u32,
 }
 
 impl Default for LogMetricConfig {
@@ -46,11 +46,11 @@ impl Default for LogMetricConfig {
 
 // LogConfig represent the configuration of logging in Sentinel.
 #[derive(Serialize, Deserialize, Debug)]
-pub(super) struct LogConfig {
+pub struct LogConfig {
     // logger indicates that using logger to replace default logging.
-    pub(super) logger: Logger,
+    pub logger: Logger,
     // metric represents the configuration items of the metric log.
-    pub(super) metric: LogMetricConfig,
+    pub metric: LogMetricConfig,
 }
 
 impl Default for LogConfig {
@@ -64,15 +64,15 @@ impl Default for LogConfig {
 
 // SystemStatConfig represents the configuration items of system statistic collector
 #[derive(Serialize, Deserialize, Debug)]
-pub(super) struct SystemStatConfig {
+pub struct SystemStatConfig {
     // interval_ms represents the collecting interval of the system metrics collector.
-    pub(super) system_interval_ms: u32,
+    pub system_interval_ms: u32,
     // load_interval_ms represents the collecting interval of the system load collector.
-    pub(super) load_interval_ms: u32,
+    pub load_interval_ms: u32,
     // cpu_interval_ms represents the collecting interval of the system cpu usage collector.
-    pub(super) cpu_interval_ms: u32,
+    pub cpu_interval_ms: u32,
     // memory_interval_ms represents the collecting interval of the system memory usage collector.
-    pub(super) memory_interval_ms: u32,
+    pub memory_interval_ms: u32,
 }
 
 impl Default for SystemStatConfig {
@@ -88,15 +88,15 @@ impl Default for SystemStatConfig {
 
 // StatConfig represents configuration items related to statistics.
 #[derive(Serialize, Deserialize, Debug)]
-pub(super) struct StatConfig {
+pub struct StatConfig {
     // sample_count_total and interval_ms_total is the per resource's global default statistic sliding window config
-    pub(super) sample_count_total: u32,
-    pub(super) interval_ms_total: u32,
+    pub sample_count_total: u32,
+    pub interval_ms_total: u32,
     // sample_count and interval_ms is the per resource's default readonly metric statistic
     // This default readonly metric statistic must be reusable based on global statistic.
-    pub(super) sample_count: u32,
-    pub(super) interval_ms: u32,
-    pub(super) system: SystemStatConfig,
+    pub sample_count: u32,
+    pub interval_ms: u32,
+    pub system: SystemStatConfig,
 }
 
 impl Default for StatConfig {
@@ -113,12 +113,12 @@ impl Default for StatConfig {
 
 // SentinelConfig represent the general configuration of Sentinel.
 #[derive(Serialize, Deserialize, Debug)]
-pub(super) struct SentinelConfig {
-    pub(super) app: AppConfig,
-    pub(super) log: LogConfig,
-    pub(super) stat: StatConfig,
+pub struct SentinelConfig {
+    pub app: AppConfig,
+    pub log: LogConfig,
+    pub stat: StatConfig,
     // use_cache_time indicates whether to cache time(ms), it is false by default
-    pub(super) use_cache_time: bool,
+    pub use_cache_time: bool,
 }
 
 impl Default for SentinelConfig {
@@ -134,8 +134,8 @@ impl Default for SentinelConfig {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConfigEntity {
-    pub(super) version: String,
-    pub(super) config: SentinelConfig,
+    pub version: String,
+    pub config: SentinelConfig,
 }
 
 impl Default for ConfigEntity {
@@ -176,66 +176,6 @@ impl ConfigEntity {
             self.config.stat.interval_ms_total,
         )?;
         Ok(())
-    }
-
-    pub fn app_name(&self) -> &String {
-        &self.config.app.app_name
-    }
-
-    pub fn app_type(&self) -> &ResourceType {
-        &self.config.app.app_type
-    }
-
-    pub fn logger(&self) -> &Logger {
-        &self.config.log.logger
-    }
-
-    pub fn metric_log_flush_interval_sec(&self) -> u32 {
-        self.config.log.metric.flush_interval_sec
-    }
-
-    pub fn metric_log_single_file_max_size(&self) -> u64 {
-        self.config.log.metric.single_file_max_size
-    }
-
-    pub fn metric_log_max_file_amount(&self) -> u32 {
-        self.config.log.metric.max_file_count
-    }
-
-    pub fn system_stat_collect_interval_ms(&self) -> u32 {
-        self.config.stat.system.system_interval_ms
-    }
-
-    pub fn load_stat_collec_interval_ms(&self) -> u32 {
-        self.config.stat.system.load_interval_ms
-    }
-
-    pub fn cpu_stat_collec_interval_ms(&self) -> u32 {
-        self.config.stat.system.cpu_interval_ms
-    }
-
-    pub fn memory_stat_collec_interval_ms(&self) -> u32 {
-        self.config.stat.system.memory_interval_ms
-    }
-
-    pub fn use_cache_time(&self) -> bool {
-        self.config.use_cache_time
-    }
-
-    pub fn global_stat_interval_ms_total(&self) -> u32 {
-        self.config.stat.interval_ms_total
-    }
-
-    pub fn global_stat_sample_count_total(&self) -> u32 {
-        self.config.stat.sample_count_total
-    }
-
-    pub fn metric_stat_interval_ms(&self) -> u32 {
-        self.config.stat.interval_ms
-    }
-
-    pub fn metric_stat_sample_count(&self) -> u32 {
-        self.config.stat.sample_count
     }
 }
 

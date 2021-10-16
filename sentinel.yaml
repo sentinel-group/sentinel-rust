@@ -1,0 +1,23 @@
+version: v1
+config:
+  app:
+    app_name: unknown_service
+    app_type: Common
+  log:
+    logger:
+      EnvLogger: warn
+    metric:
+      single_file_max_size: 52428800
+      max_file_count: 8
+      flush_interval_sec: 1
+  stat:
+    sample_count_total: 20
+    interval_ms_total: 10000
+    sample_count: 2
+    interval_ms: 1000
+    system:
+      system_interval_ms: 1000
+      load_interval_ms: 1000
+      cpu_interval_ms: 1000
+      memory_interval_ms: 150
+  use_cache_time: true

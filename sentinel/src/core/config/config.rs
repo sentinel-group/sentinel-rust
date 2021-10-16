@@ -1,21 +1,22 @@
 use super::{constant::*, ConfigEntity};
 use crate::{base::ResourceType, logging, utils, Error, Result};
 use directories::UserDirs;
-use lazy_static::lazy_static;
 use serde_yaml;
+use std::borrow::BorrowMut;
+use std::cell::RefCell;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::sync::RwLock;
 
-lazy_static! {
-    static ref GLOBAL_CONFIG: RwLock<ConfigEntity> = RwLock::new(ConfigEntity::new());
+thread_local! {
+    static GLOBAL_CONFIG : RefCell<ConfigEntity> = RefCell::new(ConfigEntity::new());
 }
 
 pub fn reset_global_config(entity: ConfigEntity) {
-    let mut cfg = GLOBAL_CONFIG.write().unwrap();
-    *cfg = entity;
+    GLOBAL_CONFIG.with(|c| {
+        *c.borrow_mut() = entity;
+    });
 }
 
 // init_config_with_yaml loads general configuration from the YAML file under provided path.
@@ -41,7 +42,7 @@ fn apply_yaml_config_file(config_path: &mut String) -> Result<()> {
 
 fn load_global_config_from_yaml_file(path_str: &String) -> Result<()> {
     let path = Path::new(path_str);
-    if path_str == CONFIG_FILENAME && path.exists() {
+    if path_str == CONFIG_FILENAME {
         //use default globalCfg.
         return Ok(());
     }
@@ -72,15 +73,14 @@ pub fn override_config_from_env_and_init_log() -> Result<()> {
     logging::logger_init(config_logger);
     logging::info!("[Config] App name resolved, appName {}", app_name());
     logging::info!(
-        "[Config] Print effective global config, globalConfig {}",
-        GLOBAL_CONFIG.read().unwrap()
+        "[Config] Print effective global config, globalConfig {:?}",
+        GLOBAL_CONFIG
     );
 
     Ok(())
 }
 
 fn override_items_from_system_env() -> Result<()> {
-    let mut cfg = GLOBAL_CONFIG.write().unwrap();
     let app_name = env::var(APP_NAME_ENV_KEY).unwrap_or(DEFAULT_APP_NAME.into());
     let app_type: ResourceType = env::var(APP_TYPE_ENV_KEY)
         .unwrap_or(format!("{}", DEFAULT_APP_TYPE))
@@ -88,106 +88,128 @@ fn override_items_from_system_env() -> Result<()> {
         .unwrap_or(DEFAULT_APP_TYPE)
         .into();
 
-    if !utils::is_blank(&app_name) {
-        cfg.config.app.app_name = app_name;
-    }
-    cfg.config.app.app_type = app_type;
-    cfg.check()?;
+    GLOBAL_CONFIG
+        .try_with(|c| -> Result<()> {
+            let mut cfg = c.borrow_mut();
+            if !utils::is_blank(&app_name) {
+                cfg.config.app.app_name = app_name;
+            }
+            cfg.config.app.app_type = app_type;
+            cfg.check()?;
+            Ok(())
+        })
+        .unwrap()?;
     Ok(())
 }
 
 #[inline]
 pub fn app_name() -> String {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.app_name().clone()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.app.app_name.clone())
+        .unwrap()
 }
 
 #[inline]
 pub fn app_type() -> ResourceType {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.app_type().clone()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.app.app_type.clone())
+        .unwrap()
 }
 
 #[inline]
 pub fn logger() -> logging::Logger {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.logger().clone()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.logger.clone())
+        .unwrap()
 }
 
 #[inline]
 pub fn metric_log_flush_interval_sec() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.metric_log_flush_interval_sec()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.metric.flush_interval_sec)
+        .unwrap()
 }
 
 #[inline]
 pub fn metric_log_single_file_max_size() -> u64 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.metric_log_single_file_max_size()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.metric.single_file_max_size)
+        .unwrap()
 }
 
 #[inline]
 pub fn metric_log_max_file_amount() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.metric_log_max_file_amount()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.metric.max_file_count)
+        .unwrap()
 }
 
 #[inline]
 pub fn system_stat_collect_interval_ms() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.system_stat_collect_interval_ms()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.system.system_interval_ms)
+        .unwrap()
 }
 
 #[inline]
 pub fn load_stat_collec_interval_ms() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.load_stat_collec_interval_ms()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.system.load_interval_ms)
+        .unwrap()
 }
 
 #[inline]
 pub fn cpu_stat_collec_interval_ms() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.cpu_stat_collec_interval_ms()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.system.cpu_interval_ms)
+        .unwrap()
 }
 
 #[inline]
 pub fn memory_stat_collec_interval_ms() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.memory_stat_collec_interval_ms()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.system.memory_interval_ms)
+        .unwrap()
 }
 
 #[inline]
 pub fn use_cache_time() -> bool {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.use_cache_time()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.use_cache_time)
+        .unwrap()
 }
 
 #[inline]
 pub fn global_stat_interval_ms_total() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.global_stat_interval_ms_total()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.interval_ms_total)
+        .unwrap()
 }
 
 #[inline]
 pub fn global_stat_sample_count_total() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.global_stat_sample_count_total()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.sample_count_total)
+        .unwrap()
 }
 
 #[inline]
 pub fn global_stat_bucket_length_ms() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.global_stat_interval_ms_total() / cfg.global_stat_sample_count_total()
+    GLOBAL_CONFIG
+        .try_with(|c| global_stat_interval_ms_total() / global_stat_sample_count_total())
+        .unwrap()
 }
 
 #[inline]
 pub fn metric_stat_interval_ms() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.metric_stat_interval_ms()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.interval_ms)
+        .unwrap()
 }
 
 #[inline]
 pub fn metric_stat_sample_count() -> u32 {
-    let cfg = GLOBAL_CONFIG.read().unwrap();
-    cfg.metric_stat_sample_count()
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.stat.sample_count)
+        .unwrap()
 }
