@@ -10,6 +10,9 @@ config:
       single_file_max_size: 52428800
       max_file_count: 8
       flush_interval_sec: 1
+    exporter:
+      addr: 127.0.0.1:9091
+      metric_path: /metrics
   stat:
     sample_count_total: 20
     interval_ms_total: 10000

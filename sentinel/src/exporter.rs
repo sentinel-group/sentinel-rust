@@ -1,10 +1,11 @@
+///! exporter the process protected by Sentinel
 use lazy_static::lazy_static;
-///! Monitor Sentinel itself
-use prometheus::{default_registry, opts, Gauge, GaugeVec, Registry};
+use prometheus_exporter::{
+    Builder,
+    prometheus::{default_registry, opts, Gauge, GaugeVec, Registry}};
 use std::sync::Once;
+use crate::config;
 
-// Go version use Prometheus
-// Java version use its dashboard
 lazy_static! {
     static ref HOST_NAME: String = hostname::get().unwrap().into_string().unwrap();
     static ref PROCESS_NAME: String = std::env::args().collect::<Vec<String>>()[0].clone();
@@ -40,7 +41,7 @@ lazy_static! {
         vec.push(RESOURCE_FLOW_THRESHOLD.clone());
         vec
     };
-    static ref REGISTRY_ONCE: Once = Once::new();
+    static ref INIT_ONCE: Once = Once::new();
 }
 
 pub fn set_cpu_ratio(percent: f32) {
@@ -61,20 +62,31 @@ pub fn set_resource_flow_threshold(resourse: String, threshold: f64) {
         .set(threshold);
 }
 
-pub fn register_sentinel_metrics(registry: Option<Box<Registry>>) {
-    REGISTRY_ONCE.call_once(move || {
-        let r = match registry {
-            Some(ref r) => r,
-            None => default_registry(),
-        };
-        for item in &*METRICS {
-            r.register(Box::new(item.clone())).unwrap();
-        }
-    });
+fn register_sentinel_metrics(registry: Option<Box<Registry>>) {
+    let r = match registry {
+        Some(ref r) => r,
+        None => default_registry(),
+    };
+    for item in &*METRICS {
+        r.register(Box::new(item.clone())).unwrap();
+    }
 }
 
 pub fn reset_sentinel_metrics() {
     for item in &*METRICS {
         item.reset()
     }
+}
+
+
+pub fn init(){
+    INIT_ONCE.call_once(move || {
+        // currently, `prometheus_exporter` crate only support global registry
+        register_sentinel_metrics(None); 
+        let binding = config::exporter_addr().parse().unwrap();
+        let metrics_path = config::exporter_metrics_path();
+        let mut builder = Builder::new(binding);
+        builder.with_endpoint(&metrics_path);
+        builder.start().unwrap();
+    });
 }

@@ -13,5 +13,3 @@ pub mod slot_chain;
 pub use api::*;
 pub use init::*;
 pub use slot_chain::*;
-
-pub use crate::config;

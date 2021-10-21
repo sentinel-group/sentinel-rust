@@ -3,8 +3,7 @@
 //! 2. initialize global logger
 //! 3. initiate core component async task, including: metric log, system statistic...
 
-use super::{config, config::ConfigEntity};
-use crate::{log::metric, system_metric, utils, Error, Result};
+use crate::{config, config::ConfigEntity, log::metric, system_metric, utils, Error, Result};
 use serde_yaml;
 
 /// `init_default` initializes Sentinel using the configuration from system
@@ -73,5 +72,9 @@ fn init_core_compoents() -> Result<()> {
     if config::use_cache_time() {
         utils::start_time_ticker();
     }
+
+    #[cfg(feature = "exporter")]
+    crate::exporter::init();
+
     Ok(())
 }

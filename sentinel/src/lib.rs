@@ -12,8 +12,8 @@ pub mod macros;
 pub mod api;
 pub mod core;
 pub mod logging;
-cfg_monitor! {
-    pub mod monitor;
+cfg_exporter! {
+    pub mod exporter;
 }
 pub mod utils;
 

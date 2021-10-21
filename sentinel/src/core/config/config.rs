@@ -124,6 +124,20 @@ pub fn logger() -> logging::Logger {
 }
 
 #[inline]
+pub fn exporter_addr() -> String {
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.exporter.addr.clone())
+        .unwrap()
+}
+
+#[inline]
+pub fn exporter_metrics_path() -> String {
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.exporter.metrics_path.clone())
+        .unwrap()
+}
+
+#[inline]
 pub fn metric_log_flush_interval_sec() -> u32 {
     GLOBAL_CONFIG
         .try_with(|c| c.borrow().config.log.metric.flush_interval_sec)

@@ -30,11 +30,11 @@ macro_rules! cfg_not_async {
     }
 }
 
-macro_rules! cfg_monitor {
+macro_rules! cfg_exporter {
     ($($item:item)*) => {
         $(
-            #[cfg(feature = "monitor")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "monitor")))]
+            #[cfg(feature = "exporter")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "exporter")))]
             $item
         )*
     }

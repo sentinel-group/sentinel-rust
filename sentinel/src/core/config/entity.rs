@@ -6,8 +6,8 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::fmt;
 use std::path::PathBuf;
+use std::{fmt, net::SocketAddr};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
@@ -44,6 +44,22 @@ impl Default for LogMetricConfig {
     }
 }
 
+// ExporterConfig represents exporter settings
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ExporterConfig {
+    pub addr: String,
+    pub metrics_path: String,
+}
+
+impl Default for ExporterConfig {
+    fn default() -> Self {
+        ExporterConfig {
+            addr: EXPORTER_ADDR.into(),
+            metrics_path: EXPORTER_METRICS_PATH.into(),
+        }
+    }
+}
+
 // LogConfig represent the configuration of logging in Sentinel.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LogConfig {
@@ -51,6 +67,7 @@ pub struct LogConfig {
     pub logger: Logger,
     // metric represents the configuration items of the metric log.
     pub metric: LogMetricConfig,
+    pub exporter: ExporterConfig,
 }
 
 impl Default for LogConfig {
@@ -58,6 +75,7 @@ impl Default for LogConfig {
         LogConfig {
             logger: Logger::EnvLogger(DEFAULT_LOG_LEVEL.into()),
             metric: LogMetricConfig::default(),
+            exporter: ExporterConfig::default(),
         }
     }
 }
