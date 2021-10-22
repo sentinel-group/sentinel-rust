@@ -44,7 +44,7 @@ pub fn init_memory_collector(mem_interval: u32) {
                 0
             });
             #[cfg(feature = "exporter")]
-            exporter::set_process_memory_size(memory_used_bytes);
+            exporter::set_memory_size(memory_used_bytes);
             CURRENT_MEMORY.store(memory_used_bytes, Ordering::SeqCst);
             utils::sleep_for_ms(mem_interval as u64);
         });

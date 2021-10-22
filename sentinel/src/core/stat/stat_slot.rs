@@ -1,8 +1,8 @@
 use super::inbound_node;
 use crate::{
     base::{
-        BaseSlot, BlockError, ContextPtr, EntryContext, MetricEvent, StatNode, StatSlot,
-        TrafficType,
+        BaseSlot, BlockError, ContextPtr, EntryContext, MetricEvent, ResultStatus, StatNode,
+        StatSlot, TrafficType,
     },
     utils::curr_time_millis,
 };
@@ -62,6 +62,13 @@ impl StatSlot for ResourceNodeStatSlot {
                 self.record_pass_for(inbound_node(), input.batch_count())
             }
         }
+        #[cfg(feature = "exporter")]
+        crate::exporter::add_handled_counter(
+            input.batch_count(),
+            res.name(),
+            ResultStatus::Pass,
+            None,
+        );
     }
 
     fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>) {
@@ -77,6 +84,13 @@ impl StatSlot for ResourceNodeStatSlot {
                 self.record_block_for(inbound_node(), input.batch_count())
             }
         }
+        #[cfg(feature = "exporter")]
+        crate::exporter::add_handled_counter(
+            input.batch_count(),
+            res.name(),
+            ResultStatus::Blocked,
+            block_error,
+        );
     }
 
     cfg_async! {

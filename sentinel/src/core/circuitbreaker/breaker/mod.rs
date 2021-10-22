@@ -233,6 +233,9 @@ impl BreakerBase {
                     Some(Arc::clone(&snapshot)),
                 );
             }
+
+            #[cfg(feature = "exporter")]
+            crate::exporter::add_state_change_counter(&self.rule.resource, "Closed", "Open");
             true
         } else {
             false
@@ -284,6 +287,9 @@ impl BreakerBase {
                         },
                     ))
                 }
+
+                #[cfg(feature = "exporter")]
+                crate::exporter::add_state_change_counter(&self.rule.resource, "Open", "HalfOpen");
                 true
             } else {
                 false
@@ -335,6 +341,9 @@ impl BreakerBase {
                         },
                     ))
                 }
+
+                #[cfg(feature = "exporter")]
+                crate::exporter::add_state_change_counter(&self.rule.resource, "Open", "HalfOpen");
                 true
             } else {
                 false
@@ -357,6 +366,9 @@ impl BreakerBase {
                     Some(Arc::clone(&snapshot)),
                 );
             }
+
+            #[cfg(feature = "exporter")]
+            crate::exporter::add_state_change_counter(&self.rule.resource, "HalfOpen", "Open");
             true
         } else {
             false
@@ -373,6 +385,9 @@ impl BreakerBase {
             for listener in &*listeners {
                 listener.on_transform_to_closed(State::HalfOpen, Arc::clone(&self.rule));
             }
+
+            #[cfg(feature = "exporter")]
+            crate::exporter::add_state_change_counter(&self.rule.resource, "HalfOpen", "Closed");
             true
         } else {
             false

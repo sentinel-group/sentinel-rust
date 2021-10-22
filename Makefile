@@ -1,3 +1,5 @@
+SRC_FILES := $(shell find . -name '*.rs' -print)
+
 check:
 	cargo check
 
@@ -11,7 +13,7 @@ clean:
 	cargo clean
 
 fmt:
-	cargo fmt
+	@rustfmt --edition 2018 $(SRC_FILES)
 
 unit: unit_single unit_parallel
 

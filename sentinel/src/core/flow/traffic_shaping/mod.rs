@@ -137,8 +137,8 @@ impl Controller {
         let calculator = self.calculator.as_ref().unwrap();
         let calculator = calculator.lock().unwrap();
         let allowed_threshold = calculator.calculate_allowed_threshold(batch_count, flag);
-        #[cfg(feature = "monitor")]
-        crate::monitor::set_resource_flow_threshold(self.rule.resource_name(), allowed_threshold);
+        #[cfg(feature = "exporter")]
+        crate::exporter::set_flow_threshold(&self.rule.resource_name(), allowed_threshold);
 
         let checker = self.checker.as_ref().unwrap();
         let checker = checker.lock().unwrap();
