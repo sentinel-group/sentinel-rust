@@ -18,7 +18,8 @@ pub fn init_default() -> Result<()> {
 pub fn init_with_config(config_entity: ConfigEntity) -> Result<()> {
     config_entity.check()?;
     config::reset_global_config(config_entity);
-    config::override_config_from_env_and_init_log()?;
+    #[cfg(any(feature = "env_logger", feature = "log4rs"))]
+    config::init_log()?;
     init_core_compoents()
 }
 
@@ -41,6 +42,7 @@ fn init_sentinel(config_path: &mut String) -> Result<()> {
 #[inline]
 fn init_core_compoents() -> Result<()> {
     if config::metric_log_flush_interval_sec() > 0 {
+        #[cfg(feature = "metric_log")]
         metric::init_task()?;
     }
 

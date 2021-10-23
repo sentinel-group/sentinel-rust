@@ -1,7 +1,6 @@
 use super::{config, constant::*};
 use crate::{
     base::{check_validity_for_reuse_statistic, constant::*, ResourceType},
-    logging::Logger,
     Error, Result,
 };
 use serde::{Deserialize, Serialize};
@@ -63,19 +62,18 @@ impl Default for ExporterConfig {
 // LogConfig represent the configuration of logging in Sentinel.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LogConfig {
-    // logger indicates that using logger to replace default logging.
-    pub logger: Logger,
     // metric represents the configuration items of the metric log.
     pub metric: LogMetricConfig,
     pub exporter: ExporterConfig,
+    pub config_file: String,
 }
 
 impl Default for LogConfig {
     fn default() -> Self {
         LogConfig {
-            logger: Logger::EnvLogger(DEFAULT_LOG_LEVEL.into()),
             metric: LogMetricConfig::default(),
             exporter: ExporterConfig::default(),
+            config_file: LOG_CONFIG_FILE.into(),
         }
     }
 }

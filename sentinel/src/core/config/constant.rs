@@ -25,4 +25,5 @@ pub const WARM_UP_COLD_FACTOR: u32 = 3;
 
 // default log settings
 pub const DEFAULT_LOG_LEVEL: &str = "warn";
-pub const DEFAULT_DIR_NAME: &str = "logs";
+pub const LOG_CONFIG_FILE: &str = "log4rs.yaml";
+pub const LOG_METRICS_DIR: &str = "logs/sentinel/";

@@ -1,6 +1,5 @@
 use super::{constant::*, ConfigEntity};
 use crate::{base::ResourceType, logging, utils, Error, Result};
-use directories::UserDirs;
 use serde_yaml;
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
@@ -23,7 +22,9 @@ pub fn reset_global_config(entity: ConfigEntity) {
 pub fn init_config_with_yaml(config_path: &mut String) -> Result<()> {
     // Initialize general config and logging module.
     apply_yaml_config_file(config_path)?;
-    override_config_from_env_and_init_log()?;
+    override_items_from_system_env()?;
+    #[cfg(any(feature = "env_logger", feature = "log4rs"))]
+    init_log()?;
     Ok(())
 }
 
@@ -64,22 +65,6 @@ fn load_global_config_from_yaml_file(path_str: &String) -> Result<()> {
     Ok(())
 }
 
-pub fn override_config_from_env_and_init_log() -> Result<()> {
-    // Then Sentinel will try to get fundamental config items from system environment.
-    // If present, the value in system env will override the value in config file.
-    override_items_from_system_env()?;
-
-    let config_logger = logger();
-    logging::logger_init(config_logger);
-    logging::info!("[Config] App name resolved, appName {}", app_name());
-    logging::info!(
-        "[Config] Print effective global config, globalConfig {:?}",
-        GLOBAL_CONFIG
-    );
-
-    Ok(())
-}
-
 fn override_items_from_system_env() -> Result<()> {
     let app_name = env::var(APP_NAME_ENV_KEY).unwrap_or(DEFAULT_APP_NAME.into());
     let app_type: ResourceType = env::var(APP_TYPE_ENV_KEY)
@@ -102,6 +87,32 @@ fn override_items_from_system_env() -> Result<()> {
     Ok(())
 }
 
+#[cfg(any(feature = "env_logger", feature = "log4rs"))]
+pub fn init_log() -> Result<()> {
+    use std::{borrow::Borrow, convert::TryInto};
+
+    // Then Sentinel will try to get fundamental config items from system environment.
+    // If present, the value in system env will override the value in config file.
+    logging::logger_init(log_config_file());
+
+    logging::info!("[Config] App name resolved, appName {}", app_name());
+    GLOBAL_CONFIG.try_with(|c| {
+        logging::info!(
+            "[Config] Print effective global config, globalConfig {:?}",
+            c.borrow()
+        );
+    });
+
+    Ok(())
+}
+
+#[inline]
+pub fn log_config_file() -> Option<String> {
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.config_file.clone())
+        .ok()
+}
+
 #[inline]
 pub fn app_name() -> String {
     GLOBAL_CONFIG
@@ -113,13 +124,6 @@ pub fn app_name() -> String {
 pub fn app_type() -> ResourceType {
     GLOBAL_CONFIG
         .try_with(|c| c.borrow().config.app.app_type.clone())
-        .unwrap()
-}
-
-#[inline]
-pub fn logger() -> logging::Logger {
-    GLOBAL_CONFIG
-        .try_with(|c| c.borrow().config.log.logger.clone())
         .unwrap()
 }
 
