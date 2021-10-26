@@ -83,7 +83,7 @@ macro_rules! wrap_sentinel {
                         Ok(result)
                     },
                     Err(err) => {
-                        Err(format!("{:?}", err))
+                        Err(err)
                     }
                 }
             }
@@ -127,12 +127,12 @@ pub(crate) fn process_func(mut func: ItemFn) -> ItemFn {
     let dummy_func = match output {
         ReturnType::Default => {
             quote! {
-                fn dummy() -> Result<(), String> {}
+                fn dummy() -> sentinel_rs::Result<()> {}
             }
         }
         ReturnType::Type(_, return_type) => {
             quote! {
-                fn dummy() -> Result<#return_type, String> {}
+                fn dummy() -> sentinel_rs::Result<#return_type> {}
             }
         }
     };

@@ -39,6 +39,7 @@ impl Default for MetricType {
 
 /// Rule represents the hotspot(frequent) parameter flow control rule
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
 pub struct Rule {
     /// `id` is the unique id
     pub id: String,

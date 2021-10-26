@@ -4,7 +4,7 @@ use sentinel_rs::utils::sleep_for_ms;
 
 fn main() {
     // Init sentienl configurations from yaml file
-    let yaml_name = String::from("sentinel.yaml");
+    let yaml_name = String::from("testdata/config/sentinel.yaml");
     sentinel_rs::init_with_config_file(yaml_name)
         .unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
 

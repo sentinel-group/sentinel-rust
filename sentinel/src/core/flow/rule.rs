@@ -52,6 +52,7 @@ impl Default for ControlStrategy {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
 /// Rule describes the strategy of flow control, the flow control strategy is based on QPS statistic metric
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).

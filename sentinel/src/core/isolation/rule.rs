@@ -19,6 +19,7 @@ impl Default for MetricType {
 
 /// `Rule` describes the policy for system resiliency.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
     pub id: String,
