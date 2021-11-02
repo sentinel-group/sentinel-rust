@@ -12,6 +12,8 @@ pub type PropertyConverter<P: SentinelRule + DeserializeOwned> =
 pub fn rule_json_array_parser<P: SentinelRule + DeserializeOwned>(
     src: &str,
 ) -> Result<Vec<Arc<P>>> {
+    println!("{:?}", src);
+    println!("{:?}", serde_json::from_str::<Vec<P>>(src));
     let rules: Vec<P> = serde_json::from_str(src)?;
     Ok(rules.into_iter().map(|r| Arc::new(r)).collect())
 }

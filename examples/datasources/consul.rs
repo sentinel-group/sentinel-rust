@@ -1,59 +1,56 @@
 #![allow(unreachable_code)]
-use etcd_rs::{Client, ClientConfig, PutRequest};
+use consul::{kv::KVPair, kv::KV, Client, Config, QueryOptions};
 use sentinel_rs::{
     base,
     datasource::{
-        ds_etcdv3::Etcdv3DataSource, new_flow_rule_handler, rule_json_array_parser, DataSource,
+        ds_consul::ConsulDataSource, new_flow_rule_handler, rule_json_array_parser, DataSource,
     },
-    flow, EntryBuilder, Result,
+    flow,
+    utils::sleep_for_ms,
+    EntryBuilder, Result,
 };
-use std::sync::Arc;
-use tokio::task::JoinHandle;
-use tokio::time::{sleep, Duration};
+use std::{sync::Arc, thread::JoinHandle};
 
-// An example on etcd-v3 dynamic data source.
-// Install etcd-v3, and run `etdc` in your terminal first. Then run this example.
+// An example on consul dynamic data source.
+// Install consul, and run `consul agent -data-dir ./` in your terminal first. Then run this example.
 // You will find that QPS number is restricted to 10 at first. But soon, it will be restricted to 1.
-#[tokio::main]
-async fn main() -> Result<()> {
-    let handlers = basic_flow_example().await;
-
+fn main() -> Result<()> {
+    let handlers = basic_flow_example();
     // Create etcd client and put a key-value pair for new rule.
-    let endpoints = vec!["http://127.0.0.1:2379".to_owned()];
-    let client = Client::connect(ClientConfig {
-        endpoints,
-        auth: None,
-        tls: None,
-    })
-    .await?;
-    let key = "flow-etcdv3-example";
+    let config = Config::new().unwrap();
+    let client = Client::new(config);
+    println!("client: {:?}", client);
+    let key = "flow-consul-example";
 
     {
-        // Dynamically add a rule to the etcd.
+        // Dynamically add a rule to the consul.
         // You can add rules by etcdctl in command line.
-        let value = r#"[
-            {
-                "resource": "task",
-                "threshold": 1.0
-            }
-        ]"#;
-        client.kv().put(PutRequest::new(key, value)).await?;
+
+        let value = r#"[{"resource": "task","threshold": 1.0}]"#;
+        let pair = KVPair {
+            Key: String::from(key),
+            Value: String::from(value),
+            ..Default::default()
+        };
+
+        client.put(&pair, None).unwrap();
+        println!("list: {:?}", client.list(&key, None));
     }
 
-    // Sleep 3 seconds and then read the etcd
+    // Sleep 3 seconds and then read the consul
     sentinel_rs::utils::sleep_for_ms(3000);
 
     // Create a data source and change the rule.
     let h = new_flow_rule_handler(rule_json_array_parser);
-    let mut ds = Etcdv3DataSource::new(client, key.into(), vec![h]);
-    ds.initialize().await?;
+    let mut ds = ConsulDataSource::new(client, QueryOptions::default(), key.into(), vec![h]);
+    ds.initialize()?;
     for h in handlers {
-        h.await.expect("Couldn't join on the associated thread");
+        h.join().expect("Couldn't join on the associated thread");
     }
     Ok(())
 }
 
-async fn basic_flow_example() -> Vec<JoinHandle<()>> {
+fn basic_flow_example() -> Vec<JoinHandle<()>> {
     // Init sentienl configurations
     sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
     let resource_name = String::from("task");
@@ -68,17 +65,17 @@ async fn basic_flow_example() -> Vec<JoinHandle<()>> {
     let mut handlers = Vec::new();
     for _ in 0..20 {
         let res_name = resource_name.clone();
-        handlers.push(tokio::spawn(async move {
+        handlers.push(std::thread::spawn(move || {
             loop {
                 let entry_builder = EntryBuilder::new(res_name.clone())
                     .with_traffic_type(base::TrafficType::Inbound);
                 if let Ok(entry) = entry_builder.build() {
                     // Passed, wrap the logic here.
-                    task().await;
+                    task();
                     // Be sure the entry is exited finally.
                     entry.write().unwrap().exit()
                 } else {
-                    sleep(Duration::from_millis(100)).await;
+                    sleep_for_ms(100);
                 }
             }
         }));
@@ -88,7 +85,7 @@ async fn basic_flow_example() -> Vec<JoinHandle<()>> {
 
 // todo: Cannot sentinel-macros now. It will append rules,
 // which is conflicts with the dynamic datasource
-async fn task() {
+fn task() {
     println!("{}: passed", sentinel_rs::utils::curr_time_millis());
-    sleep(Duration::from_millis(100)).await;
+    sleep_for_ms(100);
 }

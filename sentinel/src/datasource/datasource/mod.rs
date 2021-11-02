@@ -1,16 +1,17 @@
 /// The dynamic rule replacement.
 
 #[cfg(feature = "ds_etcdv3")]
-pub mod etcdv3;
+pub mod ds_etcdv3;
 #[cfg(feature = "ds_etcdv3")]
-pub use etcdv3::*;
+pub use ds_etcdv3::*;
+
+#[cfg(feature = "ds_consul")]
+pub mod ds_consul;
+#[cfg(feature = "ds_consul")]
+pub use ds_consul::*;
 
 use super::*;
-use async_trait::async_trait;
 
-/// The generic interface to describe the datasource
-/// Each DataSource instance listen to one property (sentinel rule).
-#[async_trait]
 pub trait DataSource<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>>:
     Send
 {
@@ -23,16 +24,6 @@ pub trait DataSource<P: SentinelRule + PartialEq + DeserializeOwned, H: Property
     fn remove_property_handler(&mut self, h: Arc<H>) {
         self.get_base().remove_property_handler(h);
     }
-    /// Read original data from the data source.
-    /// return source bytes if succeed to read, if not, return error when reading
-    async fn read_source(&mut self) -> Result<String>;
-    /// initialize the datasource and load initial rules
-    /// start listener to listen on dynamic source
-    /// return error if initialize failed;
-    /// once initialized, listener should recover all panic and error.
-    async fn initialize(&mut self) -> Result<()>;
-    /// Close the data source.
-    async fn close(&self) -> Result<()>;
 }
 
 pub struct DataSourceBase<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> {

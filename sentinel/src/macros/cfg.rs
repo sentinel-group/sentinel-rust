@@ -43,8 +43,8 @@ macro_rules! cfg_exporter {
 macro_rules! cfg_datasource {
     ($($item:item)*) => {
         $(
-            #[cfg(any(feature = "ds_etcdv3"))]
-            #[cfg_attr(docsrs, doc(cfg(feature = "ds_etcdv3")))]
+            #[cfg(any(feature = "ds_etcdv3",feature = "ds_consul"))]
+            #[cfg_attr(docsrs, doc(cfg(feature = "ds_consul")))]
             $item
         )*
     }
