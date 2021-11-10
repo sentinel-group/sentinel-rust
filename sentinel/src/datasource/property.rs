@@ -30,6 +30,8 @@ pub trait PropertyHandler<P: SentinelRule>: Send + Sync {
     fn is_property_consistent(&mut self, rules: &Vec<Arc<P>>) -> bool;
     // handle the current property
     fn handle(&mut self, src: Option<&String>) -> Result<bool>;
+    // update sentinel rules
+    fn load(&mut self, rules: Vec<Arc<P>>) -> Result<bool>;
 }
 
 /// DefaultPropertyHandler encapsulate the Converter and updater of property.
@@ -80,22 +82,8 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned> PropertyHandler<P>
             None => (self.updater)(Vec::new()),
         }
     }
-}
 
-#[cfg(test)]
-pub(crate) use test::MockPropertyHandler;
-
-#[cfg(test)]
-pub(crate) mod test {
-    use super::*;
-    use mockall::predicate::*;
-    use mockall::*;
-
-    mock! {
-        pub PropertyHandler<P:SentinelRule>{}
-        impl<P: SentinelRule> PropertyHandler<P> for PropertyHandler<P>{
-            fn is_property_consistent(&mut self, rules: &Vec<Arc<P>>) -> bool;
-            fn handle(&mut self, src: Option<&String>) -> Result<bool>;
-        }
+    fn load(&mut self, rules: Vec<Arc<P>>) -> Result<bool> {
+        (self.updater)(rules)
     }
 }

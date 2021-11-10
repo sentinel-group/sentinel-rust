@@ -4,10 +4,16 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+cfg_k8s! {
+    use schemars::JsonSchema;
+    use kube::{core::CustomResourceExt, CustomResource};
+    use crate::datasource::ds_k8s::{SENTINEL_RULE_GROUP, SENTINEL_RULE_VERSION};
+}
 
 pub type Id = String;
 
 /// RelationStrategy indicates the flow control strategy based on the relation of invocations.
+#[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum RelationStrategy {
     /// CurrentResource means flow control by current resource directly.
@@ -22,6 +28,7 @@ impl Default for RelationStrategy {
     }
 }
 
+#[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub enum CalculateStrategy {
     Direct,
@@ -36,6 +43,7 @@ impl Default for CalculateStrategy {
     }
 }
 
+#[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub enum ControlStrategy {
     Reject,
@@ -51,6 +59,16 @@ impl Default for ControlStrategy {
     }
 }
 
+#[cfg_attr(
+    feature = "ds_k8s",
+    kube(
+        group = "rust.datasource.sentinel.io",
+        version = "v1alpha1",
+        kind = "FlowResource",
+        namespaced
+    ),
+    derive(CustomResource, JsonSchema)
+)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 /// Rule describes the strategy of flow control, the flow control strategy is based on QPS statistic metric

@@ -9,6 +9,10 @@ pub use ds_etcdv3::*;
 pub mod ds_consul;
 #[cfg(feature = "ds_consul")]
 pub use ds_consul::*;
+cfg_k8s! {
+    pub mod ds_k8s;
+    pub use ds_k8s::*;
+}
 
 use super::*;
 
@@ -86,5 +90,14 @@ where
         if let Some(idx) = self.index_of_handler(Arc::clone(&h)) {
             self.handlers.swap_remove(idx);
         }
+    }
+
+    pub fn load(&mut self, rules: Vec<Arc<P>>) -> Result<bool> {
+        let mut res = true;
+        for h in &mut self.handlers {
+            let h = Arc::get_mut(h).unwrap();
+            res = res && h.load(rules.clone())?;
+        }
+        Ok(res)
     }
 }

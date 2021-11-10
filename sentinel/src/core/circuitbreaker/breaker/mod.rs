@@ -44,8 +44,13 @@ use std::sync::{
     Arc, Mutex,
 };
 
+cfg_k8s! {
+    use schemars::JsonSchema;
+}
+
 /// `BreakerStrategy` represents the strategy of circuit breaker.
 /// Each strategy is associated with one rule type.
+#[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum BreakerStrategy {
     /// `SlowRequestRatio` strategy changes the circuit breaker state based on slow request ratio
