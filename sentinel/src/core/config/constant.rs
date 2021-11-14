@@ -12,7 +12,7 @@ pub const CONFIG_FILENAME: &str = "USE_DEFAULT_CONFIGURATION";
 // default metric log settings
 pub const FLUSH_INTERVAL_SEC: u32 = 1;
 pub const SINGLE_FILE_MAX_SIZE: u64 = 1024 * 1024 * 50;
-pub const MAX_FILE_AMOUNT: u32 = 8;
+pub const MAX_FILE_AMOUNT: usize = 8;
 pub const EXPORTER_ADDR: &'static str = "127.0.0.1:9091";
 pub const EXPORTER_METRICS_PATH: &'static str = "/metrics";
 
@@ -26,4 +26,4 @@ pub const WARM_UP_COLD_FACTOR: u32 = 3;
 // default log settings
 pub const DEFAULT_LOG_LEVEL: &str = "warn";
 pub const LOG_CONFIG_FILE: &str = "log4rs.yaml";
-pub const LOG_METRICS_DIR: &str = "logs/sentinel/";
+pub const LOG_METRICS_DIR: &str = "log/sentinel/";

@@ -28,14 +28,18 @@ impl Default for AppConfig {
 // LogMetricConfig represents the configuration items of the metric log.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LogMetricConfig {
+    pub use_pid: bool,
+    pub dir: String,
     pub single_file_max_size: u64,
-    pub max_file_count: u32,
+    pub max_file_count: usize,
     pub flush_interval_sec: u32,
 }
 
 impl Default for LogMetricConfig {
     fn default() -> Self {
         LogMetricConfig {
+            use_pid: true,
+            dir: LOG_METRICS_DIR.into(),
             single_file_max_size: SINGLE_FILE_MAX_SIZE,
             max_file_count: MAX_FILE_AMOUNT,
             flush_interval_sec: FLUSH_INTERVAL_SEC,

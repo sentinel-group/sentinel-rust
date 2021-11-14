@@ -114,6 +114,20 @@ pub fn log_config_file() -> Option<String> {
 }
 
 #[inline]
+pub fn log_metrc_dir() -> String {
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.metric.dir.clone())
+        .unwrap()
+}
+
+#[inline]
+pub fn log_metrc_pid() -> bool {
+    GLOBAL_CONFIG
+        .try_with(|c| c.borrow().config.log.metric.use_pid)
+        .unwrap()
+}
+
+#[inline]
 pub fn app_name() -> String {
     GLOBAL_CONFIG
         .try_with(|c| c.borrow().config.app.app_name.clone())
@@ -156,7 +170,7 @@ pub fn metric_log_single_file_max_size() -> u64 {
 }
 
 #[inline]
-pub fn metric_log_max_file_amount() -> u32 {
+pub fn metric_log_max_file_amount() -> usize {
     GLOBAL_CONFIG
         .try_with(|c| c.borrow().config.log.metric.max_file_count)
         .unwrap()

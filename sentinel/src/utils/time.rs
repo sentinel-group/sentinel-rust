@@ -36,6 +36,12 @@ pub fn format_time_millis(ts_millis: u64) -> String {
 }
 
 #[inline]
+pub fn format_date(ts_millis: u64) -> String {
+    OffsetDateTime::from_unix_timestamp_nanos(milli2nano(ts_millis))
+        .format(time::Format::Custom(DATE_FORMAT.into()))
+}
+
+#[inline]
 pub fn format_time_nanos_curr() -> String {
     OffsetDateTime::from_unix_timestamp_nanos(curr_time_nanos())
         .format(time::Format::Custom(TIME_FORMAT.into()))

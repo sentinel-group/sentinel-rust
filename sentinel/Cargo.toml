@@ -22,6 +22,7 @@ exclude = ["/tests"]
 default = []
 full = [
   "macros",
+  "metric_log",
 ]
 # If the sentinel is not utilized in asynchronous scenarios, 
 # the `Sentinel` entry is not necessary to use `Arc` with `Send` trait
@@ -30,7 +31,7 @@ macros = ["sentinel-macros"]
 exporter = ["prometheus_exporter", "hostname"]
 logger_env = ["env_logger"]
 logger_log4rs = ["log4rs"]
-metric_log = ["directories"]
+metric_log = ["directories", "regex"]
 
 [dependencies]
 sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = true }
@@ -53,6 +54,7 @@ directories = { version = "4.0.1", optional = true }
 env_logger = { version = "0.8.3", optional = true }
 log4rs = { version = "1.0.0", optional = true }
 log = "0.4"
+regex = { version = "1.5", optional = true }
 prometheus_exporter = {version="0.8", optional=true}
 hostname = {version="0.3.1", optional=true}
 # todo: simplify encapsulation

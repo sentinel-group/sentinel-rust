@@ -13,13 +13,13 @@ use std::sync::{
 
 #[derive(Debug)]
 pub struct ResourceNode {
-    res_name: String,
-    resource_type: ResourceType,
-    sample_count: u32,
-    interval_ms: u32,
-    concurrency: AtomicU32,
-    arr: Arc<BucketLeapArray>,
-    metric: Arc<SlidingWindowMetric>,
+    pub(crate) res_name: String,
+    pub(crate) resource_type: ResourceType,
+    pub(crate) sample_count: u32,
+    pub(crate) interval_ms: u32,
+    pub(crate) concurrency: AtomicU32,
+    pub(crate) arr: Arc<BucketLeapArray>,
+    pub(crate) metric: Arc<SlidingWindowMetric>,
 }
 
 impl ResourceNode {

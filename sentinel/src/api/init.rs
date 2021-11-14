@@ -43,7 +43,7 @@ fn init_sentinel(config_path: &mut String) -> Result<()> {
 fn init_core_compoents() -> Result<()> {
     if config::metric_log_flush_interval_sec() > 0 {
         #[cfg(feature = "metric_log")]
-        metric::init_task()?;
+        metric::init_task();
     }
 
     let system_interval = config::system_stat_collect_interval_ms();
