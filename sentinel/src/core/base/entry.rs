@@ -49,7 +49,10 @@ impl SentinelEntry {
     }
 
     pub fn set_err(&self, err: Error) {
-        self.ctx.borrow_mut().set_err(err);
+        cfg_if_async! {
+            self.ctx.write().unwrap().set_err(err),
+            self.ctx.borrow_mut().set_err(err)
+        };
     }
 
     // todo: cleanup

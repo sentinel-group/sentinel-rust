@@ -4,7 +4,13 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+cfg_k8s! {
+    use schemars::JsonSchema;
+    use kube::{core::CustomResourceExt, CustomResource};
+    use crate::datasource::ds_k8s::{SENTINEL_RULE_GROUP, SENTINEL_RULE_VERSION};
+}
 
+#[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub enum MetricType {
     /// Concurrency represents the concurrency of in-flight requests
@@ -18,7 +24,18 @@ impl Default for MetricType {
 }
 
 /// `Rule` describes the policy for system resiliency.
+#[cfg_attr(
+    feature = "ds_k8s",
+    kube(
+        group = "rust.datasource.sentinel.io",
+        version = "v1alpha1",
+        kind = "IsolationResource",
+        namespaced
+    ),
+    derive(CustomResource, JsonSchema)
+)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
     pub id: String,

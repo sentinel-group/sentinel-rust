@@ -7,8 +7,14 @@ use serde_json;
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
+cfg_k8s! {
+    use schemars::JsonSchema;
+    use kube::{core::CustomResourceExt, CustomResource};
+    use crate::datasource::ds_k8s::{SENTINEL_RULE_GROUP, SENTINEL_RULE_VERSION};
+}
 
 /// ControlStrategy indicates the traffic shaping strategy.
+#[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub enum ControlStrategy {
     Reject,
@@ -23,6 +29,7 @@ impl Default for ControlStrategy {
 }
 
 // MetricType represents the target metric type.
+#[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MetricType {
     /// Concurrency represents concurrency count.
@@ -38,7 +45,18 @@ impl Default for MetricType {
 }
 
 /// Rule represents the hotspot(frequent) parameter flow control rule
+#[cfg_attr(
+    feature = "ds_k8s",
+    kube(
+        group = "rust.datasource.sentinel.io",
+        version = "v1alpha1",
+        kind = "HotspotResource",
+        namespaced
+    ),
+    derive(CustomResource, JsonSchema)
+)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
 pub struct Rule {
     /// `id` is the unique id
     pub id: String,

@@ -22,7 +22,6 @@ exclude = ["/tests"]
 default = []
 full = [
   "macros",
-  "metric_log",
 ]
 # If the sentinel is not utilized in asynchronous scenarios, 
 # the `Sentinel` entry is not necessary to use `Arc` with `Send` trait
@@ -32,6 +31,11 @@ exporter = ["prometheus_exporter", "hostname"]
 logger_env = ["env_logger"]
 logger_log4rs = ["log4rs"]
 metric_log = ["directories", "regex"]
+# datasources 
+# todo: maybe they should be separated into individual crates
+ds_etcdv3 = ["etcd-rs", "futures"]
+ds_consul = ["consul", "base64"]
+ds_k8s = ["kube", "k8s-openapi", "schemars", "futures"]
 
 [dependencies]
 sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = true }
@@ -61,6 +65,13 @@ hostname = {version="0.3.1", optional=true}
 # using getset = "0.1.1"
 lru = "0.6.6"
 uuid = { version = "0.8", features = ["serde", "v4"] }
+etcd-rs = {version="0.5", optional=true}
+consul = {version="0.4", optional=true}
+futures = {version="0.3.17", optional=true}
+base64 = {version="0.13", optional=true}
+kube = {version="0.63.2", features = ["default","derive", "runtime"], optional=true}
+k8s-openapi = {version="0.13.1", features = ["v1_22"], optional=true}
+schemars = {version="0.8.6", optional=true}
 
 [dev-dependencies]
 # criterion = "0.3"
@@ -87,22 +98,12 @@ path = "../examples/flow/hello_world.rs"
 required-features = ["full"]
 
 [[example]]
-name = "direct"
-path = "../examples/flow/hello_world.rs"
-required-features = ["full"]
-
-[[example]]
 name = "tokio"
 path = "../examples/flow/tokio.rs"
 required-features = ["full", "async"]
 
 [[example]]
 name = "macro"
-path = "../examples/flow/macro.rs"
-required-features = ["full"]
-
-[[example]]
-name = "warmup"
 path = "../examples/flow/macro.rs"
 required-features = ["full"]
 
@@ -201,3 +202,18 @@ required-features = ["full"]
 name = "prometheus"
 path = "../examples/exporter/prometheus/prometheus.rs"
 required-features = ["full", "exporter"]
+
+[[example]]
+name = "etcdv3"
+path = "../examples/datasources/etcdv3.rs"
+required-features = ["full", "ds_etcdv3", "async"]
+
+[[example]]
+name = "consul"
+path = "../examples/datasources/consul.rs"
+required-features = ["full", "ds_consul", "async"]
+
+[[example]]
+name = "k8s"
+path = "../examples/datasources/k8s.rs"
+required-features = ["full", "ds_k8s", "async"]

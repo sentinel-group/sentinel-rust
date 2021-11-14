@@ -15,6 +15,9 @@ pub mod logging;
 cfg_exporter! {
     pub mod exporter;
 }
+cfg_datasource! {
+    pub mod datasource;
+}
 pub mod utils;
 
 pub use crate::core::*;
