@@ -69,8 +69,8 @@ etcd-rs = {version="0.5", optional=true}
 consul = {version="0.4", optional=true}
 futures = {version="0.3.17", optional=true}
 base64 = {version="0.13", optional=true}
-kube = {version="0.63.2", features = ["default","derive", "runtime"], optional=true}
-k8s-openapi = {version="0.13.1", features = ["v1_22"], optional=true}
+kube = {version="0.64", features = ["derive", "runtime"], optional=true}
+k8s-openapi = {version="0.13.1", default-features = false, features = ["v1_22"], optional=true}
 schemars = {version="0.8.6", optional=true}
 
 [dev-dependencies]

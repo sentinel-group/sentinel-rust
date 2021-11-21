@@ -27,8 +27,13 @@ async fn main() -> Result<()> {
     // Create etcd client and put a key-value pair for new rule.
     let client = Client::try_default().await?;
     let property = "flow-k8s-example";
-    let namespace = "sentinel";
-    let cr_name = "flow";
+    let namespace = "kube-system";
+    let cr_name = "flowresources";
+
+    println!(
+        "FlowRule CRD is: \n{}",
+        serde_json::to_string_pretty(&flow::FlowResource::crd()).unwrap()
+    );
 
     {
         // Dynamically add a CRD sentinel rule.
@@ -102,17 +107,18 @@ async fn dynamic_update(
     cr_name: &str,
 ) -> Result<()> {
     let crds: Api<CustomResourceDefinition> = Api::all(client.clone());
-
+    println!("Before patch");
+    let cr_name = format!("{}.{}", cr_name, SENTINEL_RULE_GROUP);
     // Apply the CRD so users can create Foo instances in Kubernetes
     crds.patch(
-        &format!("{}.{}", cr_name, SENTINEL_RULE_GROUP),
+        &cr_name,
         &PatchParams::apply(manager),
         &Patch::Apply(flow::FlowResource::crd()),
     )
     .await?;
-
+    println!("After patch");
     // Wait for the CRD to be ready
-    await_condition(crds, cr_name, conditions::is_crd_established()).await?;
+    await_condition(crds, &cr_name, conditions::is_crd_established()).await?;
 
     let cr = flow::FlowResource::new(
         "flow-1",

@@ -35,7 +35,7 @@ impl Default for MetricType {
     derive(CustomResource, JsonSchema)
 )]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, default)]
+#[serde(default)]
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).
     pub id: String,

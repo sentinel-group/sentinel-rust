@@ -34,6 +34,7 @@ pub enum CalculateStrategy {
     Direct,
     WarmUp,
     MemoryAdaptive,
+    #[serde(skip)]
     Custom(u8),
 }
 
@@ -50,6 +51,7 @@ pub enum ControlStrategy {
     /// Throttling indicates that pending requests will be throttled,
     /// wait in queue (until free capacity is available)
     Throttling,
+    #[serde(skip)]
     Custom(u8),
 }
 
@@ -70,7 +72,7 @@ impl Default for ControlStrategy {
     derive(CustomResource, JsonSchema)
 )]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, default)]
+#[serde(default)]
 /// Rule describes the strategy of flow control, the flow control strategy is based on QPS statistic metric
 pub struct Rule {
     /// `id` represents the unique ID of the rule (optional).

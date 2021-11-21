@@ -22,7 +22,7 @@ cfg_k8s! {
     derive(CustomResource, JsonSchema)
 )]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, default)]
+#[serde(default)]
 pub struct Rule {
     /// unique id
     pub id: String,

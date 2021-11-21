@@ -59,6 +59,7 @@ pub enum BreakerStrategy {
     ErrorRatio,
     /// `ErrorCount` strategy changes the circuit breaker state based on error amount
     ErrorCount,
+    #[serde(skip)]
     Custom(u8),
 }
 

@@ -19,6 +19,7 @@ cfg_k8s! {
 pub enum ControlStrategy {
     Reject,
     Throttling,
+    #[serde(skip)]
     Custom(u8),
 }
 
@@ -56,7 +57,7 @@ impl Default for MetricType {
     derive(CustomResource, JsonSchema)
 )]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, default)]
+#[serde(default)]
 pub struct Rule {
     /// `id` is the unique id
     pub id: String,
