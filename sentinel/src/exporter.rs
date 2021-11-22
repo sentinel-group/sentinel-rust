@@ -10,9 +10,10 @@ use prometheus_exporter::{
     Builder,
 };
 use std::sync::Once;
+use sysinfo::{System, SystemExt};
 
 lazy_static! {
-    static ref HOST_NAME: String = hostname::get().unwrap().into_string().unwrap();
+    static ref HOST_NAME: String = System::new().host_name().unwrap_or_else(|| "<unknown>".to_owned());
     static ref PROCESS_NAME: String = std::env::args().collect::<Vec<String>>()[0].clone();
     static ref PID_STRING: String = format!("{}", std::process::id());
     // crate::core::system_metric

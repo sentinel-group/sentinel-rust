@@ -3,34 +3,28 @@ cfg_exporter! {
     use crate::exporter;
 }
 use lazy_static::lazy_static;
-use psutil::{host, memory, process::Process};
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc, Mutex, Once,
 };
 use std::time;
+use sysinfo::{Process, ProcessExt, System, SystemExt};
 
 lazy_static! {
+    static ref SYSTEM: Arc<Mutex<System>> = Arc::new(Mutex::new(System::new()));
     static ref CURRENT_CPU: Arc<Mutex<f32>> = Arc::new(Mutex::new(0.0));
     static ref CURRENT_MEMORY: AtomicU64 = AtomicU64::new(0);
     static ref CURRENT_LOAD: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     static ref LOAD_ONCE: Once = Once::new();
     static ref CPU_ONCE: Once = Once::new();
     static ref MEMORY_ONCE: Once = Once::new();
-    static ref CURRENT_PROCESS: Arc<Mutex<Process>> =
-        Arc::new(Mutex::new(Process::new(std::process::id()).unwrap()));
     static ref TOTAL_MEMORY_SIZE: u64 = get_total_memory_size();
 }
 
 /// getMemoryStat returns the current machine's memory statistic
 pub fn get_total_memory_size() -> u64 {
-    let vm = memory::virtual_memory();
-    if let Ok(vm) = vm {
-        vm.total()
-    } else {
-        logging::error!("Fail to read Virtual Memory");
-        0
-    }
+    let system = SYSTEM.lock().unwrap();
+    system.total_memory()
 }
 
 pub fn init_memory_collector(mem_interval: u32) {
@@ -39,10 +33,7 @@ pub fn init_memory_collector(mem_interval: u32) {
     }
     MEMORY_ONCE.call_once(move || {
         std::thread::spawn(move || loop {
-            let memory_used_bytes = get_process_memory_stat().unwrap_or_else(|_| {
-                logging::error!("Fail to retrieve and update cpu statistic");
-                0
-            });
+            let memory_used_bytes = get_process_memory_stat();
             #[cfg(feature = "exporter")]
             exporter::set_memory_size(memory_used_bytes);
             CURRENT_MEMORY.store(memory_used_bytes, Ordering::SeqCst);
@@ -53,12 +44,10 @@ pub fn init_memory_collector(mem_interval: u32) {
 
 #[inline]
 // get_process_memory_stat gets current process's memory usage in Bytes
-fn get_process_memory_stat() -> Result<u64> {
-    let process = CURRENT_PROCESS.lock().unwrap();
-    process
-        .memory_info()
-        .map(|res| res.rss())
-        .map_err(|err| Error::msg(format!("{:?}", err)))
+fn get_process_memory_stat() -> u64 {
+    let mut system = SYSTEM.lock().unwrap();
+    let process = system.process(std::process::id() as i32).unwrap();
+    process.memory()
 }
 
 pub fn init_cpu_collector(cpu_interval: u32) {
@@ -67,10 +56,7 @@ pub fn init_cpu_collector(cpu_interval: u32) {
     }
     CPU_ONCE.call_once(move || {
         std::thread::spawn(move || loop {
-            let mut cpu_percent = get_process_cpu_stat().unwrap_or_else(|_| {
-                logging::error!("Fail to retrieve and update cpu statistic");
-                0.0
-            });
+            let mut cpu_percent = get_process_cpu_stat();
             #[cfg(feature = "exporter")]
             exporter::set_cpu_ratio(cpu_percent);
             *CURRENT_CPU.lock().unwrap() = cpu_percent;
@@ -80,11 +66,10 @@ pub fn init_cpu_collector(cpu_interval: u32) {
 }
 
 #[inline]
-fn get_process_cpu_stat() -> Result<f32> {
-    let mut process = CURRENT_PROCESS.lock().unwrap();
-    process
-        .cpu_percent()
-        .map_err(|err| Error::msg(format!("{:?}", err)))
+fn get_process_cpu_stat() -> f32 {
+    let mut system = SYSTEM.lock().unwrap();
+    let process = system.process(std::process::id() as i32).unwrap();
+    process.cpu_usage()
 }
 
 pub fn init_load_collector(load_interval: u32) {
@@ -107,7 +92,8 @@ pub fn init_load_collector(load_interval: u32) {
 
 #[inline]
 fn get_system_load() -> Result<f64> {
-    let avg = host::loadavg()?;
+    let mut system = SYSTEM.lock().unwrap();
+    let avg = system.load_average();
     Ok(avg.one)
 }
 
@@ -191,16 +177,16 @@ mod test {
         });
 
         set_cpu_usage(0.0);
-        let got = get_process_cpu_stat().unwrap();
+        let got = get_process_cpu_stat();
 
         assert!((got - 0.0).abs() < f32::EPSILON);
         utils::sleep_for_ms(20);
-        let got = get_process_cpu_stat().unwrap();
+        let got = get_process_cpu_stat();
 
         assert!(got > 0.0);
         utils::sleep_for_ms(20);
 
-        let got = get_process_cpu_stat().unwrap();
+        let got = get_process_cpu_stat();
         assert!(got > 0.0);
     }
 }

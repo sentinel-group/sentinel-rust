@@ -27,7 +27,7 @@ full = [
 # the `Sentinel` entry is not necessary to use `Arc` with `Send` trait
 async = []
 macros = ["sentinel-macros"]
-exporter = ["prometheus_exporter", "hostname"]
+exporter = ["prometheus_exporter"]
 logger_env = ["env_logger"]
 logger_log4rs = ["log4rs"]
 metric_log = ["directories", "regex"]
@@ -39,9 +39,7 @@ ds_k8s = ["kube", "k8s-openapi", "schemars", "futures"]
 
 [dependencies]
 sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = true }
-# todo: heim (async) or psutil
-# heim = "0.0.11"
-psutil = "3.2.1"
+sysinfo = "0.21.1"
 # enum
 enum-map = "1.1.0"
 # num_enum = "0.5.2"
@@ -60,7 +58,6 @@ log4rs = { version = "1.0.0", optional = true }
 log = "0.4"
 regex = { version = "1.5", optional = true }
 prometheus_exporter = {version="0.8", optional=true}
-hostname = {version="0.3.1", optional=true}
 # todo: simplify encapsulation
 # using getset = "0.1.1"
 lru = "0.6.6"

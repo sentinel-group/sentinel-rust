@@ -18,7 +18,9 @@ use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 
 // An example on k8s dynamic data source.
-// Install minikube in your terminal first. Then run this example.
+// Install minikube in your terminal first. Run `minikube start`, then run this example.
+// Run `kubectl get flowresources -A` will show the flow resources created by this example.
+// Run `kubectl delete flowresources/flow-1` will delete the flow resource created by this example.
 // You will find that QPS number is restricted to 10 at first. But soon, it will be restricted to 1.
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -27,7 +29,7 @@ async fn main() -> Result<()> {
     // Create etcd client and put a key-value pair for new rule.
     let client = Client::try_default().await?;
     let property = "flow-k8s-example";
-    let namespace = "kube-system";
+    let namespace = "default";
     let cr_name = "flowresources";
 
     println!(
