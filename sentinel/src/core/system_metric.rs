@@ -11,19 +11,19 @@ use std::time;
 use sysinfo::{Process, ProcessExt, System, SystemExt};
 
 lazy_static! {
-    static ref SYSTEM: Arc<Mutex<System>> = Arc::new(Mutex::new(System::new()));
+    static ref SYSTEM: Arc<Mutex<System>> = Arc::new(Mutex::new(System::new_all()));
     static ref CURRENT_CPU: Arc<Mutex<f32>> = Arc::new(Mutex::new(0.0));
     static ref CURRENT_MEMORY: AtomicU64 = AtomicU64::new(0);
     static ref CURRENT_LOAD: Arc<Mutex<f64>> = Arc::new(Mutex::new(0.0));
     static ref LOAD_ONCE: Once = Once::new();
     static ref CPU_ONCE: Once = Once::new();
     static ref MEMORY_ONCE: Once = Once::new();
-    static ref TOTAL_MEMORY_SIZE: u64 = get_total_memory_size();
 }
 
-/// getMemoryStat returns the current machine's memory statistic
+/// getMemoryStat returns the current machine's memory statistic in KBytes
 pub fn get_total_memory_size() -> u64 {
-    let system = SYSTEM.lock().unwrap();
+    let mut system = SYSTEM.lock().unwrap();
+    system.refresh_memory();
     system.total_memory()
 }
 
@@ -43,10 +43,12 @@ pub fn init_memory_collector(mem_interval: u32) {
 }
 
 #[inline]
-// get_process_memory_stat gets current process's memory usage in Bytes
+/// get_process_memory_stat gets current process's memory usage in KBytes
 fn get_process_memory_stat() -> u64 {
     let mut system = SYSTEM.lock().unwrap();
-    let process = system.process(std::process::id() as i32).unwrap();
+    let pid = std::process::id() as i32;
+    system.refresh_process(pid);
+    let process = system.process(pid).unwrap();
     process.memory()
 }
 
@@ -68,7 +70,9 @@ pub fn init_cpu_collector(cpu_interval: u32) {
 #[inline]
 fn get_process_cpu_stat() -> f32 {
     let mut system = SYSTEM.lock().unwrap();
-    let process = system.process(std::process::id() as i32).unwrap();
+    let pid = std::process::id() as i32;
+    system.refresh_process(pid);
+    let process = system.process(pid).unwrap();
     process.cpu_usage()
 }
 
@@ -173,19 +177,15 @@ mod test {
             let mut i = 0;
             loop {
                 i += 1;
+                i -= 1;
             }
         });
-
         set_cpu_usage(0.0);
+        assert!((current_cpu_usage() - 0.0) < f32::EPSILON);
+        utils::sleep_for_ms(200);
         let got = get_process_cpu_stat();
-
-        assert!((got - 0.0).abs() < f32::EPSILON);
-        utils::sleep_for_ms(20);
-        let got = get_process_cpu_stat();
-
         assert!(got > 0.0);
-        utils::sleep_for_ms(20);
-
+        utils::sleep_for_ms(200);
         let got = get_process_cpu_stat();
         assert!(got > 0.0);
     }

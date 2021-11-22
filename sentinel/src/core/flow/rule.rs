@@ -513,21 +513,21 @@ mod test {
         rule.mem_low_water_mark = 0;
         assert!(rule.is_valid().is_err());
 
-        rule.mem_low_water_mark = 100 * 1024 * 1024;
-        rule.mem_high_water_mark = 300 * 1024 * 1024;
+        rule.mem_low_water_mark = 100 * 1024;
+        rule.mem_high_water_mark = 300 * 1024;
         assert!(rule.is_valid().is_ok());
 
         rule.mem_high_water_mark = 0;
         assert!(rule.is_valid().is_err());
 
-        rule.mem_high_water_mark = 300 * 1024 * 1024;
+        rule.mem_high_water_mark = 300 * 1024;
         assert!(rule.is_valid().is_ok());
 
-        rule.mem_low_water_mark = 100 * 1024 * 1024;
-        rule.mem_high_water_mark = 30 * 1024 * 1024;
+        rule.mem_low_water_mark = 100 * 1024;
+        rule.mem_high_water_mark = 30 * 1024;
         assert!(rule.is_valid().is_err());
 
-        rule.mem_high_water_mark = 300 * 1024 * 1024;
+        rule.mem_high_water_mark = 300 * 1024;
         assert!(rule.is_valid().is_ok());
     }
 }
