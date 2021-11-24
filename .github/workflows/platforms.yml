@@ -1,5 +1,5 @@
 # Availability-related actions.
-name: CI
+name: Platforms
 
 on:
   push:
@@ -18,11 +18,11 @@ on:
 
 jobs:
   # Depends on all actions that are required for a "successful" CI run.
-  ci:
-    name: CI
+  paltforms:
+    name: Platforms
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

@@ -1,0 +1,18 @@
+# Check security vulnerabilities in dependencies.
+name: Security
+on:
+  push:
+    paths: 
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+  schedule: 
+    - cron: '0 0 * * 0' # Sunday
+jobs:
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

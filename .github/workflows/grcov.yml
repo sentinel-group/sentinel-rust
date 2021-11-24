@@ -16,10 +16,7 @@ jobs:
       env:
         RUSTFLAGS: -Zinstrument-coverage
         LLVM_PROFILE_FILE: "sentinel-rs-%p-%m.profraw"
-        # please add the token from `https://codecov.io/github/sentinel-group/sentinel-rust/` to
-        # `https://github.com/sentinel-group/sentinel-rust/settings/secrets/actions` by `CODECOV_TOKEN`
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} 
-        # RUSTC_BOOTSTRAP: 1  # if use a stable toolchain
       steps:
         - uses: actions/checkout@v2
         - uses: actions-rs/toolchain@v1
@@ -38,5 +35,5 @@ jobs:
           run: cargo test -- --ignored --test-threads=1
         - name: generate lcov.info file 
           run: grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
-        - name: commit codecov
-          run: bash <(curl -s https://codecov.io/bash) -f lcov.info
+        #- name: commit codecov
+          #run: bash <(curl -s https://codecov.io/bash) -f lcov.info
