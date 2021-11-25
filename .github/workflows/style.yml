@@ -1,4 +1,4 @@
-  # Style-related actions, not related to availability.
+# Style-related actions, not related to availability.
 name: Style
 
 on:

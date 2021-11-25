@@ -46,7 +46,13 @@ pub fn init_memory_collector(mem_interval: u32) {
 /// get_process_memory_stat gets current process's memory usage in KBytes
 fn get_process_memory_stat() -> u64 {
     let mut system = SYSTEM.lock().unwrap();
-    let pid = std::process::id() as i32;
+    cfg_if::cfg_if! {
+        if #[cfg(any(windows, target_os = "unknown", target_arch = "wasm32"))]{
+            let pid = std::process::id() as usize;
+        }else{
+            let pid = std::process::id() as i32;
+        }
+    }
     system.refresh_process(pid);
     let process = system.process(pid).unwrap();
     process.memory()
@@ -70,7 +76,13 @@ pub fn init_cpu_collector(cpu_interval: u32) {
 #[inline]
 fn get_process_cpu_stat() -> f32 {
     let mut system = SYSTEM.lock().unwrap();
-    let pid = std::process::id() as i32;
+    cfg_if::cfg_if! {
+        if #[cfg(any(windows, target_os = "unknown", target_arch = "wasm32"))]{
+            let pid = std::process::id() as usize;
+        }else{
+            let pid = std::process::id() as i32;
+        }
+    }
     system.refresh_process(pid);
     let process = system.process(pid).unwrap();
     process.cpu_usage()

@@ -248,7 +248,7 @@ impl<T: MetricTrait> LeapArray<T> {
         res
     }
 
-    // for test
+    #[cfg(test)]
     pub(self) fn get_valid_head(&self) -> Result<Arc<BucketWrap<T>>> {
         let idx = self.time2idx(curr_time_millis() + (self.bucket_len_ms as u64)) as usize;
         let bucket = self.array[idx].clone();
@@ -305,28 +305,17 @@ mod test {
     fn valid_head() {
         let sample_count = 10;
         let interval_ms = 1000;
-        let bucket_len_ms = 100;
+        let bucket_len_ms = (interval_ms / sample_count) as u64;
         let mut arr = LeapArrayAtomicU64::new(sample_count, interval_ms).unwrap();
 
         let window = time::Duration::from_millis(bucket_len_ms);
-        {
-            let expected1 = arr.current_bucket().unwrap();
-            expected1.value().store(1, Ordering::SeqCst);
-        }
-        thread::sleep(window);
-        {
-            let expected2 = arr.current_bucket().unwrap();
-            expected2.value().store(2, Ordering::SeqCst);
-        }
-        for i in 0..((sample_count as u64) - 2) {
+        for i in 1..=(sample_count as u64) {
             thread::sleep(window);
             arr.current_bucket()
                 .unwrap()
                 .value()
-                .store(i + 3, Ordering::SeqCst);
+                .store(i, Ordering::SeqCst);
         }
-        let head = arr.get_valid_head().unwrap();
-        assert_eq!(1, head.value().load(Ordering::SeqCst));
         thread::sleep(window);
         let head = arr.get_valid_head().unwrap();
         assert_eq!(2, head.value().load(Ordering::SeqCst));
