@@ -194,11 +194,8 @@ mod test {
         });
         set_cpu_usage(0.0);
         assert!((current_cpu_usage() - 0.0) < f32::EPSILON);
-        utils::sleep_for_ms(200);
-        let got = get_process_cpu_stat();
-        assert!(got > 0.0);
-        utils::sleep_for_ms(200);
-        let got = get_process_cpu_stat();
-        assert!(got > 0.0);
+        init_cpu_collector(50);
+        utils::sleep_for_ms(300);
+        assert!(current_cpu_usage() > 0.0);
     }
 }

@@ -37,7 +37,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-ci-${{ env.cache-name }}-
+            ${{ runner.os }}-cargo-ci-
 
       - name: Check
         uses: actions-rs/cargo@v1

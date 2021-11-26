@@ -12,6 +12,7 @@ on:
 jobs:
   coverage:
       name: Coverage
+      if: ${{ github.actor != 'dependabot[bot]' }}
       runs-on: ubuntu-latest
       env:
         RUSTFLAGS: -Zinstrument-coverage
@@ -23,6 +24,18 @@ jobs:
           with:
             toolchain: nightly
             default: true
+        - uses: actions/cache@v2
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+            key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.lock') }}
+            restore-keys: |
+              ${{ runner.os }}-cargo-ci-${{ env.cache-name }}-
+              ${{ runner.os }}-cargo-ci-
         - name: install grcov
           run: cargo install grcov
         - name: install llvm tools
@@ -35,5 +48,5 @@ jobs:
           run: cargo test -- --ignored --test-threads=1
         - name: generate lcov.info file 
           run: grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
-        #- name: commit codecov
-          #run: bash <(curl -s https://codecov.io/bash) -f lcov.info
+        - name: commit codecov
+          run: bash <(curl -s https://codecov.io/bash) -f lcov.info
