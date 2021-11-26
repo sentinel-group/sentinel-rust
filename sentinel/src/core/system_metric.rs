@@ -70,7 +70,10 @@ pub fn init_cpu_collector(cpu_interval: u32) {
             *CURRENT_CPU.lock().unwrap() = cpu_percent;
             utils::sleep_for_ms(cpu_interval as u64);
         });
-    })
+    });
+    // Windows needs more time to start the collector thread
+    #[cfg(windows)]
+    utils::sleep_for_ms(400);
 }
 
 #[inline]

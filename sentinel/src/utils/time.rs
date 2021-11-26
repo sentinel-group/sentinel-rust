@@ -1,13 +1,9 @@
 use lazy_static::lazy_static;
-use time::{Duration, OffsetDateTime};
+use time::{macros::format_description, Duration, OffsetDateTime};
 
 lazy_static! {
-    static ref UNIX_TIME_UNIT_OFFSET: i128 =
-        (Duration::millisecond() / Duration::nanosecond()) as i128;
+    static ref UNIX_TIME_UNIT_OFFSET: i128 = (Duration::MILLISECOND / Duration::NANOSECOND) as i128;
 }
-
-const TIME_FORMAT: &str = "%F %T";
-const DATE_FORMAT: &str = "%F";
 
 #[inline]
 pub fn unix_time_unit_offset() -> u64 {
@@ -32,19 +28,25 @@ fn cal_curr_time_millis() -> u64 {
 #[inline]
 pub fn format_time_millis(ts_millis: u64) -> String {
     OffsetDateTime::from_unix_timestamp_nanos(milli2nano(ts_millis))
-        .format(time::Format::Custom(TIME_FORMAT.into()))
+        .unwrap()
+        .format(format_description!("[hour]:[minute]:[second]"))
+        .unwrap()
 }
 
 #[inline]
 pub fn format_date(ts_millis: u64) -> String {
     OffsetDateTime::from_unix_timestamp_nanos(milli2nano(ts_millis))
-        .format(time::Format::Custom(DATE_FORMAT.into()))
+        .unwrap()
+        .format(format_description!("[hour]:[minute]:[second]"))
+        .unwrap()
 }
 
 #[inline]
 pub fn format_time_nanos_curr() -> String {
     OffsetDateTime::from_unix_timestamp_nanos(curr_time_nanos())
-        .format(time::Format::Custom(TIME_FORMAT.into()))
+        .unwrap()
+        .format(format_description!("[hour]:[minute]:[second]"))
+        .unwrap()
 }
 
 pub fn curr_time_millis() -> u64 {

@@ -18,9 +18,9 @@ fmt:
 unit: unit_single unit_parallel
 
 unit_single:
-	cargo test -- --ignored --test-threads=1
+	cargo test -- --ignored --test-threads=1 --nocapture
 
 unit_parallel:
-	cargo test
+	cargo test -- --nocapture
 
 .PHONY: clean clippy doc fmt unit unit_single unit_parallel check
