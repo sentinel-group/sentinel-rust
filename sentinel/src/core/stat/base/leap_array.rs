@@ -250,10 +250,8 @@ impl<T: MetricTrait> LeapArray<T> {
 
     #[cfg(test)]
     pub(self) fn get_valid_head(&self) -> Result<Arc<BucketWrap<T>>> {
-        println!("curr time: {}", curr_time_millis());
         let idx = self.time2idx(curr_time_millis() + (self.bucket_len_ms as u64)) as usize;
         let bucket = self.array[idx].clone();
-        println!("{:?}", bucket);
         if bucket.is_deprecated(curr_time_millis(), self.interval_ms as u64) {
             Err(Error::msg("Cannot get a valid head"))
         } else {
@@ -319,12 +317,10 @@ mod test {
         let window = time::Duration::from_millis(bucket_len_ms);
         for i in 1..=(sample_count as u64) {
             thread::sleep(window);
-            println!("{}: curr time: {}", i, curr_time_millis());
             arr.current_bucket()
                 .unwrap()
                 .value()
                 .store(i, Ordering::SeqCst);
-            println!("{}: {:?}", i, arr.current_bucket());
         }
         thread::sleep(window);
         let head = arr.get_valid_head().unwrap();

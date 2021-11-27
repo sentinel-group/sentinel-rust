@@ -4,7 +4,9 @@ mod searcher;
 mod writer;
 
 pub use aggregator::*;
+// `reader` is utilized in `searcher` for metric deserialization.
 pub use reader::*;
+// Currently searcher haven't been utilized. But it intends to provide search ability for metric with index files generated in `writer`.
 pub use searcher::*;
 pub use writer::*;
 
@@ -50,7 +52,7 @@ pub trait MetricSearcher {
 }
 
 // Generate the metric file name from the service name.
-fn form_metric_filename(service_name: &str, with_pid: bool) -> PathBuf {
+fn form_metric_filename(service_name: &str, with_pid: bool) -> String {
     let dot = ".";
     let separator = "-";
     let mut filename = String::new();
@@ -62,12 +64,12 @@ fn form_metric_filename(service_name: &str, with_pid: bool) -> PathBuf {
         let pid = std::process::id();
         filename = format!("{}.pid{}", filename, pid);
     }
-    PathBuf::from(filename)
+    filename
 }
 
 // Generate the metric index filename from the metric log filename.
-fn form_metric_idx_filename(metric_filename: &Path) -> PathBuf {
-    metric_filename.join(METRIC_IDX_SUFFIX)
+fn form_metric_idx_filename(metric_filename: &str) -> String {
+    format!("{}{}", metric_filename, METRIC_IDX_SUFFIX)
 }
 
 fn filename_matches(filename: &str, base_filename: &str) -> bool {
@@ -88,16 +90,19 @@ fn list_metric_files_conditional(
     let mut arr = Vec::new();
     for f in dir {
         let f = f?.path();
-        if f.is_dir() {
-            continue;
-        }
-        let name = f.to_str().unwrap();
-        if predicate(name, file_pattern.to_str().unwrap())
-            && !name.ends_with(METRIC_IDX_SUFFIX)
-            && !name.ends_with(FILE_LOCK_SUFFIX)
-        {
-            // Put the absolute path into the slice.
-            arr.push(Path::new(base_dir).join(name));
+        match f.file_name() {
+            Some(name) => {
+                if let Some(name) = name.to_str() {
+                    if predicate(name, file_pattern.to_str().unwrap())
+                        && !name.ends_with(METRIC_IDX_SUFFIX)
+                        && !name.ends_with(FILE_LOCK_SUFFIX)
+                    {
+                        // Put the absolute path into the slice.
+                        arr.push(Path::new(base_dir).join(name));
+                    }
+                }
+            }
+            None => continue,
         }
     }
     if arr.len() > 1 {
@@ -106,13 +111,14 @@ fn list_metric_files_conditional(
     Ok(arr)
 }
 
-/// List metrics files
-/// baseDir: the directory of metrics files
-/// filePattern: metric file pattern
+/// List metrics files according to `base_dir` (the directory of metrics files) and
+/// `file_pattern` (metric file pattern).
 fn list_metric_files(base_dir: &PathBuf, file_pattern: &PathBuf) -> Result<Vec<PathBuf>> {
     return list_metric_files_conditional(base_dir, file_pattern, filename_matches);
 }
 
+/// Sort the metric files by their date time.
+/// This function is used to remove the deprecated files, or create a new file in order.
 fn filename_comparator(file1: &PathBuf, file2: &PathBuf) -> Ordering {
     let name1 = file1.file_name().unwrap().to_str().unwrap();
     let name2 = file2.file_name().unwrap().to_str().unwrap();
@@ -133,9 +139,5 @@ fn filename_comparator(file1: &PathBuf, file2: &PathBuf) -> Ordering {
     }
 
     // same date, compare the file number
-    match name1.len().cmp(&name2.len()) {
-        Ordering::Equal => name1.cmp(&name2),
-        Ordering::Less => Ordering::Less,
-        Ordering::Greater => Ordering::Greater,
-    }
+    name1.cmp(&name2)
 }

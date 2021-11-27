@@ -34,10 +34,11 @@ pub fn format_time_millis(ts_millis: u64) -> String {
 }
 
 #[inline]
+/// The format is corresponding to `crate::log::metric::METRIC_FILE_PATTERN`
 pub fn format_date(ts_millis: u64) -> String {
     OffsetDateTime::from_unix_timestamp_nanos(milli2nano(ts_millis))
         .unwrap()
-        .format(format_description!("[hour]:[minute]:[second]"))
+        .format(format_description!("[year]-[month]-[day]"))
         .unwrap()
 }
 

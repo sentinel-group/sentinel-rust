@@ -73,6 +73,8 @@ impl DefaultMetricLogWriter {
         Ok(())
     }
 
+    /// Check whether the file size is exceeded `config::SINGLE_FILE_MAX_SIZE`.
+    /// If so, roll to the next file.
     fn roll_file_size_exceeded(&mut self, time: u64) -> Result<()> {
         if self.cur_metric_file.is_none() {
             return Ok(());
@@ -91,7 +93,11 @@ impl DefaultMetricLogWriter {
         Ok(())
     }
 
+    /// Close last file and open a new one.
     fn roll_to_next_file(&mut self, time: u64) -> Result<()> {
+        // pay attention, if the computation name of the next file is failed,
+        // the old file won't be closed and metric logs would be append to the old file.
+        // And it may also lead to failure when deleting deprecated metric logs, since it also depnds on this .
         let new_filename = self.next_file_name_of_time(time)?;
         self.close_cur_and_new_file(new_filename)
     }
@@ -105,13 +111,15 @@ impl DefaultMetricLogWriter {
         Ok(())
     }
 
+    /// Remove the outdated metric log files and corresponding index files,
+    /// incase that log files accumulate exceedng the `config::MAX_FILE_AMOUNT`.
     fn remove_deprecated_files(&self) -> Result<()> {
         let files = list_metric_files(&self.base_dir, &self.base_filename)?;
         if files.len() >= self.max_file_amount {
             let amount_to_remove = files.len() - self.max_file_amount + 1;
             for i in 0..amount_to_remove {
                 let filename = &files[i];
-                let idx_filename = form_metric_idx_filename(&filename);
+                let idx_filename = form_metric_idx_filename(filename.to_str().unwrap());
                 match fs::remove_file(filename) {
                     Ok(_) => {
                         logging::info!("[MetricWriter] Metric log file removed in DefaultMetricLogWriter.remove_deprecated_files(), filename: {:?}", filename);
@@ -133,6 +141,8 @@ impl DefaultMetricLogWriter {
         Ok(())
     }
 
+    /// Compute the next file name of the given time. Find the lastest file with the same prefix pattern and add increase the order.
+    /// And never use `fmt::Debug` to print the file name (either `String/&str` or `PathBuf/&Path`), since it will contain `\"`.
     fn next_file_name_of_time(&self, time: u64) -> Result<String> {
         let date_str = utils::format_date(time);
         let file_pattern = self.base_filename.to_str().unwrap().to_owned() + "." + &date_str;
@@ -144,13 +154,19 @@ impl DefaultMetricLogWriter {
         if list.len() == 0 {
             return Ok(self.base_dir.to_str().unwrap().to_owned() + &file_pattern);
         }
+        // Find files with the same prefix pattern, have to add the order to separate files.
         let last = &list[list.len() - 1];
         let mut n = 0;
         let items = last.to_str().unwrap().split(".").collect::<Vec<&str>>();
         if items.len() > 0 {
-            n = str::parse::<u32>(items[items.len() - 1])?;
+            n = str::parse::<u32>(items[items.len() - 1]).unwrap_or(0);
         }
-        return Ok(format!("{:?}{}.{}", self.base_dir, file_pattern, n + 1));
+        return Ok(format!(
+            "{}{}.{}",
+            self.base_dir.to_str().unwrap().to_owned(),
+            file_pattern,
+            n + 1
+        ));
     }
 
     fn close_cur_and_new_file(&mut self, filename: String) -> Result<()> {
@@ -169,7 +185,7 @@ impl DefaultMetricLogWriter {
             filename
         );
 
-        let idx_file = form_metric_idx_filename(Path::new(&filename));
+        let idx_file = form_metric_idx_filename(&filename);
         let mif = fs::File::create(&idx_file)?;
         logging::info!(
             "[MetricWriter] New metric log index file created, idx_file {:?}",
@@ -199,11 +215,11 @@ impl DefaultMetricLogWriter {
     }
 
     fn new_of_app(
-        max_size: u64,
+        max_single_size: u64,
         max_file_amount: usize,
         app_name: String,
     ) -> Result<DefaultMetricLogWriter> {
-        if max_size == 0 || max_file_amount == 0 {
+        if max_single_size == 0 || max_file_amount == 0 {
             return Err(Error::msg("invalid max_size or max_file_amount"));
         }
         let mut base_dir = PathBuf::from(config::log_metrc_dir());
@@ -212,7 +228,7 @@ impl DefaultMetricLogWriter {
         let mut writer = DefaultMetricLogWriter {
             base_dir,
             base_filename,
-            max_single_size: max_size,
+            max_single_size,
             max_file_amount,
             latest_op_sec: 0,
             ..Default::default()

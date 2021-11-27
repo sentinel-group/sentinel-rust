@@ -99,7 +99,8 @@ impl DefaultMetricSearcher {
             let filename = &filenames[i];
             // Retrieve the start offset that is valid for given condition.
             // If offset = -1, it indicates that current file (i) does not satisfy the condition.
-            let offset = self.find_offset_to_start(&filename, begin_time_ms, offset_start);
+            let offset =
+                self.find_offset_to_start(filename.to_str().unwrap(), begin_time_ms, offset_start);
             match offset {
                 Ok(offset) => {
                     // Read metric items from the offset of current file (number i).
@@ -136,7 +137,7 @@ impl DefaultMetricSearcher {
 
     fn find_offset_to_start(
         &self,
-        filename: &Path,
+        filename: &str,
         begin_time_ms: u64,
         last_pos: SeekFrom,
     ) -> Result<u32> {
