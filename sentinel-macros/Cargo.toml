@@ -20,7 +20,7 @@ keywords = ["microservices", "flow-control", "sentinel", "reliability"]
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0.28"
+proc-macro2 = "1.0.33"
 quote = "1.0.9"
 syn = { version = "1.0.74", features = ["full"] }
 darling = "0.13.0"
