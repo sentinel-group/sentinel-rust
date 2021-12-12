@@ -73,7 +73,7 @@ schemars = {version="0.8.8", optional=true}
 
 [dev-dependencies]
 # criterion = "0.3"
-mockall = "0.10.1"
+mockall = "0.11.0"
 rand = "0.8.4"
 tokio = { version = "1", features = ["full"] }
 
