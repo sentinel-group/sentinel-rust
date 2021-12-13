@@ -1,5 +1,5 @@
 use super::*;
-use crate::{base::SentinelRule, logging, system_metric, Error, Result};
+use crate::{base::SentinelRule, logging, system_metric, Error};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
@@ -94,7 +94,7 @@ impl SentinelRule for Rule {
         self.resource.clone()
     }
 
-    fn is_valid(&self) -> Result<()> {
+    fn is_valid(&self) -> crate::Result<()> {
         if self.resource.len() == 0 {
             return Err(Error::msg("empty resource name"));
         }
