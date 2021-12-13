@@ -59,7 +59,6 @@ pub(crate) fn process_rule(resource_name: &str, rule: &Params) -> TokenStream2 {
             id: String::from(#resource_name), // incase of duplication
             resource: String::from(#resource_name),
             ref_resource: String::from(#resource_name),
-            relation_strategy: flow::RelationStrategy::CurrentResource,
             #strategy
             #optional_params
             ..Default::default()
@@ -83,6 +82,13 @@ fn parse_strategy(cal: &Option<String>, ctrl: &Option<String>) -> TokenStream2 {
         strategy.extend(match &val[..] {
             "Reject" => quote! {control_strategy: flow::ControlStrategy::Reject,},
             "Throttling" => quote! {control_strategy: flow::ControlStrategy::Throttling,},
+            _ => quote! {},
+        })
+    }
+    if let Some(val) = ctrl {
+        strategy.extend(match &val[..] {
+            "Current" => quote! {relation_strategy: flow::RelationStrategy::Current,},
+            "Associated" => quote! {relation_strategy: flow::RelationStrategy::Associated,},
             _ => quote! {},
         })
     }

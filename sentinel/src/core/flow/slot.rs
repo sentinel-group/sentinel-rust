@@ -91,7 +91,7 @@ fn can_pass_check(
 ) -> TokenResult {
     let actual_node = {
         match tc.rule().relation_strategy {
-            RelationStrategy::AssociatedResource => {
+            RelationStrategy::Associated => {
                 let node = stat::get_resource_node(&tc.rule().ref_resource).unwrap();
                 let node = node.as_any_arc();
                 let node = node.downcast_ref::<Arc<dyn StatNode>>().unwrap();
@@ -147,7 +147,7 @@ mod test {
             // Use standalone statistic, using single-bucket-sliding-windows
             stat_interval_ms: 20000,
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             ..Default::default()
         });
         load_rules(vec![r1]);

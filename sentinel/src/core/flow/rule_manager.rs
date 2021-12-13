@@ -362,7 +362,7 @@ fn generate_stat_for(rule: &Arc<Rule>) -> Result<Arc<StandaloneStat>> {
     let interval_ms = rule.stat_interval_ms;
 
     let res_node: Arc<ResourceNode> = {
-        if rule.relation_strategy == RelationStrategy::AssociatedResource {
+        if rule.relation_strategy == RelationStrategy::Associated {
             // use associated statistic
             stat::get_or_create_resource_node(&rule.ref_resource, &ResourceType::Common)
         } else {
@@ -704,7 +704,7 @@ mod test {
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             ..Default::default()
         });
         let bound_stat = generate_stat_for(&r1).unwrap();
@@ -723,7 +723,7 @@ mod test {
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 5000,
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             ..Default::default()
         });
         let bound_stat = generate_stat_for(&r1).unwrap();
@@ -744,7 +744,7 @@ mod test {
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 50000,
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             ..Default::default()
         });
 
@@ -760,7 +760,7 @@ mod test {
         let r1 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             ..Default::default()
@@ -769,7 +769,7 @@ mod test {
         let r2 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 200.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Throttling,
             max_queueing_time_ms: 10,
@@ -809,7 +809,7 @@ mod test {
         let r0 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Throttling,
             stat_interval_ms: 1000,
@@ -819,7 +819,7 @@ mod test {
         let r1 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -829,7 +829,7 @@ mod test {
         let r2 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 200.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             max_queueing_time_ms: 10,
@@ -840,7 +840,7 @@ mod test {
         let r3 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 300.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             max_queueing_time_ms: 10,
@@ -851,7 +851,7 @@ mod test {
         let r4 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 400.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             max_queueing_time_ms: 10,
@@ -911,7 +911,7 @@ mod test {
         let r12 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 300.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -921,7 +921,7 @@ mod test {
         let r22 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 400.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             max_queueing_time_ms: 10,
@@ -932,7 +932,7 @@ mod test {
         let r32 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 300.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             max_queueing_time_ms: 10,
@@ -943,7 +943,7 @@ mod test {
         let r42 = Arc::new(Rule {
             resource: "abc1".into(),
             threshold: 4000.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             max_queueing_time_ms: 10,

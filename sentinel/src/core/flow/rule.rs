@@ -15,15 +15,15 @@ pub type Id = String;
 #[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum RelationStrategy {
-    /// CurrentResource means flow control by current resource directly.
-    CurrentResource,
-    /// AssociatedResource means flow control by the associated resource rather than current resource.
-    AssociatedResource,
+    /// Current means flow control by current resource directly.
+    Current,
+    /// Associated means flow control by the associated resource rather than current resource.
+    Associated,
 }
 
 impl Default for RelationStrategy {
     fn default() -> RelationStrategy {
-        RelationStrategy::CurrentResource
+        RelationStrategy::Current
     }
 }
 
@@ -166,10 +166,8 @@ impl SentinelRule for Rule {
         if self.threshold < 0.0 {
             return Err(Error::msg("negative threshold"));
         }
-        if self.relation_strategy == RelationStrategy::AssociatedResource
-            && self.ref_resource.len() == 0
-        {
-            return Err(Error::msg("ref_resource must be non empty when relation_strategy is RelationStrategy::AssociatedResource"));
+        if self.relation_strategy == RelationStrategy::Associated && self.ref_resource.len() == 0 {
+            return Err(Error::msg("ref_resource must be non empty when relation_strategy is RelationStrategy::Associated"));
         }
         if self.calculate_strategy == CalculateStrategy::WarmUp {
             if self.warm_up_period_sec == 0 {
@@ -252,7 +250,7 @@ mod test {
         let r1 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -262,7 +260,7 @@ mod test {
         let r2 = Rule {
             resource: "abc1".into(),
             threshold: 200.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Throttling,
             max_queueing_time_ms: 10,
@@ -273,7 +271,7 @@ mod test {
         let r3 = Rule {
             resource: "abc1".into(),
             threshold: 300.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::WarmUp,
             control_strategy: ControlStrategy::Reject,
             max_queueing_time_ms: 10,
@@ -284,7 +282,7 @@ mod test {
         let r4 = Rule {
             resource: "abc1".into(),
             threshold: 400.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::WarmUp,
             control_strategy: ControlStrategy::Throttling,
             max_queueing_time_ms: 10,
@@ -304,7 +302,7 @@ mod test {
         let r11 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -313,7 +311,7 @@ mod test {
         let r12 = Rule {
             resource: "abc2".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -325,7 +323,7 @@ mod test {
         let r21 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -334,7 +332,7 @@ mod test {
         let r22 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::AssociatedResource,
+            relation_strategy: RelationStrategy::Associated,
             ref_resource: "abc3".into(),
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
@@ -347,7 +345,7 @@ mod test {
         let r31 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::AssociatedResource,
+            relation_strategy: RelationStrategy::Associated,
             ref_resource: "abc3".into(),
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
@@ -357,7 +355,7 @@ mod test {
         let r32 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::AssociatedResource,
+            relation_strategy: RelationStrategy::Associated,
             ref_resource: "abc4".into(),
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
@@ -370,7 +368,7 @@ mod test {
         let r41 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -379,7 +377,7 @@ mod test {
         let r42 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 2000,
@@ -391,7 +389,7 @@ mod test {
         let r51 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -400,7 +398,7 @@ mod test {
         let r52 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Throttling,
             stat_interval_ms: 1000,
@@ -412,7 +410,7 @@ mod test {
         let r61 = Rule {
             resource: "abc1".into(),
             threshold: 100.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
@@ -421,7 +419,7 @@ mod test {
         let r62 = Rule {
             resource: "abc1".into(),
             threshold: 200.0,
-            relation_strategy: RelationStrategy::CurrentResource,
+            relation_strategy: RelationStrategy::Current,
             calculate_strategy: CalculateStrategy::Direct,
             control_strategy: ControlStrategy::Reject,
             stat_interval_ms: 1000,
