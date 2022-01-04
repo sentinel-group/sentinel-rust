@@ -30,6 +30,6 @@ Test Sentienl:
 $ ./proxy_envoy_test.sh 
 ```
 
-You will get lots of `Access forbidden.` since QPS (Query/Second) is much larger than the specified threshold 5. 
+You will get lots of `Too Many Requests`, since QPS (Query/Second) is much larger than the specified threshold 5. 
 In this scripts, we visit the cluster 10000 times. You can visit [Envoy Admin Page](http://localhost:18001/stats) to view `*cx_total` statistics on each server.
 Increase threshold number, you can get less 429 response.
