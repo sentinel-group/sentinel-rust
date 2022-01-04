@@ -70,10 +70,10 @@ fn main() {
                     println!("{}: passed", sentinel_rs::utils::curr_time_millis());
                     sleep_for_ms(10);
                     if thread_rng().gen::<f32>() > 0.6 {
-                        entry.borrow().set_err(Error::msg("Example"));
+                        entry.set_err(Error::msg("Example"));
                     }
                     // Be sure the entry is exited finally.
-                    entry.borrow().exit()
+                    entry.exit()
                 } else {
                     // Blocked. We could get the block reason from the BlockError.
                     sleep_for_ms(rand::random::<u64>() % 10);

@@ -1,7 +1,8 @@
 use super::global_slot_chain;
 use crate::base::{
-    EntryContext, EntryStrongPtr, ParamsList, ParamsMap, ResourceType, ResourceWrapper,
-    ResultStatus, SentinelEntry, SentinelInput, SlotChain, TokenResult, TrafficType,
+    EntryContext, EntryStrongPtr, EntryWeakPtr, ParamsList, ParamsMap, ResourceType,
+    ResourceWrapper, ResultStatus, SentinelEntry, SentinelInput, SlotChain, TokenResult,
+    TrafficType,
 };
 use crate::utils::format_time_nanos_curr;
 use crate::{Error, Result};
@@ -83,7 +84,7 @@ impl EntryBuilder {
                     Arc::clone(&ctx),
                     Arc::clone(&self.slot_chain),
                 )));
-            ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
+            ctx.write().unwrap().set_entry(EntryWeakPtr(Arc::downgrade(&entry)));
 
             let r = self.slot_chain.entry(Arc::clone(&ctx));
             if *r.status() == ResultStatus::Blocked {
@@ -95,7 +96,7 @@ impl EntryBuilder {
                 entry.read().unwrap().exit();
                 Err(Error::msg(r.to_string()))
             } else {
-                Ok(entry)
+                Ok(EntryWeakPtr(entry))
             }
         }
     }
@@ -138,7 +139,7 @@ impl EntryBuilder {
                 entry.borrow().exit();
                 Err(Error::msg(r.to_string()))
             } else {
-                Ok(entry)
+                Ok(EntryStrongPtr::new(entry))
             }
         }
     }
@@ -180,10 +181,7 @@ impl EntryBuilder {
 }
 
 pub fn trace_error(entry: &EntryStrongPtr, err: Error) {
-    cfg_if_async!(
-        entry.read().unwrap().set_err(err),
-        entry.borrow().set_err(err)
-    );
+    entry.set_err(err);
 }
 
 #[cfg(test)]
@@ -195,6 +193,7 @@ mod test {
     };
     use mockall::predicate::*;
     use mockall::*;
+    use rand::distributions::uniform::SampleBorrow;
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -251,8 +250,8 @@ mod test {
 
         let builder = EntryBuilder::new("abc".into()).with_slot_chain(sc);
         let entry = builder.build().unwrap();
-        assert_eq!("abc", entry.borrow().context().borrow().resource().name());
-        entry.borrow().exit();
+        assert_eq!("abc", entry.context().borrow().resource().name());
+        entry.exit();
     }
 
     #[test]

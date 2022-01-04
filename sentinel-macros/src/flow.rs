@@ -41,7 +41,11 @@ pub(crate) struct Params {
 }
 
 pub(crate) fn process_rule(resource_name: &str, rule: &Params) -> TokenStream2 {
-    let strategy = parse_strategy(&rule.calculate_strategy, &rule.control_strategy);
+    let strategy = parse_strategy(
+        &rule.calculate_strategy,
+        &rule.control_strategy,
+        &rule.relation_strategy,
+    );
     let optional_params = expand_optional_params!(
         rule,
         threshold,
@@ -66,7 +70,11 @@ pub(crate) fn process_rule(resource_name: &str, rule: &Params) -> TokenStream2 {
     }
 }
 
-fn parse_strategy(cal: &Option<String>, ctrl: &Option<String>) -> TokenStream2 {
+fn parse_strategy(
+    cal: &Option<String>,
+    ctrl: &Option<String>,
+    rel: &Option<String>,
+) -> TokenStream2 {
     let mut strategy = TokenStream2::new();
     if let Some(val) = cal {
         strategy.extend(match &val[..] {
@@ -85,7 +93,7 @@ fn parse_strategy(cal: &Option<String>, ctrl: &Option<String>) -> TokenStream2 {
             _ => quote! {},
         })
     }
-    if let Some(val) = ctrl {
+    if let Some(val) = rel {
         strategy.extend(match &val[..] {
             "Current" => quote! {relation_strategy: flow::RelationStrategy::Current,},
             "Associated" => quote! {relation_strategy: flow::RelationStrategy::Associated,},

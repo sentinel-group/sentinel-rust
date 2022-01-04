@@ -66,7 +66,6 @@ macro_rules! wrap_sentinel {
             #(#attrs)* #vis #sig {
                 use sentinel_rs::{base, $name, EntryBuilder};
                 use std::sync::Arc;
-                use sentinel_rs::cfg_if_async;
 
                 // Load sentinel rules
                 $name::append_rule(Arc::new(#rule));
@@ -79,7 +78,7 @@ macro_rules! wrap_sentinel {
                         // Passed, wrap the logic here.
                         let result = {#(#stmts)*};
                         // Be sure the entry is exited finally.
-                        cfg_if_async!(entry.read().unwrap().exit(), entry.borrow().exit());
+                        entry.exit();
                         Ok(result)
                     },
                     Err(err) => {

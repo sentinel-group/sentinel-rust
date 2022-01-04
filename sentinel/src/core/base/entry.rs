@@ -8,14 +8,16 @@ type ExitHandler = Box<dyn Send + Sync + Fn(&SentinelEntry, ContextPtr) -> Resul
 
 cfg_async! {
     use std::sync::{RwLock, Weak};
-    pub type EntryStrongPtr = Arc<RwLock<SentinelEntry>>;
+    type EntryStrongPtrInner = Arc<RwLock<SentinelEntry>>;
+    pub struct EntryStrongPtr(EntryStrongPtrInner);
     pub type EntryWeakPtr = Weak<RwLock<SentinelEntry>>;
 }
 
 cfg_not_async! {
     use std::rc::{Rc,Weak};
     use std::cell::RefCell;
-    pub type EntryStrongPtr = Rc<RefCell<SentinelEntry>>;
+    type EntryStrongPtrInner = Rc<RefCell<SentinelEntry>>;
+    pub struct EntryStrongPtr(EntryStrongPtrInner);
     pub type EntryWeakPtr = Weak<RefCell<SentinelEntry>>;
 }
 
@@ -65,6 +67,31 @@ impl SentinelEntry {
                 .unwrap();
         }
         self.sc.exit(self.ctx.clone()); // Rc/Arc clone
+    }
+}
+
+impl EntryStrongPtr {
+    pub fn new(entry: EntryStrongPtrInner) -> EntryStrongPtr {
+        EntryStrongPtr(entry)
+    }
+
+    pub fn context(&self) -> ContextPtr {
+        cfg_if_async!(
+            let entry = self.0.read().unwrap(),
+            let entry = self.0.borrow()
+        );
+        entry.context().clone()
+    }
+
+    pub fn set_err(&self, err: Error) {
+        cfg_if_async!(
+            self.0.read().unwrap().set_err(err),
+            self.0.borrow().set_err(err)
+        );
+    }
+
+    pub fn exit(&self) {
+        cfg_if_async!(self.0.read().unwrap().exit(), self.0.borrow().exit());
     }
 }
 
