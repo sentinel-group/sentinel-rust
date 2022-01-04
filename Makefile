@@ -1,7 +1,7 @@
 SRC_FILES := $(shell find . -name '*.rs' -print)
 
 check:
-	cargo check
+	cargo check --all-features
 
 clippy:
 	cargo clippy --all-targets

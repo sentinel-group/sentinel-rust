@@ -84,7 +84,7 @@ impl EntryBuilder {
                     Arc::clone(&ctx),
                     Arc::clone(&self.slot_chain),
                 )));
-            ctx.write().unwrap().set_entry(EntryWeakPtr(Arc::downgrade(&entry)));
+            ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
 
             let r = self.slot_chain.entry(Arc::clone(&ctx));
             if *r.status() == ResultStatus::Blocked {
@@ -96,7 +96,7 @@ impl EntryBuilder {
                 entry.read().unwrap().exit();
                 Err(Error::msg(r.to_string()))
             } else {
-                Ok(EntryWeakPtr(entry))
+                Ok(EntryStrongPtr::new(entry))
             }
         }
     }
