@@ -18,14 +18,14 @@ fmt:
 unit: unit_single unit_parallel
 
 unit_single:
-	cargo test -- --ignored --test-threads=1 --nocapture
+	cargo test --workspace --exclude sentinel-envoy-module -- --ignored --test-threads=1 --nocapture
 
 unit_parallel:
-	cargo test -- --nocapture
+	cargo test --workspace --exclude sentinel-envoy-module -- --nocapture
 
 envoy:
 	cargo build --target wasm32-unknown-unknown --release -p sentinel-envoy-module
 	cd examples/proxy/envoy
-	docker-compose up
+	docker-compose up --build
 
 .PHONY: clean clippy doc fmt unit unit_single unit_parallel check

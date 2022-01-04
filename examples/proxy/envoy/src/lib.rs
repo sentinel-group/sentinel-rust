@@ -1,5 +1,4 @@
 use log::trace;
-use primes::is_prime;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
 use sentinel_macros::flow;

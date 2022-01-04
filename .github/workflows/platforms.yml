@@ -48,9 +48,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: test
+            args: --workspace --exclude sentinel-envoy-module 
 
       - name: Ignored Unit Tests
         uses: actions-rs/cargo@v1
         with:
             command: test
-            args: -- --ignored --test-threads=1
+            args: --workspace --exclude sentinel-envoy-module -- --ignored --test-threads=1
