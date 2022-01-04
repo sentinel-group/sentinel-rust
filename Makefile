@@ -23,4 +23,9 @@ unit_single:
 unit_parallel:
 	cargo test -- --nocapture
 
+envoy:
+	cargo build --target wasm32-unknown-unknown --release -p sentinel-envoy-module
+	cd examples/proxy/envoy
+	docker-compose up
+
 .PHONY: clean clippy doc fmt unit unit_single unit_parallel check

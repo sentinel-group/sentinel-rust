@@ -19,10 +19,8 @@ exclude = ["/tests"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
-full = [
-  "macros",
-]
+default = ["proxy_envoy"]
+full = ["macros"]
 # If the sentinel is not utilized in asynchronous scenarios, 
 # the `Sentinel` entry is not necessary to use `Arc` with `Send` trait
 async = []
@@ -36,6 +34,8 @@ metric_log = ["directories", "regex"]
 ds_etcdv3 = ["etcd-rs", "futures"]
 ds_consul = ["consul", "base64"]
 ds_k8s = ["kube", "k8s-openapi", "schemars", "futures"]
+# wasm proxy
+proxy_envoy = ["proxy-wasm", "getrandom"]
 
 [dependencies]
 sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = true }
@@ -58,18 +58,23 @@ env_logger = { version = "0.9.0", optional = true }
 log4rs = { version = "1.0.0", optional = true }
 log = "0.4"
 regex = { version = "1.5", optional = true }
-prometheus_exporter = {version="0.8", optional=true}
+prometheus_exporter = { version = "0.8", optional = true }
 # todo: simplify encapsulation
 # using getset = "0.1.1"
 lru = "0.7.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
-etcd-rs = {version="0.5", optional=true}
-consul = {version="0.4", optional=true}
-futures = {version="0.3.17", optional=true}
-base64 = {version="0.13", optional=true}
-kube = {version="0.65", features = ["derive", "runtime"], optional=true}
-k8s-openapi = {version="0.13.1", default-features = false, features = ["v1_22"], optional=true}
-schemars = {version="0.8.8", optional=true}
+etcd-rs = { version = "0.5", optional = true }
+consul = { version = "0.4", optional = true }
+futures = { version = "0.3.17", optional = true }
+base64 = { version = "0.13", optional = true }
+kube = { version = "0.65", features = ["derive", "runtime"], optional = true }
+k8s-openapi = { version = "0.13.1", default-features = false, features = [
+  "v1_22",
+], optional = true }
+schemars = { version = "0.8.8", optional = true }
+# for envoy wasm proxy
+proxy-wasm = { version = "0.1.4", optional = true }
+getrandom = { version = "0.2", features = ["js"], optional = true  }
 
 [dev-dependencies]
 # criterion = "0.3"
@@ -92,96 +97,96 @@ rustdoc-args = ["--cfg", "docsrs"]
 # flow control related examples
 [[example]]
 name = "hello_world"
-path = "../examples/flow/hello_world.rs"
+path = "../examples/rules/flow/hello_world.rs"
 required-features = ["full"]
 
 [[example]]
 name = "tokio"
-path = "../examples/flow/tokio.rs"
+path = "../examples/rules/flow/tokio.rs"
 required-features = ["full", "async"]
 
 [[example]]
 name = "macro"
-path = "../examples/flow/macro.rs"
+path = "../examples/rules/flow/macro.rs"
 required-features = ["full"]
 
 [[example]]
 name = "memory_adaptive"
-path = "../examples/flow/memory_adaptive.rs"
+path = "../examples/rules/flow/memory_adaptive.rs"
 required-features = ["full"]
 
 [[example]]
 name = "throttling"
-path = "../examples/flow/throttling.rs"
+path = "../examples/rules/flow/throttling.rs"
 required-features = ["full"]
 
 [[example]]
 name = "method"
-path = "../examples/flow/method.rs"
+path = "../examples/rules/flow/method.rs"
 required-features = ["full"]
 
 # system metrics related examples
 [[example]]
 name = "inbound_qps"
-path = "../examples/system/inbound_qps.rs"
+path = "../examples/rules/system/inbound_qps.rs"
 required-features = ["full"]
 
 [[example]]
 name = "avg_rt"
-path = "../examples/system/avg_rt.rs"
+path = "../examples/rules/system/avg_rt.rs"
 required-features = ["full"]
 
 [[example]]
 name = "cpu_usage"
-path = "../examples/system/cpu_usage.rs"
+path = "../examples/rules/system/cpu_usage.rs"
 required-features = ["full"]
 
 [[example]]
 name = "concurrency"
-path = "../examples/system/concurrency.rs"
+path = "../examples/rules/system/concurrency.rs"
 required-features = ["full"]
 
 [[example]]
 name = "load"
-path = "../examples/system/load.rs"
+path = "../examples/rules/system/load.rs"
 required-features = ["full"]
 
 # isolation related examples
 [[example]]
 name = "isolation"
-path = "../examples/isolation/concurrency.rs"
+path = "../examples/rules/isolation/concurrency.rs"
 required-features = ["full"]
 
 # circuit breaker related examples
 [[example]]
 name = "error_count"
-path = "../examples/circuit_breaker/error_count.rs"
+path = "../examples/rules/circuit_breaker/error_count.rs"
 required-features = ["full"]
 
 [[example]]
 name = "error_ratio"
-path = "../examples/circuit_breaker/error_ratio.rs"
+path = "../examples/rules/circuit_breaker/error_ratio.rs"
 required-features = ["full"]
 
 [[example]]
 name = "slow_request"
-path = "../examples/circuit_breaker/slow_request.rs"
+path = "../examples/rules/circuit_breaker/slow_request.rs"
 required-features = ["full"]
 
 # hotspot related examples
 [[example]]
 name = "hotspot_qps_reject"
-path = "../examples/hotspot/qps_reject.rs"
+path = "../examples/rules/hotspot/qps_reject.rs"
 required-features = ["full"]
 
 [[example]]
 name = "hotspot_qps_throttling"
-path = "../examples/hotspot/qps_throttling.rs"
+path = "../examples/rules/hotspot/qps_throttling.rs"
 required-features = ["full"]
 
 [[example]]
 name = "hotspot_concurrency"
-path = "../examples/hotspot/concurrency.rs"
+path = "../examples/rules/hotspot/concurrency.rs"
 required-features = ["full"]
 
 [[example]]

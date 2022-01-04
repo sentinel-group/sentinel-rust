@@ -5,3 +5,4 @@ Run examples with
 ```
 cargo run --example $example_name
 ```
+For proxy related examples, visit the subdirectory.

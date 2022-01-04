@@ -6,6 +6,4 @@ pre = [
     "echo 'preliminary done'",
 ]
 
-after = [
-    "git status",
-]
+after = ["git status"]

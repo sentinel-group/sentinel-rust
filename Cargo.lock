@@ -589,8 +589,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1368,6 +1370,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "primes"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68a61082d8bceecd71a3870e9162002bb75f7ba9c7aa8b76227e887782fef9c8"
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1453,6 +1461,16 @@ checksum = "b518d7cdd93dab1d1122cf07fa9a60771836c668dde9d9e2a139f957f0d9f1bb"
 dependencies = [
  "bytes",
  "prost",
+]
+
+[[package]]
+name = "proxy-wasm"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5b944c570b7e30d8b6725753360c5f92311d0888d0e86089e1c651f0d3c2ef3"
+dependencies = [
+ "hashbrown",
+ "log",
 ]
 
 [[package]]
@@ -1729,6 +1747,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sentinel-envoy-module"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "primes",
+ "proxy-wasm",
+ "sentinel-macros",
+ "sentinel-rs",
+]
+
+[[package]]
 name = "sentinel-macros"
 version = "0.1.0"
 dependencies = [
@@ -1752,6 +1781,7 @@ dependencies = [
  "env_logger",
  "etcd-rs",
  "futures",
+ "getrandom",
  "k8s-openapi",
  "kube",
  "lazy_static",
@@ -1760,6 +1790,7 @@ dependencies = [
  "lru",
  "mockall",
  "prometheus_exporter",
+ "proxy-wasm",
  "rand",
  "regex",
  "schemars",

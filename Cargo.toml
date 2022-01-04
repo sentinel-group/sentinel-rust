@@ -1,6 +1,3 @@
 [workspace]
 
-members = [
-  "sentinel",
-  "sentinel-macros",
-]
+members = ["sentinel", "sentinel-macros", "examples/proxy/envoy"]
