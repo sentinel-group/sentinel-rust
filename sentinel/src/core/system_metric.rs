@@ -12,7 +12,7 @@ use std::sync::{
     Arc, Mutex, Once,
 };
 use std::time;
-use sysinfo::{Process, ProcessExt, System, SystemExt};
+use sysinfo::{get_current_pid, Process, ProcessExt, System, SystemExt};
 
 lazy_static! {
     static ref SYSTEM: Arc<Mutex<System>> = Arc::new(Mutex::new(System::new_all()));
@@ -45,7 +45,7 @@ pub fn init_memory_collector(mem_interval: u32) {
         });
     });
     // Windows needs more time to start the collector thread
-    // and aquire the lock on SYSTEM
+    // and acquire the lock on SYSTEM
     #[cfg(windows)]
     utils::sleep_for_ms(4000);
 }
@@ -54,16 +54,14 @@ pub fn init_memory_collector(mem_interval: u32) {
 /// get_process_memory_stat gets current process's memory usage in KBytes
 fn get_process_memory_stat() -> u64 {
     let mut system = SYSTEM.lock().unwrap();
-    cfg_if::cfg_if! {
-        if #[cfg(any(windows, target_os = "unknown", target_arch = "wasm32"))]{
-            let pid = std::process::id() as usize;
-        }else{
-            let pid = std::process::id() as i32;
+    match get_current_pid() {
+        Ok(pid) => {
+            system.refresh_process(pid);
+            let process = system.process(pid).unwrap();
+            process.memory()
         }
+        Err(_) => 0,
     }
-    system.refresh_process(pid);
-    let process = system.process(pid).unwrap();
-    process.memory()
 }
 
 pub fn init_cpu_collector(cpu_interval: u32) {
@@ -80,7 +78,7 @@ pub fn init_cpu_collector(cpu_interval: u32) {
         });
     });
     // Windows needs more time to start the collector thread
-    // and aquire the lock on SYSTEM
+    // and acquire the lock on SYSTEM
     #[cfg(windows)]
     utils::sleep_for_ms(4000);
 }
@@ -88,16 +86,14 @@ pub fn init_cpu_collector(cpu_interval: u32) {
 #[inline]
 fn get_process_cpu_stat() -> f32 {
     let mut system = SYSTEM.lock().unwrap();
-    cfg_if::cfg_if! {
-        if #[cfg(any(windows, target_os = "unknown", target_arch = "wasm32"))]{
-            let pid = std::process::id() as usize;
-        }else{
-            let pid = std::process::id() as i32;
+    match get_current_pid() {
+        Ok(pid) => {
+            system.refresh_process(pid);
+            let process = system.process(pid).unwrap();
+            process.cpu_usage()
         }
+        Err(_) => 0.0,
     }
-    system.refresh_process(pid);
-    let process = system.process(pid).unwrap();
-    process.cpu_usage()
 }
 
 pub fn init_load_collector(load_interval: u32) {
@@ -117,7 +113,7 @@ pub fn init_load_collector(load_interval: u32) {
         });
     });
     // Windows needs more time to start the collector thread
-    // and aquire the lock on SYSTEM
+    // and acquire the lock on SYSTEM
     #[cfg(windows)]
     utils::sleep_for_ms(4000);
 }

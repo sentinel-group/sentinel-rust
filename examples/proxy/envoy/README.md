@@ -8,10 +8,11 @@ There is a higher-level [proxy-wasm crate for Envoy](https://github.com/tetratel
 
 1. clone this repo
 2. `cargo build --target=wasm32-unknown-unknown --release`
-3. `docker-compose up --build`
+3. `cp ../../../target/wasm32-unknown-unknown/release/sentinel_envoy_module.wasm ./docker/sentinel_envoy_module.wasm`
+4. `docker-compose up --build`
 
 ## What this example Filter Does
-Each request directed to our service asking a certain service will be counted by Sentinel. If related service calling times exceed the specified thresholds, 5 in this case, Sentinel directly rejects the request and reply a 429 response to the caller.  
+Each request directed to our service asking a certain service will be counted by Sentinel. If related service calling times exceed the specified thresholds, 5 in this case, Sentinel directly rejects the request and reply a 429 response to the caller. In this cluster, there are two servers with Round Robin Load Balancer. Sentinel count flows at the proxy, which is the sum of flows on two servers.  
 
 Of course, you can play with other Sentinel rules.
 

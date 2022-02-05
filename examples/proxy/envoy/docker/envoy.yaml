@@ -38,14 +38,14 @@ static_resources:
                         "@type": type.googleapis.com/google.protobuf.StringValue
                         value: |
                           {"param":"value"}
-                      name: prime_auth
-                      root_id: prime_auth
+                      name: sentinel
+                      root_id: sentinel
                       vm_config:
-                        vm_id: vm.sentinel.prime_auth
+                        vm_id: vm.sentinel.example
                         runtime: envoy.wasm.runtime.v8
                         code:
                           local:
-                            filename: /etc/myenvoyfilter.wasm
+                            filename: /etc/sentinel_envoy_module.wasm
                         allow_precompiled: true
                 - name: envoy.filters.http.router
 
