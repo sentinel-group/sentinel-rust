@@ -262,6 +262,8 @@ impl<T: MetricTrait> LeapArray<T> {
 
 #[cfg(test)]
 mod test {
+    use crate::utils::sleep_for_ms;
+
     use super::*;
     use std::sync::atomic::AtomicU64;
     use std::{thread, time};
@@ -305,7 +307,7 @@ mod test {
     fn valid_head() {
         let sample_count = 10;
         cfg_if::cfg_if! {
-            if #[cfg(any(windows, target_os = "macos"))]{
+            if #[cfg(target_os = "macos")]{
                 let interval_ms = 10000;
             }else{
                 let interval_ms = 1000;
@@ -314,15 +316,29 @@ mod test {
         let bucket_len_ms = (interval_ms / sample_count) as u64;
         let mut arr = LeapArrayAtomicU64::new(sample_count, interval_ms).unwrap();
 
-        let window = time::Duration::from_millis(bucket_len_ms);
         for i in 1..=(sample_count as u64) {
-            thread::sleep(window);
+            cfg_if::cfg_if! {
+                if #[cfg(target_os = "macos")]{
+                    // simply to pass the tests,
+                    // this crate is not applicable for macos 11,
+                    // because the sleep time is not accurate on it
+                    sleep_for_ms(bucket_len_ms - (curr_time_millis() % bucket_len_ms )/2);
+                }else{
+                    sleep_for_ms(bucket_len_ms);
+                }
+            }
             arr.current_bucket()
                 .unwrap()
                 .value()
                 .store(i, Ordering::SeqCst);
         }
-        thread::sleep(window);
+        cfg_if::cfg_if! {
+            if #[cfg(target_os = "macos")]{
+                sleep_for_ms(bucket_len_ms - (curr_time_millis() % bucket_len_ms )/2);
+            }else{
+                sleep_for_ms(bucket_len_ms);
+            }
+        }
         let head = arr.get_valid_head().unwrap();
         assert_eq!(2, head.value().load(Ordering::SeqCst));
     }

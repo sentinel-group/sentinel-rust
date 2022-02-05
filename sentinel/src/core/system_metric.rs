@@ -1,4 +1,8 @@
-use crate::{logging, utils, Error, Result};
+use crate::{
+    logging,
+    utils::{self, curr_time_millis},
+    Error, Result,
+};
 cfg_exporter! {
     use crate::exporter;
 }
@@ -20,7 +24,7 @@ lazy_static! {
     static ref MEMORY_ONCE: Once = Once::new();
 }
 
-/// getMemoryStat returns the current machine's memory statistic in KBytes
+/// get_total_memory_size returns the current machine's memory statistic in KBytes
 pub fn get_total_memory_size() -> u64 {
     let mut system = SYSTEM.lock().unwrap();
     system.refresh_memory();
@@ -39,7 +43,11 @@ pub fn init_memory_collector(mem_interval: u32) {
             CURRENT_MEMORY.store(memory_used_bytes, Ordering::SeqCst);
             utils::sleep_for_ms(mem_interval as u64);
         });
-    })
+    });
+    // Windows needs more time to start the collector thread
+    // and aquire the lock on SYSTEM
+    #[cfg(windows)]
+    utils::sleep_for_ms(4000);
 }
 
 #[inline]
@@ -72,8 +80,9 @@ pub fn init_cpu_collector(cpu_interval: u32) {
         });
     });
     // Windows needs more time to start the collector thread
+    // and aquire the lock on SYSTEM
     #[cfg(windows)]
-    utils::sleep_for_ms(400);
+    utils::sleep_for_ms(4000);
 }
 
 #[inline]
@@ -106,7 +115,11 @@ pub fn init_load_collector(load_interval: u32) {
             *CURRENT_LOAD.lock().unwrap() = load;
             utils::sleep_for_ms(load_interval as u64);
         });
-    })
+    });
+    // Windows needs more time to start the collector thread
+    // and aquire the lock on SYSTEM
+    #[cfg(windows)]
+    utils::sleep_for_ms(4000);
 }
 
 #[inline]
@@ -191,14 +204,18 @@ mod test {
         std::thread::spawn(|| {
             let mut i = 0;
             loop {
-                i += 1;
-                i -= 1;
+                let start = curr_time_millis();
+                while curr_time_millis() - start < 50 {
+                    i += 1;
+                    i -= 1;
+                }
+                utils::sleep_for_ms(20);
             }
         });
         set_cpu_usage(0.0);
         assert!((current_cpu_usage() - 0.0) < f32::EPSILON);
         init_cpu_collector(50);
-        utils::sleep_for_ms(300);
+        utils::sleep_for_ms(500);
         assert!(current_cpu_usage() > 0.0);
     }
 }
