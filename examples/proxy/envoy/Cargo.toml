@@ -11,7 +11,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sentinel-rs = { version = "0.1.0", path = "../../../sentinel", features = ["full", "proxy_envoy"] }
-sentinel-macros = { version = "0.1.0", path = "../../../sentinel-macros" }
 proxy-wasm = "0.1.4"
 log = "0.4"
-

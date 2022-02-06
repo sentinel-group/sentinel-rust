@@ -1,10 +1,8 @@
 use log::trace;
+use proxy_wasm::hostcalls::get_current_time;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
-/*
-use sentinel_macros::flow;
-use sentinel_rs::utils::sleep_for_ms;
-*/
+
 #[no_mangle]
 pub fn _start() {
     proxy_wasm::set_log_level(LogLevel::Trace);
@@ -26,32 +24,21 @@ impl HttpContext for FlowAuthorizer {
         }
 
         match self.get_http_request_header("user") {
-            // todo: use `wasm_bindgen`
-            /*
-            Some(token) if &token == "Cat" => match task() {
-                Ok(_) => {
-                    self.resume_http_request();
-                    Action::Continue
-                }
-                Err(_err) => {
+            Some(token) if &token == "Cat" => {
+                // sentinel_rs::system_metric::init_cpu_collector(1000); // would panic, same as follows
+                // sentinel_rs::utils::sleep_for_ms(1000); // would panic since wasm did not support thread sleep
+                let builder = sentinel_rs::EntryBuilder::new(token)
+                    .with_traffic_type(sentinel_rs::base::TrafficType::Inbound);
+                /*
+                if builder.build().is_err() {
                     self.send_http_response(
                         429,
                         vec![("Powered-By", "proxy-wasm")],
                         Some(b"Too Many Requests.\n"),
                     );
-                    Action::Pause
+                    return Action::Pause
                 }
-            },
-            _ => {
-                self.send_http_response(
-                    402,
-                    vec![("Powered-By", "proxy-wasm")],
-                    Some(b"Access forbidden.\n"),
-                );
-                Action::Pause
-            }
-             */
-            Some(token) if &token == "Cat" => {
+                */
                 self.resume_http_request();
                 Action::Continue
             }
@@ -66,15 +53,3 @@ impl HttpContext for FlowAuthorizer {
         }
     }
 }
-
-/*
-#[flow(
-    calculate_strategy = "Direct",
-    control_strategy = "Reject",
-    threshold = 5.0
-)]
-fn task() {
-    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
-    sleep_for_ms(10);
-}
-*/

@@ -62,7 +62,6 @@ prometheus_exporter = { version = "0.8", optional = true }
 # todo: simplify encapsulation
 # using getset = "0.1.1"
 lru = "0.7.0"
-uuid = { version = "0.8", features = ["serde", "v4"] }
 etcd-rs = { version = "0.6", optional = true }
 consul = { version = "0.4", optional = true }
 futures = { version = "0.3.17", optional = true }
@@ -72,23 +71,22 @@ k8s-openapi = { version = "0.13.1", default-features = false, features = [
   "v1_22",
 ], optional = true }
 schemars = { version = "0.8.8", optional = true }
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+# cannot add "wasm-bindgen" feature to uuid, 
+# they won't be exported by `proxy_wasm` module 
+uuid = { version = "0.8", features = ["serde", "v4"] }
+
 # for envoy wasm proxy
+[target.wasm32-unknown-unknown.dependencies]
 proxy-wasm = { version = "0.1.4", optional = true }
 getrandom = { version = "0.2", features = ["js"], optional = true  }
 
-[target.wasm32-unknown-unknown.dependencies]
-uuid = { version = "0.8", features = ["serde", "v4", "wasm-bindgen"] }
 
 [dev-dependencies]
-# criterion = "0.3"
 mockall = "0.11.0"
 rand = "0.8.4"
 tokio = { version = "1", features = ["full"] }
-
-# [[bench]]
-# name = "benches"
-# path = "tests/benches.rs"
-# harness = false
 
 [lib]
 doctest = false

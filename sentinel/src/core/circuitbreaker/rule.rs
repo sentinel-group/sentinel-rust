@@ -1,5 +1,5 @@
 use super::*;
-use crate::{base::SentinelRule, logging, system_metric, Error};
+use crate::{base::SentinelRule, config::DEFAULT_RULE_NAME, logging, system_metric, Error};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
@@ -59,7 +59,7 @@ pub struct Rule {
 impl Default for Rule {
     fn default() -> Self {
         Rule {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: DEFAULT_RULE_NAME.clone(),
             resource: String::default(),
             strategy: BreakerStrategy::default(),
             retry_timeout_ms: 0,
