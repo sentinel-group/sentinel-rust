@@ -105,6 +105,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "backoff"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b62ddb9cb1ec0a098ad4bbf9344d0713fa193ae1a80af55febcff2627b6a00c1"
+dependencies = [
+ "getrandom",
+ "instant",
+ "rand",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -282,16 +293,6 @@ dependencies = [
  "darling_core",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "dashmap"
-version = "4.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e77a43b28d0668df09411cb0bc9a8c2adc40f9a048afe863e05fd43251e8e39c"
-dependencies = [
- "cfg-if",
- "num_cpus",
 ]
 
 [[package]]
@@ -845,12 +846,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "kube"
-version = "0.65.0"
+name = "k8s-openapi"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ec231e9ec9e84789f9eb414d1ac40ce6c90d0517fb272a335b4233f2e272b1e"
+checksum = "0489fc937cc7616a9abfa61bf39c250d7e32e1325ef028c8d9278dd24ea395b3"
 dependencies = [
- "k8s-openapi",
+ "base64",
+ "bytes",
+ "chrono",
+ "serde",
+ "serde-value",
+ "serde_json",
+]
+
+[[package]]
+name = "kube"
+version = "0.68.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d41f782ddd187a0d8965607679bbd741052106b75330696ce7d7712b13194d88"
+dependencies = [
+ "k8s-openapi 0.14.0",
  "kube-client",
  "kube-core",
  "kube-derive",
@@ -859,9 +874,9 @@ dependencies = [
 
 [[package]]
 name = "kube-client"
-version = "0.65.0"
+version = "0.68.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95dddb1fcced906d79cdae530ff39079c2d3772b2d623088fdbebe610bfa8217"
+checksum = "cced1a3e738c2a4bccb52d33066632369c668f366a71c9c58139d9360e1a341d"
 dependencies = [
  "base64",
  "bytes",
@@ -875,11 +890,12 @@ dependencies = [
  "hyper-timeout",
  "hyper-tls",
  "jsonpath_lib",
- "k8s-openapi",
+ "k8s-openapi 0.14.0",
  "kube-core",
  "openssl",
  "pem",
  "pin-project",
+ "secrecy",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -894,16 +910,17 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.65.0"
+version = "0.68.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c52b6ab05d160691083430f6f431707a4e05b64903f2ffa0095ee5efde759117"
+checksum = "6878656f5e349ef08b0a48d2b1841f1e68c4cf1ef42524feadad2f9a109dd888"
 dependencies = [
  "chrono",
  "form_urlencoded",
  "http",
  "json-patch",
- "k8s-openapi",
+ "k8s-openapi 0.14.0",
  "once_cell",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror",
@@ -911,9 +928,9 @@ dependencies = [
 
 [[package]]
 name = "kube-derive"
-version = "0.65.0"
+version = "0.68.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b98ff3d647085c6c025083efad0435890867f4bea042fc62d408ab3aeb1cdf66"
+checksum = "73f5fa510a64791242047fea4d807a5da06514ee714cace4b942d38a1126f0a8"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -924,16 +941,18 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.65.0"
+version = "0.68.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "406280d56304bc79b37af7f78e0d9719a4eebc3f46e5e79663154874b7696a48"
+checksum = "0990fe3ab89a1217e6a4d4952e1ab0a24783265ed413228efbc489a00f86b3da"
 dependencies = [
- "dashmap",
+ "ahash",
+ "backoff",
  "derivative",
  "futures",
  "json-patch",
- "k8s-openapi",
+ "k8s-openapi 0.14.0",
  "kube-client",
+ "parking_lot",
  "pin-project",
  "serde",
  "serde_json",
@@ -1711,6 +1730,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "serde",
+ "zeroize",
+]
+
+[[package]]
 name = "security-framework"
 version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1766,7 +1795,7 @@ dependencies = [
  "etcd-rs",
  "futures",
  "getrandom",
- "k8s-openapi",
+ "k8s-openapi 0.13.1",
  "kube",
  "lazy_static",
  "log",
@@ -2545,3 +2574,9 @@ checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c88870063c39ee00ec285a2f8d6a966e5b6fb2becc4e8dac77ed0d370ed6006"
