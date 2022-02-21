@@ -1,5 +1,5 @@
 use log::trace;
-use proxy_wasm::hostcalls::get_current_time;
+// use proxy_wasm::hostcalls::get_current_time;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
 
@@ -27,10 +27,10 @@ impl HttpContext for FlowAuthorizer {
             Some(token) if &token == "Cat" => {
                 // sentinel_rs::system_metric::init_cpu_collector(1000); // would panic, same as follows
                 // sentinel_rs::utils::sleep_for_ms(1000); // would panic since wasm did not support thread sleep
-                let builder = sentinel_rs::EntryBuilder::new(token)
+                let _builder = sentinel_rs::EntryBuilder::new(token)
                     .with_traffic_type(sentinel_rs::base::TrafficType::Inbound);
                 /*
-                if builder.build().is_err() {
+                if _builder.build().is_err() {
                     self.send_http_response(
                         429,
                         vec![("Powered-By", "proxy-wasm")],

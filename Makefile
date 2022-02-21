@@ -25,7 +25,7 @@ unit_parallel:
 
 envoy:
 	cargo build --target wasm32-unknown-unknown --release -p sentinel-envoy-module
-	cd examples/proxy/envoy
-	docker-compose up --build
+	cp target/wasm32-unknown-unknown/release/sentinel_envoy_module.wasm examples/proxy/envoy/docker/sentinel_envoy_module.wasm
+	cd examples/proxy/envoy && docker-compose up --build
 
-.PHONY: clean clippy doc fmt unit unit_single unit_parallel check
+.PHONY: clean clippy doc fmt unit unit_single unit_parallel check envoy
