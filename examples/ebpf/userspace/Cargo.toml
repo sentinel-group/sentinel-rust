@@ -11,6 +11,7 @@ redbpf = { version = "2.3.0", features = ["load"] }
 futures = "0.3"
 tracing = "0.1.26"
 tracing-subscriber = "0.3.3"
+sentinel-rs = { version = "0.1.0", path = "../../../sentinel", features = ["full"] }
 
 [build-dependencies]
 cargo-bpf = { version = "2.3.0", default-features = false, features = ["build", "llvm-sys-130"] }

@@ -491,6 +491,7 @@ dependencies = [
  "ebpf-probes",
  "futures",
  "redbpf",
+ "sentinel-rs",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.7",

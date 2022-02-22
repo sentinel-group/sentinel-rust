@@ -32,6 +32,7 @@ envoy:
 ebpf_port:
 	cd examples/ebpf/probes && KERNEL_VERSION=$(KERNEL_VERSION) cargo bpf build port --target-dir=../target
 	cd examples/ebpf/userspace && KERNEL_VERSION=$(KERNEL_VERSION) BPF_DIR=$(shell pwd)/examples/ebpf cargo build --example port --target-dir=../target
+	sudo ip link set dev lo xdpgeneric off
 	sudo examples/ebpf/target/x86_64-unknown-linux-gnu/debug/examples/port
 
 
