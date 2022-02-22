@@ -1,0 +1,27 @@
+[package]
+name = "ebpf-probes"
+version = "0.1.0"
+edition = '2018'
+publish = false
+
+[dependencies]
+redbpf-macros = "2.3.0"
+redbpf-probes = "2.3.0"
+
+[build-dependencies]
+cargo-bpf = { version = "2.3.0", default-features = false }
+bpf-sys = "2.3.0"
+tracing = "0.1.26"
+tracing-subscriber = "0.2.18"
+
+[features]
+default = []
+probes = []
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "port"
+path = "src/port/main.rs"
+required-features = ["probes"]

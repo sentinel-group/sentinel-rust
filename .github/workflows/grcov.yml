@@ -43,9 +43,9 @@ jobs:
         - name: build project
           run: cargo build
         - name: test project
-          run: cargo test --workspace --exclude sentinel-envoy-module 
+          run: cargo test --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
         - name: test project
-          run: cargo test --workspace --exclude sentinel-envoy-module -- --ignored --test-threads=1
+          run: cargo test --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace -- --ignored --test-threads=1
         - name: generate lcov.info file 
           run: grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
         - name: commit codecov
