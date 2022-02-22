@@ -47,7 +47,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --target=${{ matrix.RUSTC_TARGET }}
+          args: --target=${{ matrix.RUSTC_TARGET }} --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
 
       - name: Unit Tests
         uses: actions-rs/cargo@v1

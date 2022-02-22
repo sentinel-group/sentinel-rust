@@ -2,10 +2,10 @@ SRC_FILES := $(shell find . -path '*/target' -prune -o -name '*.rs' -print)
 KERNEL_VERSION?=$(shell ls /lib/modules | grep generic | head -1)
 
 check:
-	cargo check --all-features
+	cargo check --all-features --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
 
 clippy:
-	cargo clippy --all-targets
+	cargo clippy --all-targets --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
 
 doc: clean
 	cargo doc --no-deps 

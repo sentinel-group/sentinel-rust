@@ -49,7 +49,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: cargo doc --lib --no-deps --all-features --document-private-items
+      - run: cargo doc --lib --no-deps --all-features --document-private-items --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
 
   check-readme:
     name: Check README # for correct README file on crates.io
@@ -74,5 +74,5 @@ jobs:
       - name: Install clippy
         run: rustup component add clippy
       - name: "clippy --all"
-        run: cargo clippy --all-targets
+        run: cargo clippy --all-targets --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
         

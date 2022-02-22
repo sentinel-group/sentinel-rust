@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 use ebpf_probes::port::PortEvent;
-use redbpf_probes::helpers::bpf_trace_printk;
 use redbpf_probes::maps::Array;
 use redbpf_probes::xdp::prelude::*;
 

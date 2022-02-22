@@ -1,3 +1,5 @@
+#![allow(clippy::needless_update)]
+
 use rand::prelude::*;
 use sentinel_macros::circuitbreaker;
 use sentinel_rs::base::Snapshot;
