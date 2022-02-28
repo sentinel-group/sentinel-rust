@@ -2,6 +2,7 @@
 name = "sentinel-envoy-module"
 version = "0.1.0"
 edition = "2021"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,6 +11,7 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-sentinel-rs = { version = "0.1.0", path = "../../../sentinel", features = ["full", "proxy_envoy"] }
+sentinel-core = { version = "0.1.0", path = "../../../sentinel-core", features = ["full", "proxy_envoy"] }
+
 proxy-wasm = "0.1.4"
 log = "0.4"

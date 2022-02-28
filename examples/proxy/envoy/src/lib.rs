@@ -25,10 +25,10 @@ impl HttpContext for FlowAuthorizer {
 
         match self.get_http_request_header("user") {
             Some(token) if &token == "Cat" => {
-                // sentinel_rs::system_metric::init_cpu_collector(1000); // would panic, same as follows
-                // sentinel_rs::utils::sleep_for_ms(1000); // would panic since wasm did not support thread sleep
-                let _builder = sentinel_rs::EntryBuilder::new(token)
-                    .with_traffic_type(sentinel_rs::base::TrafficType::Inbound);
+                // sentinel_core::system_metric::init_cpu_collector(1000); // would panic, same as follows
+                // sentinel_core::utils::sleep_for_ms(1000); // would panic since wasm did not support thread sleep
+                let _builder = sentinel_core::EntryBuilder::new(token)
+                    .with_traffic_type(sentinel_core::base::TrafficType::Inbound);
                 /*
                 if _builder.build().is_err() {
                     self.send_http_response(

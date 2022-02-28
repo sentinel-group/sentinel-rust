@@ -16,7 +16,7 @@ jobs:
       runs-on: ubuntu-latest
       env:
         RUSTFLAGS: -Zinstrument-coverage
-        LLVM_PROFILE_FILE: "sentinel-rs-%p-%m.profraw"
+        LLVM_PROFILE_FILE: "sentinel-core-%p-%m.profraw"
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} 
       steps:
         - uses: actions/checkout@v2

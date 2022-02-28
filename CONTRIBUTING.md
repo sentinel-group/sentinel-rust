@@ -46,10 +46,10 @@ The final commit message should be clear and concise.
 
 ### Open an issue / PR
 
-We use [GitHub Issues](https://github.com/alibaba/Sentinel/issues) and [Pull Requests](https://github.com/alibaba/Sentinel/pulls) for trackers.
+We use [GitHub Issues](https://github.com/sentinel-group/sentinel-rust/issues) and [Pull Requests](https://github.com/sentinel-group/sentinel-rust/pulls) for trackers.
 
 If you find a typo in document, find a bug in code, or want new features, or want to give suggestions,
-you can [open an issue on GitHub](https://github.com/alibaba/Sentinel/issues/new) to report it.
+you can [open an issue on GitHub](https://github.com/sentinel-group/sentinel-rust/issues/new) to report it.
 Please follow the guideline message in the issue template.
 
 If you want to contribute, please follow the [contribution workflow](#github-workflow) and create a new pull request.

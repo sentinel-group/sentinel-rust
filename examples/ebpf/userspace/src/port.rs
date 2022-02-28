@@ -1,7 +1,7 @@
 use futures::stream::StreamExt;
 use probes::port::PortEvent;
 use redbpf::{load::Loader, xdp, Array};
-use sentinel_rs::{base, flow, EntryBuilder};
+use sentinel_core::{base, flow, EntryBuilder};
 use std::sync::Arc;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -16,7 +16,7 @@ fn probe_code() -> &'static [u8] {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> std::result::Result<(), String> {
     // initialize sentinel
-    sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    sentinel_core::init_default().unwrap_or_else(|err| sentinel_core::logging::error!("{:?}", err));
     flow::load_rules(vec![Arc::new(flow::Rule {
         resource: "port:8000".into(),
         threshold: 1.0,
@@ -68,7 +68,7 @@ async fn main() -> std::result::Result<(), String> {
                                 println!(
                                     "{} at {} passed",
                                     res_name,
-                                    sentinel_rs::utils::curr_time_millis()
+                                    sentinel_core::utils::curr_time_millis()
                                 );
                             }
                             entry.exit()
@@ -79,7 +79,7 @@ async fn main() -> std::result::Result<(), String> {
                             println!(
                                 "{} at {} blocked",
                                 res_name,
-                                sentinel_rs::utils::curr_time_millis()
+                                sentinel_core::utils::curr_time_millis()
                             );
                         }
                     }

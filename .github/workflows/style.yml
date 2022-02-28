@@ -58,9 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Verify that both READMEs are identical 
-        run: diff README.md sentinel/README.md
+        run: diff README.md sentinel-core/README.md
       - name: Verify that Sentinel version is up to date in README
-        working-directory: sentinel
+        working-directory: sentinel-core
         run: grep -q "$(sed '/^version = /!d' Cargo.toml | head -n1)" README.md
 
   clippy:

@@ -1,11 +1,11 @@
 use anyhow::Error;
 use rand::prelude::*;
-use sentinel_rs::base::{Snapshot, TrafficType};
-use sentinel_rs::circuitbreaker::{
+use sentinel_core::base::{Snapshot, TrafficType};
+use sentinel_core::circuitbreaker::{
     load_rules, register_state_change_listeners, BreakerStrategy, Rule, State, StateChangeListener,
 };
-use sentinel_rs::utils::{curr_time_millis, sleep_for_ms};
-use sentinel_rs::EntryBuilder;
+use sentinel_core::utils::{curr_time_millis, sleep_for_ms};
+use sentinel_core::EntryBuilder;
 use std::sync::Arc;
 
 struct MyStateListener {}
@@ -41,7 +41,7 @@ impl StateChangeListener for MyStateListener {
 /// error-ratio circuit breaking example with explicit Sentinel entry builder
 fn main() {
     // Init sentienl configurations
-    sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    sentinel_core::init_default().unwrap_or_else(|err| sentinel_core::logging::error!("{:?}", err));
     let listeners: Vec<Arc<dyn StateChangeListener>> = vec![Arc::new(MyStateListener {})];
     register_state_change_listeners(listeners);
     let resource_name = String::from("error_ratio_example");
@@ -67,7 +67,7 @@ fn main() {
                     EntryBuilder::new(res_name.clone()).with_traffic_type(TrafficType::Inbound);
                 if let Ok(entry) = entry_builder.build() {
                     // Passed, wrap the logic here.
-                    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
+                    println!("{}: passed", sentinel_core::utils::curr_time_millis());
                     sleep_for_ms(10);
                     if thread_rng().gen::<f32>() > 0.6 {
                         entry.set_err(Error::msg("Example"));

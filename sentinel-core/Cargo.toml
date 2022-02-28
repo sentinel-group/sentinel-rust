@@ -1,11 +1,11 @@
 [package]
-name = "sentinel-rs"
+name = "sentinel-core"
 version = "0.1.0"
 authors = ["Forsworns <378974295@qq.com>"]
 edition = "2018"
 license = "Apache-2.0"
 readme = "README.md"
-documentation = "https://docs.rs/sentinel-rs/latest"
+documentation = "https://docs.rs/sentinel-core/latest"
 repository = "https://github.com/sentinel-group/sentinel-rust"
 homepage = "https://sentinelguard.io/en-us/"
 description = """

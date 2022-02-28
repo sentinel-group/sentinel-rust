@@ -3,8 +3,6 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 // macro_todo: Maybe impl `darling::FromMeta` for Enum is better?
-// macro_todo: Maybe refactor the `sentinel-rs` crate, elimnate cyclic dependcies,
-// can reduce this redundant definition?
 // Refer to crate `rocket_codegen::http_codegen`.
 #[derive(Debug, FromMeta)]
 pub(crate) struct Params {

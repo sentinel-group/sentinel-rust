@@ -2,7 +2,7 @@ emoji = true
 
 pre = [
     "make fmt",
-    "cp ./README.md ./sentinel/README.md",
+    "cp ./README.md ./sentinel-core/README.md",
     "echo 'preliminary done'",
 ]
 

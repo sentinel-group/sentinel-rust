@@ -59,3 +59,26 @@ jobs:
         with:
           command: test
           args: --target=${{ matrix.RUSTC_TARGET }} --workspace --exclude sentinel-envoy-module  --exclude ebpf-probes --exclude ebpf-userspace -- --ignored --test-threads=1 --nocapture
+  wasm:
+    name: WebAssembly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-wasm-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target=wasm32-unknown-unknown
