@@ -1,7 +1,7 @@
 use super::*;
 use crate::{config, logging, utils, Error, Result};
 use std::fs::{DirBuilder, File};
-use std::io::{BufWriter, Seek, SeekFrom};
+use std::io::{Seek, SeekFrom};
 use std::{io::Write, sync::RwLock};
 
 #[derive(Default)]
@@ -105,8 +105,8 @@ impl DefaultMetricLogWriter {
     fn write_index(&self, time: u64, offset: u64) -> Result<()> {
         // Use BigEndian here to keep consistent with DataOutputStream in Java.
         let mut idx_out = self.cur_metric_idx_file.as_ref().unwrap().write().unwrap();
-        idx_out.write(&time.to_be_bytes());
-        idx_out.write(&offset.to_be_bytes());
+        idx_out.write(&time.to_be_bytes())?;
+        idx_out.write(&offset.to_be_bytes())?;
         idx_out.flush()?;
         Ok(())
     }
@@ -222,7 +222,7 @@ impl DefaultMetricLogWriter {
         if max_single_size == 0 || max_file_amount == 0 {
             return Err(Error::msg("invalid max_size or max_file_amount"));
         }
-        let mut base_dir = PathBuf::from(config::log_metrc_dir());
+        let base_dir = PathBuf::from(config::log_metrc_dir());
         let base_filename = form_metric_filename(&app_name, config::log_metrc_pid()).into();
 
         let mut writer = DefaultMetricLogWriter {

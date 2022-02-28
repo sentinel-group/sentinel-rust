@@ -4,14 +4,10 @@ use crate::{
     config, logging,
     stat::{self, ResourceNode},
     utils::sleep_for_ms,
-    Error, Result,
 };
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Once};
-
-/// Concurrent number
-static LOG_FLUSH_QUEUE_SIZE: usize = 60;
 
 lazy_static! {
     /// The timestamp of the last fetching. The time unit is ms (= second * 1000).

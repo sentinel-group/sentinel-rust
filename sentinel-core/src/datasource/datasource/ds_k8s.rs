@@ -1,12 +1,10 @@
 use super::*;
 use crate::{logging, utils::sleep_for_ms};
 use futures::{StreamExt, TryStreamExt};
-use k8s_openapi::{
-    apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition, Metadata,
-};
+use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use kube::{
     api::{Api, DeleteParams, ListParams, Patch, PatchParams},
-    core::{object::HasSpec, CustomResourceExt, Resource, ResourceExt},
+    core::{object::HasSpec, CustomResourceExt, Resource},
     runtime::{
         utils::try_flatten_applied,
         wait::{await_condition, conditions},
@@ -14,7 +12,6 @@ use kube::{
     },
     Client,
 };
-use serde_json::json;
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::{
@@ -135,7 +132,7 @@ where
             let lp = ListParams::default();
             let mut apply_stream = try_flatten_applied(watcher(rules, lp)).boxed();
             while let Some(rule) = apply_stream.try_next().await? {
-                self.ds.load(vec![Arc::new(rule.spec().clone())]);
+                self.ds.load(vec![Arc::new(rule.spec().clone())]).unwrap();
             }
             if self.closed.load(Ordering::SeqCst) {
                 return Ok(());

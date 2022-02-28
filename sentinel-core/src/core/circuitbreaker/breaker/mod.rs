@@ -273,7 +273,7 @@ impl BreakerBase {
                     let rule = Arc::clone(&self.rule);
                     let state = Arc::clone(&self.state);
                     entry.upgrade().unwrap().write().unwrap().when_exit(Box::new(
-                        move |entry: &SentinelEntry, ctx: ContextPtr| -> Result<()> {
+                        move |_entry: &SentinelEntry, ctx: ContextPtr| -> Result<()> {
                             let mut state = state.lock().unwrap();
                             if ctx.read().unwrap().is_blocked() && *state == State::HalfOpen {
                                 *state = State::Open;

@@ -1,6 +1,6 @@
 use super::*;
 use crate::{logging, utils::sleep_for_ms, Error};
-use consul::{kv::KVPair, kv::KV, Client, Config, QueryOptions};
+use consul::{kv::KV, Client, QueryOptions};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -57,9 +57,9 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Cons
     fn read_and_update(&mut self) -> Result<()> {
         let src = self.read_source()?;
         if src.len() == 0 {
-            self.get_base().update(None);
+            self.get_base().update(None).unwrap();
         } else {
-            self.get_base().update(Some(&src));
+            self.get_base().update(Some(&src)).unwrap();
         }
         Ok(())
     }

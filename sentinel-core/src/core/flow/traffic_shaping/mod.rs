@@ -16,6 +16,8 @@ pub use warmup::*;
 
 use super::Rule;
 use crate::base::{ReadStat, StatNode, TokenResult, WriteStat};
+#[cfg(feature = "exporter")]
+use crate::core::base::rule::SentinelRule;
 use std::sync::{Arc, Mutex, Weak};
 
 /// Traffic Shaping `Calculator` calculates the actual traffic shaping threshold

@@ -9,6 +9,5 @@ pub use property::*;
 use crate::base::SentinelRule;
 use crate::{Error, Result};
 use serde::de::DeserializeOwned;
-use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;

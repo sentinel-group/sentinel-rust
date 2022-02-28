@@ -10,7 +10,7 @@ pub use reader::*;
 pub use searcher::*;
 pub use writer::*;
 
-use crate::{base::MetricItem, Error, Result};
+use crate::{base::MetricItem, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::cmp::Ordering;
@@ -59,7 +59,7 @@ fn form_metric_filename(service_name: &str, with_pid: bool) -> String {
     if service_name.contains(dot) {
         filename = service_name.replace(dot, separator);
     }
-    let mut filename = format!("{}{}{}", service_name, separator, METRIC_FILENAME_SUFFIX);
+    let mut filename = format!("{}{}{}", filename, separator, METRIC_FILENAME_SUFFIX);
     if with_pid {
         let pid = std::process::id();
         filename = format!("{}.pid{}", filename, pid);

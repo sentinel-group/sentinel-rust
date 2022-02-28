@@ -87,8 +87,6 @@ impl EntryBuilder {
                 // todo: here need fix
                 // if return block_error,
                 // must deep copy the error, since Arc only clone pointer
-                let block_err = r.block_err();
-
                 entry.read().unwrap().exit();
                 Err(Error::msg(r.to_string()))
             } else {

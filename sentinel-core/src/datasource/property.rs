@@ -5,8 +5,7 @@ use serde_json;
 /// if succeed to convert src, return Ok(Property)
 /// if not, return the detailed error when convert src.
 /// if src is None or len(src)==0, the return value is Ok()
-pub type PropertyConverter<P: SentinelRule + DeserializeOwned> =
-    fn(src: &str) -> Result<Vec<Arc<P>>>;
+pub type PropertyConverter<P> = fn(src: &str) -> Result<Vec<Arc<P>>>;
 
 // `rule_json_array_parser` provide JSON as the default serialization for list of flow::Rule
 pub fn rule_json_array_parser<P: SentinelRule + DeserializeOwned>(
@@ -20,7 +19,7 @@ pub fn rule_json_array_parser<P: SentinelRule + DeserializeOwned>(
 
 /// PropertyUpdater func is to update the specific properties to downstream.
 /// return nil if succeed to update, if not, return the error.
-pub type PropertyUpdater<P: SentinelRule> = fn(rule: Vec<Arc<P>>) -> Result<bool>;
+pub type PropertyUpdater<P> = fn(rule: Vec<Arc<P>>) -> Result<bool>;
 
 // todo: the updater in fact is the load method now,
 // the load method should be revised to a template method,

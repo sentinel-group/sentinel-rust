@@ -1,6 +1,5 @@
 use crate::{
     base::{BlockError, ResultStatus},
-    circuitbreaker::State,
     config,
 };
 ///! exporter the process protected by Sentinel
@@ -147,7 +146,7 @@ pub fn init() {
         let binding = config::exporter_addr().parse().unwrap();
         let metrics_path = config::exporter_metrics_path();
         let mut builder = Builder::new(binding);
-        builder.with_endpoint(&metrics_path);
+        builder.with_endpoint(&metrics_path).unwrap();
         builder.start().unwrap();
     });
 }

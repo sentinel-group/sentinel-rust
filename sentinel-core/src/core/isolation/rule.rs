@@ -5,8 +5,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 cfg_k8s! {
     use schemars::JsonSchema;
-    use kube::{core::CustomResourceExt, CustomResource};
-    use crate::datasource::ds_k8s::{SENTINEL_RULE_GROUP, SENTINEL_RULE_VERSION};
+    use kube::CustomResource;
 }
 
 #[cfg_attr(feature = "ds_k8s", derive(JsonSchema))]
@@ -25,13 +24,13 @@ impl Default for MetricType {
 /// `Rule` describes the policy for system resiliency.
 #[cfg_attr(
     feature = "ds_k8s",
+    derive(CustomResource, JsonSchema),
     kube(
         group = "rust.datasource.sentinel.io",
         version = "v1alpha1",
         kind = "IsolationResource",
         namespaced
-    ),
-    derive(CustomResource, JsonSchema)
+    )
 )]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

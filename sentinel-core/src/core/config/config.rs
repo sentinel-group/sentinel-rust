@@ -88,19 +88,19 @@ fn override_items_from_system_env() -> Result<()> {
 
 #[cfg(any(feature = "env_logger", feature = "log4rs"))]
 pub fn init_log() -> Result<()> {
-    use std::{borrow::Borrow, convert::TryInto};
-
     // Then Sentinel will try to get fundamental config items from system environment.
     // If present, the value in system env will override the value in config file.
     logging::logger_init(log_config_file());
 
     logging::info!("[Config] App name resolved, appName {}", app_name());
-    GLOBAL_CONFIG.try_with(|c| {
-        logging::info!(
-            "[Config] Print effective global config, globalConfig {:?}",
-            c.borrow()
-        );
-    });
+    GLOBAL_CONFIG
+        .try_with(|c| {
+            logging::info!(
+                "[Config] Print effective global config, globalConfig {:?}",
+                c.borrow()
+            );
+        })
+        .unwrap();
 
     Ok(())
 }

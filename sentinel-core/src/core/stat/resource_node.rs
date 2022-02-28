@@ -11,6 +11,7 @@ use std::sync::{
     Arc,
 };
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ResourceNode {
     pub(crate) res_name: String,

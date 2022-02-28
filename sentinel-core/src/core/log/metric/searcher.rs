@@ -1,11 +1,8 @@
 use super::*;
 use crate::{logging, Error, Result};
 use std::fs::File;
-use std::io::{ErrorKind, Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom};
 use std::sync::Mutex;
-
-static OFFSET_NOT_FOUND: isize = -1;
-
 #[derive(Debug)]
 pub struct FilePosition {
     pub metric_filename: PathBuf,
@@ -151,23 +148,21 @@ impl DefaultMetricSearcher {
 
         // Set position to the offset recorded in the idx file
         cached_pos.cur_offset_in_idx = SeekFrom::Start(file.seek(last_pos)?);
-        let mut sec = 0;
-        let mut offset = 0;
+        let mut sec: u64;
         loop {
             let mut buffer: [u8; 8] = [0; 8];
-            let res = file.read(&mut buffer)?;
+            file.read(&mut buffer)?;
             sec = u64::from_be_bytes(buffer);
             if sec >= begin_sec {
                 break;
             }
             let mut buffer: [u8; 4] = [0; 4];
             file.read(&mut buffer)?;
-            offset = u32::from_be_bytes(buffer);
             cached_pos.cur_offset_in_idx = SeekFrom::Start(file.seek(SeekFrom::Current(0))?);
         }
         let mut buffer: [u8; 4] = [0; 4];
         file.read(&mut buffer)?;
-        offset = u32::from_be_bytes(buffer);
+        let offset = u32::from_be_bytes(buffer);
         // Cache the idx filename and position
         cached_pos.metric_filename = filename.into();
         cached_pos.idx_filename = idx_filename.into();
@@ -187,7 +182,7 @@ impl DefaultMetricSearcher {
         let mut idx_file = open_file_and_seek_to(&idx_filename, cached_pos.cur_offset_in_idx)?;
 
         let mut buffer: [u8; 8] = [0; 8];
-        idx_file.read(&mut buffer);
+        idx_file.read(&mut buffer)?;
         let sec = u64::from_be_bytes(buffer);
 
         Ok(sec == cached_pos.cur_sec_in_idx)

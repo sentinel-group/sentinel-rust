@@ -1,7 +1,7 @@
 use super::*;
 use crate::{base, logging};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Bytes, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Seek, SeekFrom};
 
 const MAX_ITEM_AMOUNT: usize = 100000;
 

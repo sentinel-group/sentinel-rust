@@ -28,7 +28,7 @@ impl BaseSlot for Slot {
 impl RuleCheckSlot for Slot {
     fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
         cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
+            let ctx = ctx_ptr.write().unwrap(),
             let ctx = ctx_ptr.borrow()
         };
         let res = ctx.resource().name();

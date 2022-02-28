@@ -1,4 +1,6 @@
 use super::inbound_node;
+#[cfg(feature = "exporter")]
+use crate::base::ResultStatus;
 use crate::{
     base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot, TrafficType},
     utils::curr_time_millis,
@@ -91,7 +93,7 @@ impl StatSlot for ResourceNodeStatSlot {
 
     cfg_async! {
         fn on_completed(&self, ctx: ContextPtr) {
-            let mut round_trip = curr_time_millis() - ctx.read().unwrap().start_time();
+            let round_trip = curr_time_millis() - ctx.read().unwrap().start_time();
             ctx.write().unwrap().set_round_trip(round_trip);
             if let Some(stat_node) = ctx.read().unwrap().stat_node().clone() {
                 self.record_complete_for(stat_node, ctx.read().unwrap().input().batch_count(), round_trip);

@@ -29,7 +29,7 @@ impl RuleCheckSlot for Slot {
             if res.len() == 0 {
                 return ctx.read().unwrap().result().clone();
             }
-            if let Some(rule) = can_pass_check(&ctx, &res) {
+            if let Some(_) = can_pass_check(&ctx, &res) {
                 ctx.write().unwrap()
                     .set_result(TokenResult::new_blocked_with_msg(
                         BlockType::CircuitBreaking,

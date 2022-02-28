@@ -57,9 +57,9 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Etcd
     async fn read_and_update(&mut self) -> Result<()> {
         let src = self.read_source().await?;
         if src.len() == 0 {
-            self.get_base().update(None);
+            self.get_base().update(None).unwrap();
         } else {
-            self.get_base().update(Some(&src));
+            self.get_base().update(Some(&src)).unwrap();
         }
         Ok(())
     }
@@ -125,20 +125,19 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Etcd
             for ev in resp.take_events() {
                 match ev.event_type() {
                     EventType::Put => {
-                        if let Err(err) = self.read_and_update().await {
+                        if let Err(_) = self.read_and_update().await {
                             logging::error!(
                                 "Fail to execute process_watch_response() for PUT event"
                             );
                         }
                     }
                     EventType::Delete => {
-                        if let Err(err) = self.ds.update(None) {
+                        if let Err(_) = self.ds.update(None) {
                             logging::error!(
                                 "Fail to execute process_watch_response() for DELETE event"
                             );
                         }
                     }
-                    _ => {}
                 }
             }
         }
