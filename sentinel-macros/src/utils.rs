@@ -64,7 +64,7 @@ macro_rules! wrap_sentinel {
         // build sentinel entry
         let expanded = quote::quote! {
             #(#attrs)* #vis #sig {
-                use sentinel_rs::{base, $name, EntryBuilder};
+                use sentinel_core::{base, $name, EntryBuilder};
                 use std::sync::Arc;
 
                 // Load sentinel rules
@@ -126,12 +126,12 @@ pub(crate) fn process_func(mut func: ItemFn) -> ItemFn {
     let dummy_func = match output {
         ReturnType::Default => {
             quote! {
-                fn dummy() -> sentinel_rs::Result<()> {}
+                fn dummy() -> sentinel_core::Result<()> {}
             }
         }
         ReturnType::Type(_, return_type) => {
             quote! {
-                fn dummy() -> sentinel_rs::Result<#return_type> {}
+                fn dummy() -> sentinel_core::Result<#return_type> {}
             }
         }
     };

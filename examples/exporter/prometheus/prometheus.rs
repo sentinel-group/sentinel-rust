@@ -1,10 +1,10 @@
 use rand::prelude::*;
-use sentinel_macros::{circuitbreaker, flow};
-use sentinel_rs::base::Snapshot;
-use sentinel_rs::circuitbreaker::{
+use sentinel_core::base::Snapshot;
+use sentinel_core::circuitbreaker::{
     register_state_change_listeners, Rule, State, StateChangeListener,
 };
-use sentinel_rs::utils::{curr_time_millis, sleep_for_ms};
+use sentinel_core::utils::{curr_time_millis, sleep_for_ms};
+use sentinel_macros::{circuitbreaker, flow};
 use std::sync::Arc;
 
 struct MyStateListener {}
@@ -34,7 +34,7 @@ impl StateChangeListener for MyStateListener {
 /// slow-request circuit breaking example with Sentinel attributes macros
 fn main() {
     // Init sentienl configurations
-    sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    sentinel_core::init_default().unwrap_or_else(|err| sentinel_core::logging::error!("{:?}", err));
     let listeners: Vec<Arc<dyn StateChangeListener>> = vec![Arc::new(MyStateListener {})];
     register_state_change_listeners(listeners);
 
@@ -74,7 +74,7 @@ fn main() {
     stat_sliding_window_bucket_count = 10
 )]
 fn task1() {
-    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
+    println!("{}: passed", sentinel_core::utils::curr_time_millis());
     let uzi = (thread_rng().gen::<f32>() * 10.0).round() as u64;
     sleep_for_ms(uzi);
 }
@@ -87,6 +87,6 @@ fn task1() {
     warm_up_cold_factor = 3
 )]
 fn task2() {
-    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
+    println!("{}: passed", sentinel_core::utils::curr_time_millis());
     sleep_for_ms(10);
 }

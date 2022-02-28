@@ -491,7 +491,7 @@ dependencies = [
  "ebpf-probes",
  "futures",
  "redbpf",
- "sentinel-rs",
+ "sentinel-core",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.7",
@@ -2086,26 +2086,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sentinel-envoy-module"
-version = "0.1.0"
-dependencies = [
- "log",
- "proxy-wasm",
- "sentinel-rs",
-]
-
-[[package]]
-name = "sentinel-macros"
-version = "0.1.0"
-dependencies = [
- "darling",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "sentinel-rs"
+name = "sentinel-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2138,6 +2119,25 @@ dependencies = [
  "time 0.3.5",
  "tokio",
  "uuid",
+]
+
+[[package]]
+name = "sentinel-envoy-module"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "proxy-wasm",
+ "sentinel-core",
+]
+
+[[package]]
+name = "sentinel-macros"
+version = "0.1.0"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

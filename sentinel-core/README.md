@@ -9,8 +9,8 @@
 [![Gitter chat][gitter-badge]][gitter-url]
 
 
-[crates-badge]: https://img.shields.io/crates/v/sentinel-rs.svg
-[crates-url]: https://crates.io/crates/sentinel-rs
+[crates-badge]: https://img.shields.io/crates/v/sentinel-core.svg
+[crates-url]: https://crates.io/crates/sentinel-core
 [ci-badge]: https://github.com/sentinel-group/sentinel-rust/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/sentinel-group/sentinel-rust/actions/workflows/ci.yml
 [codecov-badge]: https://codecov.io/gh/sentinel-group/sentinel-rust/branch/main/graph/badge.svg
@@ -41,7 +41,7 @@ See the [Sentinel](https://sentinelguard.io/en-us/) for the document website.
 
 See the [中文文档](https://sentinelguard.io/zh-cn/) for document in Chinese.
 
-The [Rust API documentation](https://docs.rs/sentinel-rs/latest) is working in progress.
+The [Rust API documentation](https://docs.rs/sentinel-core/latest) is working in progress.
 
 ## Example
 
@@ -49,7 +49,7 @@ Add the dependency in Cargo.toml:
 
 ```toml
 [dependencies]
-sentinel-rs = { version = "0.1.0", features = ["full"] }
+sentinel-core = { version = "0.1.0", features = ["full"] }
 ```
 
 ## Contributing

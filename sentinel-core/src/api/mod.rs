@@ -1,4 +1,4 @@
-//! mod `api` provides the topmost fundamental APIs for users using sentinel-rs.
+//! mod `api` provides the topmost fundamental APIs for users using sentinel-core.
 //! Users must initialize Sentinel before loading Sentinel rules. Sentinel support three ways to perform initialization:
 //!
 //!  1. `init_default()`, using default config to initialize.

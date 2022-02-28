@@ -1,12 +1,12 @@
 use sentinel_macros::flow;
 
-use sentinel_rs::utils::sleep_for_ms;
+use sentinel_core::utils::sleep_for_ms;
 use std::sync::Arc;
 
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
 fn main() {
     // Init sentienl configurations
-    sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    sentinel_core::init_default().unwrap_or_else(|err| sentinel_core::logging::error!("{:?}", err));
 
     let mut handlers = Vec::new();
     let db = Arc::new(DB {});

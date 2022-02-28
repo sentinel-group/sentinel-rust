@@ -1,3 +1,8 @@
 [workspace]
-
-members = ["sentinel", "sentinel-macros", "examples/proxy/envoy", "examples/ebpf/probes", "examples/ebpf/userspace"]
+members = [
+    "sentinel-core",
+    "sentinel-macros",
+    "examples/proxy/envoy",
+    "examples/ebpf/probes",
+    "examples/ebpf/userspace",
+]

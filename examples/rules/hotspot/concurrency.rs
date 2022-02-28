@@ -1,12 +1,12 @@
+use sentinel_core::base::{ConcurrencyStat, ResourceType};
+use sentinel_core::stat::get_or_create_resource_node;
+use sentinel_core::utils::sleep_for_ms;
 use sentinel_macros::hotspot;
-use sentinel_rs::base::{ConcurrencyStat, ResourceType};
-use sentinel_rs::stat::get_or_create_resource_node;
-use sentinel_rs::utils::sleep_for_ms;
 
 /// a "hello-world" example on small code snippets with Sentinel attributes macros
 fn main() {
     // Init sentienl configurations
-    sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    sentinel_core::init_default().unwrap_or_else(|err| sentinel_core::logging::error!("{:?}", err));
 
     let mut handlers = Vec::new();
     for _ in 0..20 {
@@ -41,6 +41,6 @@ fn main() {
     args = r#"vec!["task".into()]"#
 )]
 fn task() {
-    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
+    println!("{}: passed", sentinel_core::utils::curr_time_millis());
     sleep_for_ms(10);
 }

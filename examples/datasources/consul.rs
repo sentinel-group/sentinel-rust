@@ -1,6 +1,6 @@
 #![allow(unreachable_code)]
 use consul::{kv::KVPair, kv::KV, Client, Config, QueryOptions};
-use sentinel_rs::{
+use sentinel_core::{
     base,
     datasource::{
         ds_consul::ConsulDataSource, new_flow_rule_handler, rule_json_array_parser, DataSource,
@@ -38,7 +38,7 @@ fn main() -> Result<()> {
     }
 
     // Sleep 3 seconds and then read the consul
-    sentinel_rs::utils::sleep_for_ms(3000);
+    sentinel_core::utils::sleep_for_ms(3000);
 
     // Create a data source and change the rule.
     let h = new_flow_rule_handler(rule_json_array_parser);
@@ -52,7 +52,7 @@ fn main() -> Result<()> {
 
 fn basic_flow_example() -> Vec<JoinHandle<()>> {
     // Init sentienl configurations
-    sentinel_rs::init_default().unwrap_or_else(|err| sentinel_rs::logging::error!("{:?}", err));
+    sentinel_core::init_default().unwrap_or_else(|err| sentinel_core::logging::error!("{:?}", err));
     let resource_name = String::from("task");
     // Load sentinel rules
     flow::load_rules(vec![Arc::new(flow::Rule {
@@ -86,6 +86,6 @@ fn basic_flow_example() -> Vec<JoinHandle<()>> {
 // todo: Cannot sentinel-macros now. It will append rules,
 // which is conflicts with the dynamic datasource
 fn task() {
-    println!("{}: passed", sentinel_rs::utils::curr_time_millis());
+    println!("{}: passed", sentinel_core::utils::curr_time_millis());
     sleep_for_ms(100);
 }
