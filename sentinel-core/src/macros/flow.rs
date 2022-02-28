@@ -1,11 +1,5 @@
 #![allow(unused_macros)]
 
-use crate::{
-    flow::{Calculator, Checker, Controller, ControllerGenKey, Rule, StandaloneStat},
-    Result,
-};
-use std::sync::{Arc, Mutex, Weak};
-
 // todo: use `syn` to concat the ident/expr name, further reduce the number of arguments
 macro_rules! insert_flow_generator {
     ($map:expr, $calculator_strategy:expr, $controller_strategy:expr, $calculator_struct:ident, $checker_struct:ident) => {

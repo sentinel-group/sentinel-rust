@@ -2,14 +2,10 @@
 
 use super::*;
 use crate::{
-    base::{BlockType, MetricEvent, ParamKey, StatNode, TokenResult},
+    base::{BlockType, ParamKey, TokenResult},
     utils,
 };
-use std::convert::TryInto;
-use std::sync::{
-    atomic::{AtomicI64, Ordering},
-    Arc, Mutex, Weak,
-};
+use std::sync::{atomic::Ordering, Arc, Weak};
 
 #[derive(Debug)]
 pub struct RejectChecker<C: CounterTrait = Counter> {
@@ -92,7 +88,7 @@ impl<C: CounterTrait> Checker<C> for RejectChecker<C> {
                 let rest_qps = old_qps_arc.load(Ordering::SeqCst);
                 let to_add_token_num =
                     pass_time as u64 * token_count / (owner.rule().duration_in_sec * 1000);
-                let mut new_qps = {
+                let new_qps = {
                     if to_add_token_num + rest_qps > max_count {
                         max_count as i64 - batch_count as i64
                     } else {

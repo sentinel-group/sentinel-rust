@@ -3,8 +3,7 @@ use crate::{base::SentinelRule, logging, utils};
 use crate::{Error, Result};
 use lazy_static::lazy_static;
 use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
-use std::sync::{Arc, Mutex, RwLock, Weak};
+use std::sync::{Arc, Mutex, RwLock};
 
 pub type RuleMap = HashMap<String, HashSet<Arc<Rule>>>;
 
@@ -32,7 +31,7 @@ pub fn get_rules_of_resource(res: &String) -> Vec<Arc<Rule>> {
     let mut placeholder = HashSet::new();
     let rule_map = RULE_MAP.read().unwrap();
     let res_rules = rule_map.get(res).unwrap_or(&mut placeholder);
-    let mut rules = res_rules.clone().into_iter().collect();
+    let rules = res_rules.clone().into_iter().collect();
     rules
 }
 
@@ -77,7 +76,7 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
 pub fn load_rules(rules: Vec<Arc<Rule>>) {
     let mut res_rules_map = RuleMap::new();
     for rule in rules {
-        let mut val = res_rules_map
+        let val = res_rules_map
             .entry(rule.resource.clone())
             .or_insert(HashSet::new());
         val.insert(rule);
@@ -215,8 +214,6 @@ mod test {
     //! Some tests cannot run in parallel, since we cannot promise that
     //! the global data structs are not modified before assertion.
     use super::*;
-    use crate::base::ReadStat;
-    use crate::utils::AsAny;
 
     #[test]
     fn empty_rules() {
@@ -315,8 +312,8 @@ mod test {
         });
         // todo: the consistency between resource and rule should be verified,
         // that is, rule of "abc3" cannot be loaded to "abc1"
-        load_rules_of_resource(&"abc1".into(), vec![Arc::clone(&r1), Arc::clone(&r2)]);
-        load_rules_of_resource(&"abc3".into(), vec![Arc::clone(&r3), Arc::clone(&r4)]);
+        load_rules_of_resource(&"abc1".into(), vec![Arc::clone(&r1), Arc::clone(&r2)]).unwrap();
+        load_rules_of_resource(&"abc3".into(), vec![Arc::clone(&r3), Arc::clone(&r4)]).unwrap();
         let rule_map = RULE_MAP.read().unwrap();
         let current_rules = CURRENT_RULES.lock().unwrap();
         assert_eq!(2, rule_map.len());

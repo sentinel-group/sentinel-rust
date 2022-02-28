@@ -5,8 +5,7 @@
 
 #[cfg(feature = "metric_log")]
 use crate::log::metric;
-use crate::{config, config::ConfigEntity, system_metric, utils, Error, Result};
-use serde_yaml;
+use crate::{config, config::ConfigEntity, system_metric, utils, Result};
 
 /// `init_default` initializes Sentinel using the configuration from system
 /// environment and the default value.

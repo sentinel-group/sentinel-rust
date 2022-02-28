@@ -6,7 +6,7 @@ use enum_map::Enum;
 use lazy_static::lazy_static;
 use std::any::Any;
 use std::fmt;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub type TimePredicate = dyn Fn(u64) -> bool;
 
@@ -146,7 +146,6 @@ pub(crate) mod test {
     use mockall::predicate::*;
     use mockall::*;
 
-    /// MockStatNode
     mock! {
         #[derive(Debug)]
         pub(crate) StatNode {}

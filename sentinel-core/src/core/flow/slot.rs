@@ -1,16 +1,10 @@
 use super::*;
 use crate::{
-    base::{
-        BaseSlot, ContextPtr, EntryContext, MetricEvent, ResultStatus, RuleCheckSlot, StatNode,
-        StatSlot, TokenResult,
-    },
+    base::{BaseSlot, ContextPtr, ResultStatus, RuleCheckSlot, StatNode, TokenResult},
     logging, stat, utils,
     utils::AsAny,
 };
 use lazy_static::lazy_static;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const RULE_CHECK_SLOT_ORDER: u32 = 2000;
@@ -117,9 +111,9 @@ fn can_pass_check(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        base::{ResourceType, ResourceWrapper, SentinelInput, TrafficType},
-        flow::StandaloneStat,
+    use crate::base::{
+        EntryContext, MetricEvent, ResourceType, ResourceWrapper, SentinelInput, StatSlot,
+        TrafficType,
     };
     use std::cell::RefCell;
     use std::rc::Rc;

@@ -1,4 +1,4 @@
-use crate::{base::SentinelRule, config::DEFAULT_RULE_NAME, logging, system_metric, Error};
+use crate::{base::SentinelRule, config::DEFAULT_RULE_NAME, Error};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;

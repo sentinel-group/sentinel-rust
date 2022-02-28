@@ -1,9 +1,8 @@
 //! Context
 //!
-use super::{EntryStrongPtr, EntryWeakPtr, ResourceWrapper, StatNode, TokenResult};
+use super::{EntryWeakPtr, ResourceWrapper, StatNode, TokenResult};
 use crate::utils::time::curr_time_millis;
 use crate::Error;
-use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -15,7 +14,6 @@ cfg_async! {
 cfg_not_async! {
     use std::rc::Rc;
     use std::cell::RefCell;
-    use std::rc::Weak;
     pub type ContextPtr = Rc<RefCell<EntryContext>>;
 }
 

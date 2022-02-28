@@ -1,11 +1,11 @@
 use super::Rule;
 ///! `WarmUpCalculator` is based on the **Token Bucket** algorithm
-use super::{Calculator, Checker, Controller};
-use crate::base::{BlockType, MetricEvent, TokenResult};
+use super::{Calculator, Controller};
+use crate::base::MetricEvent;
 use crate::{config, logging, utils};
 use std::sync::{
     atomic::{AtomicU64, Ordering},
-    Arc, Mutex, Weak,
+    Arc, Weak,
 };
 
 #[derive(Debug)]

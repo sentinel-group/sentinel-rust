@@ -2,10 +2,9 @@ use super::*;
 use crate::{
     core::{
         base,
-        base::{nop_read_stat, nop_write_stat, ReadStat, ResourceType, SentinelRule, StatNode},
+        base::{nop_read_stat, nop_write_stat, ResourceType, SentinelRule, StatNode},
         config, stat,
-        stat::{ResourceNode, SlidingWindowMetric},
-        system_metric,
+        stat::ResourceNode,
     },
     logging, utils, Error, Result,
 };
@@ -392,22 +391,25 @@ fn generate_stat_for(rule: &Arc<Rule>) -> Result<Arc<StandaloneStat>> {
         config::global_stat_sample_count_total(),
         config::global_stat_interval_ms_total(),
     );
-    let err = Error::msg(base::GLOBAL_STATISTIC_NON_REUSABLE_ERROR);
+    let _err = Error::msg(base::GLOBAL_STATISTIC_NON_REUSABLE_ERROR);
     match validity {
-		Ok(_)=> {
-			let metric = res_node.generate_read_stat(sample_count, interval_ms)?;
-			let ret_stat = Arc::new(StandaloneStat::new(true, metric, None));
-			Ok(ret_stat)
-		},
-		Err(err) => {
-			logging::info!("[FlowRuleManager] Flow rule couldn't reuse global statistic and will generate independent statistic, rule: {:?}", rule);
-			let write_stat = Arc::new(stat::BucketLeapArray::new(sample_count, interval_ms)?);
-			let read_stat = Arc::new(stat::SlidingWindowMetric::new(sample_count, interval_ms, write_stat.clone())?);
-			let res_stat = Arc::new(StandaloneStat::new(false, read_stat, Some(write_stat)));
-			Ok(res_stat)
-		},
-		_=>Err(Error::msg(format!("fail to new standalone statistic because of invalid stat_interval_ms in flow::Rule, stat_interval_ms: {}", interval_ms)))
-	}
+        Ok(_) => {
+            let metric = res_node.generate_read_stat(sample_count, interval_ms)?;
+            let ret_stat = Arc::new(StandaloneStat::new(true, metric, None));
+            Ok(ret_stat)
+        }
+        Err(_err) => {
+            logging::info!("[FlowRuleManager] Flow rule couldn't reuse global statistic and will generate independent statistic, rule: {:?}", rule);
+            let write_stat = Arc::new(stat::BucketLeapArray::new(sample_count, interval_ms)?);
+            let read_stat = Arc::new(stat::SlidingWindowMetric::new(
+                sample_count,
+                interval_ms,
+                write_stat.clone(),
+            )?);
+            let res_stat = Arc::new(StandaloneStat::new(false, read_stat, Some(write_stat)));
+            Ok(res_stat)
+        }
+    }
 }
 
 /// `set_traffic_shaping_generator` sets the traffic controller generator for the given CalculateStrategy and ControlStrategy.
@@ -499,7 +501,7 @@ pub fn build_resource_traffic_shaping_controller(
             continue;
         }
 
-        let mut gen_fun_map = GEN_FUN_MAP.read().unwrap();
+        let gen_fun_map = GEN_FUN_MAP.read().unwrap();
         let key = ControllerGenKey::new(
             rule.calculate_strategy.clone(),
             rule.control_strategy.clone(),
@@ -544,8 +546,6 @@ mod test {
     #![allow(clippy::vtable_address_comparisons)]
 
     use super::*;
-    use crate::core::base::ReadStat;
-    use crate::utils::AsAny;
 
     #[test]
     #[should_panic(expected = "Default control behaviors are not allowed to be modified.")]
@@ -588,7 +588,8 @@ mod test {
                     Ok(tsc)
                 },
             ),
-        );
+        )
+        .unwrap();
         let resource = String::from("test-customized-tc");
         load_rules(vec![Arc::new(Rule {
             threshold: 20.0,
@@ -609,7 +610,8 @@ mod test {
         remove_traffic_shaping_generator(
             CalculateStrategy::Custom(STRATEGY),
             ControlStrategy::Custom(STRATEGY),
-        );
+        )
+        .unwrap();
         assert!(!GEN_FUN_MAP.read().unwrap().contains_key(&key));
         drop(controller_map);
         clear_rules();
@@ -731,7 +733,6 @@ mod test {
         assert!(bound_stat.write_only_metric().is_none());
 
         let res_node = stat::get_resource_node(&String::from("abc")).unwrap();
-        let stat = Arc::clone(&res_node.default_metric());
         let stat = res_node.default_metric();
         assert!(!Arc::ptr_eq(bound_stat.read_only_metric(), &stat));
     }

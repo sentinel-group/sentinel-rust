@@ -1,7 +1,5 @@
 use crate::base::{BaseSlot, BlockError, ContextPtr, StatSlot};
 use lazy_static::lazy_static;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const STAT_SLOT_ORDER: u32 = 2000;

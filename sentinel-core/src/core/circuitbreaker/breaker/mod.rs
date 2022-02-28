@@ -29,16 +29,13 @@ pub use stat::*;
 
 use super::*;
 use crate::{
-    base::{ContextPtr, EntryContext, SentinelEntry, Snapshot},
+    base::{ContextPtr, SentinelEntry, Snapshot},
     logging,
-    stat::{LeapArray, MetricTrait},
+    stat::MetricTrait,
     utils, Error, Result,
 };
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
 use std::hash::Hash;
-use std::rc::Rc;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc, Mutex,
@@ -330,7 +327,7 @@ impl BreakerBase {
                     let rule = Arc::clone(&self.rule);
                     let state = Arc::clone(&self.state);
                     entry.upgrade().unwrap().borrow_mut().when_exit(Box::new(
-                        move |entry: &SentinelEntry, ctx: ContextPtr| -> Result<()> {
+                        move |_entry: &SentinelEntry, ctx: ContextPtr| -> Result<()> {
                             let mut state = state.lock().unwrap();
                             if ctx.borrow().is_blocked() && *state == State::HalfOpen {
                                 *state = State::Open;
@@ -402,16 +399,17 @@ impl BreakerBase {
 }
 
 #[cfg(test)]
-pub(crate) use test::{MockCircuitBreaker, MockStateListener};
+pub(crate) use test::MockCircuitBreaker;
 
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use crate::base::{ResourceType, ResourceWrapper, SentinelInput, SlotChain, TrafficType};
+    use crate::base::{EntryContext, ResourceType, ResourceWrapper, SlotChain, TrafficType};
     use mockall::predicate::*;
     use mockall::*;
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
-    /// MockCircuitBreaker
     mock! {
         pub(crate) CircuitBreaker {}
         impl  CircuitBreakerTrait  for CircuitBreaker {
@@ -431,7 +429,6 @@ pub(crate) mod test {
         }
     }
 
-    /// MockStateListener
     mock! {
         pub(crate) StateListener {}
         impl StateChangeListener for StateListener {

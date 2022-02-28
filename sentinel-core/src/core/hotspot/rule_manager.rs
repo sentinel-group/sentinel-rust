@@ -1,5 +1,4 @@
 use super::*;
-use crate::base::ParamKey;
 use crate::{base::SentinelRule, logging, utils, Error, Result};
 use lazy_static::lazy_static;
 use std::collections::{HashMap, HashSet};
@@ -405,7 +404,7 @@ pub fn build_resource_traffic_shaping_controller(
             continue;
         }
 
-        let mut gen_fun_map = GEN_FUN_MAP.read().unwrap();
+        let gen_fun_map = GEN_FUN_MAP.read().unwrap();
         let generator = gen_fun_map.get(&rule.control_strategy);
 
         if generator.is_none() {

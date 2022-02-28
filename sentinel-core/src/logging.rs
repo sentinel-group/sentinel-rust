@@ -1,3 +1,4 @@
+#[cfg(feature = "logger_env")]
 use crate::config::DEFAULT_LOG_LEVEL;
 #[cfg(feature = "logger_env")]
 use env_logger;
@@ -5,24 +6,23 @@ use lazy_static::lazy_static;
 pub use log::{debug, error, info, trace, warn};
 #[cfg(feature = "logger_log4rs")]
 use log4rs;
-use serde::{Deserialize, Serialize};
-use std::path::Path;
 use std::sync::Once;
 
 lazy_static! {
     pub static ref FREQUENT_ERROR_ONCE: Once = Once::new();
 }
 
+#[cfg(any(feature = "logger_env", feature = "logger_log4rs"))]
 pub fn logger_init(file_name: Option<String>) {
     #[cfg(feature = "logger_env")]
-    init_env_logger();
+    init_env_logger(file_name);
 
     #[cfg(feature = "logger_log4rs")]
     init_log4rs(file_name);
 }
 
 #[cfg(feature = "logger_env")]
-fn init_env_logger() {
+fn init_env_logger(_: Option<String>) {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(DEFAULT_LOG_LEVEL))
         .init();
 }

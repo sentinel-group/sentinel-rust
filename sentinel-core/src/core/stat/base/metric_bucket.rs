@@ -2,8 +2,6 @@ use crate::base::{MetricEvent, DEFAULT_STATISTIC_MAX_RT};
 use enum_map::EnumMap;
 use std::fmt;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
-use std::sync::Arc;
-use std::thread::{spawn, JoinHandle};
 
 /// use atomic types to ensure metric's internal mutability
 /// otherwise, exclusive Mutex would be necessary on the LeapArray Arc among threads
@@ -90,6 +88,8 @@ impl MetricBucket {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::sync::Arc;
+    use std::thread::spawn;
 
     #[test]
     fn single() {

@@ -1,8 +1,6 @@
 use super::*;
-use crate::base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot};
+use crate::base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatSlot};
 use lazy_static::lazy_static;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const STAT_SLOT_ORDER: u32 = 3000;

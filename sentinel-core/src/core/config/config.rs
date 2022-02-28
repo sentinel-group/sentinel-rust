@@ -1,7 +1,6 @@
 use super::{constant::*, ConfigEntity};
 use crate::{base::ResourceType, logging, utils, Error, Result};
 use serde_yaml;
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::env;
 use std::fs::File;
@@ -228,7 +227,7 @@ pub fn global_stat_sample_count_total() -> u32 {
 #[inline]
 pub fn global_stat_bucket_length_ms() -> u32 {
     GLOBAL_CONFIG
-        .try_with(|c| global_stat_interval_ms_total() / global_stat_sample_count_total())
+        .try_with(|_c| global_stat_interval_ms_total() / global_stat_sample_count_total())
         .unwrap()
 }
 

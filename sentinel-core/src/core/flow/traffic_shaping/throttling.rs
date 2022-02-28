@@ -1,13 +1,13 @@
 //! Throttling indicates that pending requests will be throttled,
 //! wait in queue (until free capacity is available)
 
-use super::{Calculator, Checker, Controller, Rule};
-use crate::base::{BlockType, MetricEvent, StatNode, TokenResult};
+use super::{Checker, Controller, Rule};
+use crate::base::{BlockType, StatNode, TokenResult};
 use crate::utils;
 use std::convert::TryInto;
 use std::sync::{
     atomic::{AtomicI64, Ordering},
-    Arc, Mutex, Weak,
+    Arc, Weak,
 };
 
 static BLOCK_MSG_QUEUEING: &'static str = "flow throttling check blocked, threshold is <= 0.0";
@@ -196,7 +196,7 @@ mod test {
         assert!(res.is_pass());
 
         let req_count = 10;
-        for i in 0..req_count {
+        for _ in 0..req_count {
             assert!(tc.do_check(None, 1, threshold).is_blocked());
         }
         utils::sleep_for_ms(interval_ms as u64 / threshold as u64 * req_count + 10);
@@ -228,7 +228,7 @@ mod test {
 
         let req_count: usize = 20;
         let mut result_list = Vec::<TokenResult>::with_capacity(req_count);
-        for i in 0..req_count {
+        for _ in 0..req_count {
             let res = tc.do_check(None, 1, threshold);
             result_list.push(res);
         }
@@ -264,9 +264,9 @@ mod test {
         assert!(tc.do_check(None, 1, threshold).is_pass());
         let thread_num: u32 = 24;
         let mut handles = Vec::with_capacity(thread_num as usize);
-        let mut wait_count = Arc::new(AtomicU32::new(0));
-        let mut block_count = Arc::new(AtomicU32::new(0));
-        for i in 0..thread_num {
+        let wait_count = Arc::new(AtomicU32::new(0));
+        let block_count = Arc::new(AtomicU32::new(0));
+        for _ in 0..thread_num {
             let tc_clone = Arc::clone(&tc);
             let block_clone = Arc::clone(&block_count);
             let wait_clone = Arc::clone(&wait_count);
@@ -315,9 +315,9 @@ mod test {
 
         let thread_num: u32 = 512;
         let mut handles = Vec::with_capacity(thread_num as usize);
-        let mut pass_count = Arc::new(AtomicU32::new(0));
+        let pass_count = Arc::new(AtomicU32::new(0));
 
-        for i in 0..thread_num {
+        for _ in 0..thread_num {
             let tc_clone = Arc::clone(&tc);
             let pass_clone = Arc::clone(&pass_count);
             handles.push(std::thread::spawn(move || {

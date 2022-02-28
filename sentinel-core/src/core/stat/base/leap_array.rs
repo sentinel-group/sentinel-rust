@@ -266,7 +266,6 @@ mod test {
 
     use super::*;
     use std::sync::atomic::AtomicU64;
-    use std::{thread, time};
 
     const SAMPLE_COUNT: u32 = 20;
     const BUCKET_LEN_MS: u32 = 500; // 500 ms
@@ -288,7 +287,7 @@ mod test {
 
     #[test]
     fn start_time() {
-        let mut arr = LeapArrayAtomicU64::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
+        let arr = LeapArrayAtomicU64::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
         let now = 1596199310000;
         let bucket = arr.get_bucket_of_time(now + 801).unwrap();
         assert_eq!(bucket.start_stamp(), now + 500);
@@ -314,7 +313,7 @@ mod test {
             }
         }
         let bucket_len_ms = (interval_ms / sample_count) as u64;
-        let mut arr = LeapArrayAtomicU64::new(sample_count, interval_ms).unwrap();
+        let arr = LeapArrayAtomicU64::new(sample_count, interval_ms).unwrap();
 
         for i in 1..=(sample_count as u64) {
             cfg_if::cfg_if! {

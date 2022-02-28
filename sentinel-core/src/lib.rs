@@ -1,7 +1,7 @@
 //! # Sentinel in Rust
 //!
 //!
-#![allow(warnings)]
+// #![allow(warnings)]
 
 // This module is not intended to be part of the public API. In general, any
 // `doc(hidden)` code is not part of Sentinel's public and stable API.

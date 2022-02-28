@@ -1,9 +1,7 @@
-use super::{BlockError, ContextPtr, EntryContext, TokenResult, SLOT_INIT};
+use super::{BlockError, ContextPtr, TokenResult, SLOT_INIT};
 use crate::logging;
 use crate::utils::AsAny;
 use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 /// trait `PartialOrd` is not object safe
@@ -26,7 +24,7 @@ pub trait StatPrepareSlot: BaseSlot {
     /// The result of preparing would store in EntryContext
     /// All StatPrepareSlots execute in sequence
     /// prepare fntion should not throw panic.
-    fn prepare(&self, ctx: ContextPtr) {}
+    fn prepare(&self, _ctx: ContextPtr) {}
 }
 
 /// RuleCheckSlot is rule based checking strategy
@@ -50,16 +48,16 @@ pub trait RuleCheckSlot: BaseSlot {
 pub trait StatSlot: BaseSlot {
     /// OnEntryPass fntion will be invoked when StatPrepareSlots and RuleCheckSlots execute pass
     /// StatSlots will do some statistic logic, such as QPS、log、etc
-    fn on_entry_pass(&self, ctx: ContextPtr) {}
+    fn on_entry_pass(&self, _ctx: ContextPtr) {}
     /// on_entry_blocked fntion will be invoked when StatPrepareSlots and RuleCheckSlots fail to execute
     /// It may be inbound flow control or outbound cir
     /// StatSlots will do some statistic logic, such as QPS、log、etc
     /// blockError introduce the block detail
-    fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: ContextPtr, _block_error: Option<BlockError>) {}
     /// on_completed fntion will be invoked when chain exits.
     /// The semantics of on_completed is the entry passed and completed
     /// Note: blocked entry will not call this fntion
-    fn on_completed(&self, ctx: ContextPtr) {}
+    fn on_completed(&self, _ctx: ContextPtr) {}
 }
 
 /// SlotChain hold all system slots and customized slot.
@@ -189,12 +187,12 @@ pub(crate) use test::aggregation::{MockRuleCheckSlot, MockStatPrepareSlot, MockS
 #[cfg(test)]
 mod test {
     use super::super::{
-        BlockType, ConcurrencyStat, MetricItem, MetricItemRetriever, MockStatNode, NopReadStat,
-        ReadStat, ResourceType, ResourceWrapper, ResultStatus, SentinelEntry, SentinelInput,
-        TimePredicate, TrafficType, WriteStat,
+        BlockType, EntryContext, MockStatNode, ResourceType, ResourceWrapper, ResultStatus,
+        SentinelEntry, TrafficType,
     };
     use super::*;
-    use crate::Result;
+    use std::cell::RefCell;
+    use std::rc::Rc;
     use std::sync::Arc;
 
     // here we test three kinds of slots one by one
@@ -314,21 +312,18 @@ mod test {
         // these signatures are necessary, don't remove them
         // because when use macro `mock!`, we have to supply the signatures expected to be mocked
         // otherwise, we cannot call `expect_xx()` on mocked objects
-        /// MockStatPrepareSlot
         mock! {
             pub(crate) StatPrepareSlot {}
             impl BaseSlot for StatPrepareSlot {}
             impl StatPrepareSlot for StatPrepareSlot { fn prepare(&self, ctx: ContextPtr); }
         }
 
-        /// MockRuleCheckSlot
         mock! {
             pub(crate) RuleCheckSlot {}
             impl BaseSlot for RuleCheckSlot {}
             impl RuleCheckSlot for RuleCheckSlot { fn check(&self, ctx: &ContextPtr) -> TokenResult; }
         }
 
-        /// MockStatSlot
         mock! {
             pub(crate) StatSlot {}
             impl BaseSlot for StatSlot {}
@@ -482,7 +477,7 @@ mod test {
         impl BaseSlot for StatPrepareSlotBadMock {}
 
         impl StatPrepareSlot for StatPrepareSlotBadMock {
-            fn prepare(&self, ctx: ContextPtr) {
+            fn prepare(&self, _ctx: ContextPtr) {
                 panic!("sentinel internal panic for test");
             }
         }
@@ -538,7 +533,7 @@ mod test {
             )));
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
-            let r = sc.entry(Rc::clone(&ctx));
+            sc.entry(Rc::clone(&ctx));
         }
     }
 }

@@ -1,16 +1,6 @@
 use super::*;
-use crate::{
-    base::{
-        BaseSlot, BlockType, ContextPtr, MetricEvent, ResultStatus, RuleCheckSlot, StatNode,
-        StatSlot, TokenResult,
-    },
-    logging, stat, utils,
-    utils::AsAny,
-};
+use crate::base::{BaseSlot, BlockType, ContextPtr, RuleCheckSlot, TokenResult};
 use lazy_static::lazy_static;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const RULE_CHECK_SLOT_ORDER: u32 = 5000;
@@ -56,7 +46,7 @@ impl RuleCheckSlot for Slot {
             if res.len() == 0 {
                 return ctx.borrow().result().clone();
             }
-            if let Some(rule) = can_pass_check(&ctx, &res) {
+            if let Some(_) = can_pass_check(&ctx, &res) {
                 ctx.borrow_mut()
                     .set_result(TokenResult::new_blocked_with_msg(
                         BlockType::CircuitBreaking,
@@ -83,7 +73,9 @@ fn can_pass_check(ctx: &ContextPtr, res: &String) -> Option<Arc<Rule>> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::base::{EntryContext, ResourceType, ResourceWrapper, SentinelInput, TrafficType};
+    use crate::base::{EntryContext, ResourceType, ResourceWrapper, TrafficType};
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     #[test]
     #[ignore]

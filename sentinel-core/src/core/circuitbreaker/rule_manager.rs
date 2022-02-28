@@ -2,7 +2,6 @@ use super::*;
 use crate::{base::rule::SentinelRule, logging, utils, Error, Result};
 use lazy_static::lazy_static;
 use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
 use std::sync::{Arc, Mutex, RwLock};
 
 pub type BreakerGenFn =
@@ -438,7 +437,7 @@ pub fn build_resource_circuit_breaker(
             continue;
         }
 
-        let mut gen_fun_map = GEN_FUN_MAP.read().unwrap();
+        let gen_fun_map = GEN_FUN_MAP.read().unwrap();
         let generator = gen_fun_map.get(&rule.strategy);
         if generator.is_none() {
             logging::error!("[CircuitBreakerTrait build_resource_circuit_breaker] Ignoring the rule due to unsupported circuit breaking strategy, rule {:?}", rule);
@@ -506,7 +505,8 @@ mod test {
                     Arc::new(SlowRtBreaker::new(rule))
                 },
             ),
-        );
+        )
+        .unwrap();
         let resource = String::from("test-customized-cb");
         load_rules(vec![Arc::new(Rule {
             resource: resource.clone(),
@@ -522,7 +522,7 @@ mod test {
 
         assert!(GEN_FUN_MAP.read().unwrap().contains_key(&key));
         assert!(breaker_map[&resource].len() > 0);
-        remove_circuit_breaker_generator(&key);
+        remove_circuit_breaker_generator(&key).unwrap();
         assert!(!GEN_FUN_MAP.read().unwrap().contains_key(&key));
         drop(breaker_map);
         clear_rules();
@@ -563,7 +563,7 @@ mod test {
         let sucess = load_rules(vec![Arc::clone(&r0), Arc::clone(&r1), Arc::clone(&r2)]);
         assert!(sucess);
         let breaker_map = BREAKER_MAP.read().unwrap();
-        let b2 = &breaker_map["abc"][1];
+        let _b2 = &breaker_map["abc"][1];
         assert_eq!(breaker_map.len(), 1);
         assert_eq!(breaker_map["abc"].len(), 3);
         drop(breaker_map);
@@ -614,7 +614,7 @@ mod test {
         ]);
         assert!(sucess);
         let breaker_map = BREAKER_MAP.read().unwrap();
-        let b2 = &breaker_map["abc"][1];
+        let _b2 = &breaker_map["abc"][1];
         assert_eq!(breaker_map.len(), 1);
         assert_eq!(breaker_map["abc"].len(), 4);
         drop(breaker_map);

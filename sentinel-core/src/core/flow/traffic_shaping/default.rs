@@ -1,6 +1,6 @@
 use super::{Calculator, Checker, Controller, Rule};
 use crate::base::{BlockType, MetricEvent, StatNode, TokenResult};
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Weak};
 
 /// Provide a determined threshold
 #[derive(Debug)]

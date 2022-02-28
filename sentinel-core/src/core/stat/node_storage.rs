@@ -1,11 +1,11 @@
 use super::ResourceNode;
 use crate::{
-    base::{ResourceType, StatNode, DEFAULT_MAX_RESOURCE_AMOUNT, TOTAL_IN_BOUND_RESOURCE_NAME},
+    base::{ResourceType, DEFAULT_MAX_RESOURCE_AMOUNT, TOTAL_IN_BOUND_RESOURCE_NAME},
     logging,
 };
 use lazy_static::lazy_static;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 
 type ResourceNodeMap = HashMap<String, Arc<ResourceNode>>;
 

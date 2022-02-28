@@ -1,14 +1,10 @@
 use super::global_slot_chain;
 use crate::base::{
-    EntryContext, EntryStrongPtr, EntryWeakPtr, ParamsList, ParamsMap, ResourceType,
-    ResourceWrapper, ResultStatus, SentinelEntry, SentinelInput, SlotChain, TokenResult,
-    TrafficType,
+    EntryContext, EntryStrongPtr, ParamsList, ParamsMap, ResourceType, ResourceWrapper,
+    ResultStatus, SentinelEntry, SentinelInput, SlotChain, TrafficType,
 };
 use crate::utils::format_time_nanos_curr;
 use crate::{Error, Result};
-use std::any::Any;
-use std::collections::HashMap;
-use std::fmt;
 use std::sync::Arc;
 
 cfg_async! {
@@ -131,11 +127,9 @@ impl EntryBuilder {
 
             let r = self.slot_chain.entry(Rc::clone(&ctx));
             if *r.status() == ResultStatus::Blocked {
-                // todo: here need fix
+                // todo:
                 // if return block_error,
                 // must deep copy the error, since Arc only clone pointer
-                let block_err = r.block_err();
-
                 entry.borrow().exit();
                 Err(Error::msg(r.to_string()))
             } else {
@@ -188,12 +182,9 @@ pub fn trace_error(entry: &EntryStrongPtr, err: Error) {
 mod test {
     use super::*;
     use crate::base::{
-        BaseSlot, BlockType, MockRuleCheckSlot, MockStatNode, MockStatPrepareSlot, MockStatSlot,
-        RuleCheckSlot, StatPrepareSlot, StatSlot,
+        BlockType, MockRuleCheckSlot, MockStatNode, MockStatPrepareSlot, MockStatSlot, TokenResult,
     };
-    use mockall::predicate::*;
     use mockall::*;
-    use rand::distributions::uniform::SampleBorrow;
     use std::cell::RefCell;
     use std::rc::Rc;
 

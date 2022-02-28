@@ -9,12 +9,9 @@
 //!
 
 use super::Rule;
-use super::{Calculator, Checker, Controller};
-use crate::{
-    base::{BlockType, MetricEvent, TokenResult},
-    system_metric,
-};
-use std::sync::{Arc, Mutex, Weak};
+use super::{Calculator, Controller};
+use crate::system_metric;
+use std::sync::{Arc, Weak};
 
 #[derive(Debug)]
 pub struct MemoryAdaptiveCalculator {

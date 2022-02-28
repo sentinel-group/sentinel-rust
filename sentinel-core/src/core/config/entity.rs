@@ -1,12 +1,11 @@
-use super::{config, constant::*};
+use super::constant::*;
 use crate::{
     base::{check_validity_for_reuse_statistic, constant::*, ResourceType},
     Error, Result,
 };
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::path::PathBuf;
-use std::{fmt, net::SocketAddr};
+use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {

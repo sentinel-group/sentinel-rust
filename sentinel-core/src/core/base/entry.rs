@@ -1,4 +1,4 @@
-use super::{ContextPtr, EntryContext, ResourceWrapper, SlotChain};
+use super::{ContextPtr, SlotChain};
 use crate::logging;
 use crate::{Error, Result};
 use std::sync::Arc;
@@ -98,6 +98,7 @@ impl EntryStrongPtr {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::base::EntryContext;
     use std::cell::RefCell;
     use std::rc::Rc;
 

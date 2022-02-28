@@ -1,16 +1,6 @@
 use super::*;
-use crate::{
-    base::{
-        BaseSlot, BlockType, ConcurrencyStat, ContextPtr, EntryContext, MetricEvent, ReadStat,
-        ResultStatus, RuleCheckSlot, SentinelRule, Snapshot, StatNode, StatSlot, TokenResult,
-        TrafficType,
-    },
-    logging, stat, system_metric, utils,
-};
+use crate::base::{BaseSlot, BlockType, ContextPtr, RuleCheckSlot, Snapshot, TokenResult};
 use lazy_static::lazy_static;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const RULE_CHECK_SLOT_ORDER: u32 = 3000;

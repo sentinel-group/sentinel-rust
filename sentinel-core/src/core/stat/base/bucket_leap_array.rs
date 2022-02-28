@@ -67,10 +67,9 @@ impl BucketLeapArray {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand::prelude::*;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Arc;
-    use std::{thread, time};
+    use std::thread;
 
     const SAMPLE_COUNT: u32 = 20;
     const BUCKET_LEN_MS: u32 = 500; // 500 ms
@@ -78,7 +77,7 @@ mod test {
 
     #[test]
     fn reset_bucket() {
-        let mut arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
+        let arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
         let idx = 19;
         arr.array[idx].value().add(MetricEvent::Block, 100);
         let want_start_time = curr_time_millis() + 1000;
@@ -89,7 +88,7 @@ mod test {
 
     #[test]
     fn update_concurrency() {
-        let mut arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
+        let arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
         assert_eq!(arr.max_concurrency(), 0);
         arr.update_concurrency(1);
         arr.update_concurrency(2);
@@ -99,7 +98,7 @@ mod test {
 
     #[test]
     fn add_count() {
-        let mut arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
+        let arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
         arr.add_count(MetricEvent::Pass, 3);
         arr.add_count(MetricEvent::Block, 1);
         assert_eq!(arr.count(MetricEvent::Pass), 3);
@@ -109,7 +108,7 @@ mod test {
 
     #[test]
     fn min_rt() {
-        let mut arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
+        let arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
         assert_eq!(arr.min_rt(), DEFAULT_STATISTIC_MAX_RT as u64);
         arr.add_count(MetricEvent::Rt, 100);
         assert_eq!(arr.min_rt(), 100);
@@ -117,17 +116,16 @@ mod test {
 
     #[test]
     fn concurrent() {
-        let mut arr = Arc::new(BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap());
-        const THREAD_NUM: u32 = 3000;
+        let arr = Arc::new(BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap());
         let now = 1976296040000u64;
-        let count = 0u64;
         let mut t = now;
         while t < now + INTERVAL_MS as u64 {
-            arr.add_count_with_time(t, MetricEvent::Pass, 1);
-            arr.add_count_with_time(t, MetricEvent::Block, 1);
-            arr.add_count_with_time(t, MetricEvent::Error, 1);
-            arr.add_count_with_time(t, MetricEvent::Complete, 1);
-            arr.add_count_with_time(t, MetricEvent::Rt, 10);
+            arr.add_count_with_time(t, MetricEvent::Pass, 1).unwrap();
+            arr.add_count_with_time(t, MetricEvent::Block, 1).unwrap();
+            arr.add_count_with_time(t, MetricEvent::Error, 1).unwrap();
+            arr.add_count_with_time(t, MetricEvent::Complete, 1)
+                .unwrap();
+            arr.add_count_with_time(t, MetricEvent::Rt, 10).unwrap();
             t += BUCKET_LEN_MS as u64;
         }
         for b in arr.get_valid_values(now + 9999) {
@@ -151,11 +149,16 @@ mod test {
                 let counter = counter.clone();
                 move || {
                     let timestamp = rand::random::<u64>() % INTERVAL_MS as u64;
-                    arr.add_count_with_time(now + timestamp, MetricEvent::Pass, 1);
-                    arr.add_count_with_time(now + timestamp, MetricEvent::Block, 1);
-                    arr.add_count_with_time(now + timestamp, MetricEvent::Complete, 1);
-                    arr.add_count_with_time(now + timestamp, MetricEvent::Error, 1);
-                    arr.add_count_with_time(now + timestamp, MetricEvent::Rt, 10);
+                    arr.add_count_with_time(now + timestamp, MetricEvent::Pass, 1)
+                        .unwrap();
+                    arr.add_count_with_time(now + timestamp, MetricEvent::Block, 1)
+                        .unwrap();
+                    arr.add_count_with_time(now + timestamp, MetricEvent::Complete, 1)
+                        .unwrap();
+                    arr.add_count_with_time(now + timestamp, MetricEvent::Error, 1)
+                        .unwrap();
+                    arr.add_count_with_time(now + timestamp, MetricEvent::Rt, 10)
+                        .unwrap();
                     counter.fetch_add(1, Ordering::SeqCst);
                 }
             }));

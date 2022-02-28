@@ -38,8 +38,6 @@ impl CounterLeapArray {
 
 #[cfg(test)]
 mod test {
-    use std::sync::atomic::AtomicU32;
-
     use super::*;
 
     #[test]

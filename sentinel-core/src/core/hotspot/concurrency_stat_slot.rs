@@ -1,11 +1,9 @@
 use super::*;
 use crate::{
-    base::{BaseSlot, BlockError, ContextPtr, EntryContext, MetricEvent, StatNode, StatSlot},
+    base::{BaseSlot, BlockError, ContextPtr, StatSlot},
     logging,
 };
 use lazy_static::lazy_static;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::{atomic::Ordering, Arc};
 
 const STAT_SLOT_ORDER: u32 = 4000;
@@ -36,7 +34,6 @@ impl StatSlot for ConcurrencyStatSlot {
             let ctx = ctx.borrow()
         };
         let res = ctx.resource().name();
-        let input = ctx.input();
         let tcs = get_traffic_controller_list_for(res);
         for tc in tcs {
             if tc.rule().metric_type != MetricType::Concurrency {

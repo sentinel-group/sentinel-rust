@@ -1,14 +1,9 @@
 use super::inbound_node;
 use crate::{
-    base::{
-        BaseSlot, BlockError, ContextPtr, EntryContext, MetricEvent, ResultStatus, StatNode,
-        StatSlot, TrafficType,
-    },
+    base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot, TrafficType},
     utils::curr_time_millis,
 };
 use lazy_static::lazy_static;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const STAT_SLOT_ORDER: u32 = 1000;
@@ -71,6 +66,7 @@ impl StatSlot for ResourceNodeStatSlot {
         );
     }
 
+    #[allow(unused_variables)]
     fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>) {
         cfg_if_async! {
             let ctx = ctx.read().unwrap(),

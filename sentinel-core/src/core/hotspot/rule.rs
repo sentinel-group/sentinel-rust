@@ -1,7 +1,7 @@
 use crate::{
     base::{ParamKey, SentinelRule},
     config::DEFAULT_RULE_NAME,
-    logging, system_metric, Error,
+    Error,
 };
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -182,8 +182,6 @@ impl fmt::Display for Rule {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use super::*;
 
     #[test]

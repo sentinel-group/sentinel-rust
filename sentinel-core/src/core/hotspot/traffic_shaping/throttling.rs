@@ -3,17 +3,10 @@
 
 use super::*;
 use crate::{
-    base::{BlockType, MetricEvent, ParamKey, StatNode, TokenResult},
+    base::{BlockType, ParamKey, TokenResult},
     utils,
 };
-use std::any::Any;
-use std::convert::TryInto;
-use std::sync::{
-    atomic::{AtomicI64, Ordering},
-    Arc, Mutex, Weak,
-};
-
-static BLOCK_MSG_QUEUEING: &'static str = "flow throttling check blocked, threshold is <= 0.0";
+use std::sync::{atomic::Ordering, Arc, Weak};
 
 #[derive(Debug)]
 pub struct ThrottlingChecker<C: CounterTrait = Counter> {

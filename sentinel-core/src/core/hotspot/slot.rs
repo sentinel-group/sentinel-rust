@@ -1,16 +1,9 @@
 use super::*;
 use crate::{
-    base::{
-        BaseSlot, ContextPtr, EntryContext, MetricEvent, ResultStatus, RuleCheckSlot, StatNode,
-        StatSlot, TokenResult,
-    },
-    logging, stat, utils,
-    utils::AsAny,
+    base::{BaseSlot, ContextPtr, ResultStatus, RuleCheckSlot, TokenResult},
+    utils,
 };
 use lazy_static::lazy_static;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const RULE_CHECK_SLOT_ORDER: u32 = 4000;
@@ -36,7 +29,7 @@ impl RuleCheckSlot for Slot {
     fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
         cfg_if_async! {
             let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow()
+            let ctx = ctx_ptr.borrow()
         };
         let res = ctx.resource().name();
         let batch = ctx.input().batch_count();

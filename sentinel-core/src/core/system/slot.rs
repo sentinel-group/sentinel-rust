@@ -1,16 +1,12 @@
 use super::*;
 use crate::{
     base::{
-        BaseSlot, BlockType, ConcurrencyStat, ContextPtr, EntryContext, MetricEvent, ReadStat,
-        ResultStatus, RuleCheckSlot, SentinelRule, Snapshot, StatNode, StatSlot, TokenResult,
-        TrafficType,
+        BaseSlot, BlockType, ConcurrencyStat, ContextPtr, MetricEvent, ReadStat, RuleCheckSlot,
+        Snapshot, TokenResult, TrafficType,
     },
-    logging, stat, system_metric, utils,
+    stat, system_metric,
 };
 use lazy_static::lazy_static;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const RULE_CHECK_SLOT_ORDER: u32 = 1000;
@@ -131,10 +127,7 @@ fn check_bbr_simple() -> bool {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        base::{ResourceType, ResourceWrapper, SentinelInput},
-        flow::StandaloneStat,
-    };
+    use crate::base::{EntryContext, ResourceType, ResourceWrapper, SentinelInput};
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -244,8 +237,8 @@ mod test {
             ..Default::default()
         });
         system_metric::set_cpu_usage(0.0);
-        let (r, _, v) = can_pass_check(&rule);
-        assert!(r);
+        let (r, _, _) = can_pass_check(&rule);
+        assert!(r)
     }
 
     #[test]

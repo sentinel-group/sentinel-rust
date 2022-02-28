@@ -104,20 +104,20 @@ mod test {
     #[should_panic(expected = "invalid metric line: empty string")] //METRIC_EMPTY_STRING_ERROR
     fn illegal1() {
         let metric_item = "";
-        let metric_item = MetricItem::from_string(metric_item).unwrap();
+        MetricItem::from_string(metric_item).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "invalid metric line: invalid format")] //METRIC_INVALID_FORMAT_ERROR
     fn illegal2() {
         let metric_item = "1564382218000|2019-07-29 14:36:58|/foo/*|4";
-        let metric_item = MetricItem::from_string(metric_item).unwrap();
+        MetricItem::from_string(metric_item).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "invalid digit found in string")]
     fn illegal3() {
         let metric_item = "1564382218000|2019-07-29 14:36:58|/foo/*|4|-3|3|0|25|0|2|1";
-        let metric_item = MetricItem::from_string(metric_item).unwrap();
+        MetricItem::from_string(metric_item).unwrap();
     }
 }

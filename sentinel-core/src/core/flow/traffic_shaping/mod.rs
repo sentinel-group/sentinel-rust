@@ -15,7 +15,7 @@ pub use throttling::*;
 pub use warmup::*;
 
 use super::Rule;
-use crate::base::{ReadStat, SentinelRule, StatNode, TokenResult, WriteStat};
+use crate::base::{ReadStat, StatNode, TokenResult, WriteStat};
 use std::sync::{Arc, Mutex, Weak};
 
 /// Traffic Shaping `Calculator` calculates the actual traffic shaping threshold

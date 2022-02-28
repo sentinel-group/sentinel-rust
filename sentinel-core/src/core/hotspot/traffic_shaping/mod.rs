@@ -6,17 +6,11 @@ pub use throttling::*;
 
 use super::*;
 use crate::{
-    base::{BlockType, ContextPtr, EntryContext, ParamKey, TokenResult},
-    logging, utils, Error, Result,
+    base::{BlockType, ContextPtr, ParamKey, TokenResult},
+    logging,
 };
-use lazy_static::lazy_static;
-use std::any::Any;
-use std::cell::RefCell;
 use std::cmp::min;
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::rc::Rc;
-use std::sync::{atomic::Ordering, Arc, Mutex, RwLock, Weak};
+use std::sync::{atomic::Ordering, Arc, Mutex, Weak};
 
 /// Traffic Shaping `Checker` performs checking according to current metrics and the traffic
 /// shaping strategy, then yield the token result.
@@ -45,7 +39,7 @@ where
     pub fn new(rule: Arc<Rule>) -> Controller<C> {
         let metric = match rule.metric_type {
             MetricType::QPS => {
-                let mut capacity = {
+                let capacity = {
                     if rule.params_max_capacity > 0 {
                         rule.params_max_capacity
                     } else if rule.duration_in_sec == 0 {
@@ -65,7 +59,7 @@ where
                 }
             }
             MetricType::Concurrency => {
-                let mut capacity = {
+                let capacity = {
                     if rule.params_max_capacity > 0 {
                         rule.params_max_capacity
                     } else {
@@ -224,9 +218,14 @@ where
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::base::{ParamsList, ParamsMap, SentinelInput};
-
     use super::*;
+    use crate::{
+        base::{EntryContext, ParamsList, ParamsMap, SentinelInput},
+        utils,
+    };
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    use std::rc::Rc;
     use std::sync::atomic::AtomicU64;
 
     #[test]
@@ -324,6 +323,7 @@ pub(crate) mod test {
         assert!(extracted.is_none());
     }
 
+    #[test]
     fn extract_args_exist() {
         let rule = Arc::new(Rule {
             resource: "abc".into(),
@@ -334,7 +334,7 @@ pub(crate) mod test {
             param_key: "test1".into(),
             ..Default::default()
         });
-        let mut controller = gen_reject::<Counter>(rule, None);
+        let controller = gen_reject::<Counter>(rule, None);
 
         let mut args = ParamsList::new();
         args.push("1".into());
@@ -353,6 +353,7 @@ pub(crate) mod test {
         assert_eq!("v1", &extracted.unwrap());
     }
 
+    #[test]
     fn extract_args_exist_kv() {
         let rule = Arc::new(Rule {
             resource: "abc".into(),
@@ -363,7 +364,7 @@ pub(crate) mod test {
             param_key: "test1".into(),
             ..Default::default()
         });
-        let mut controller = gen_reject::<Counter>(rule, None);
+        let controller = gen_reject::<Counter>(rule, None);
 
         let mut args = ParamsList::new();
         args.push("1".into());
@@ -382,6 +383,7 @@ pub(crate) mod test {
         assert_eq!("v1", &extracted.unwrap());
     }
 
+    #[test]
     fn extract_args_exist_list() {
         let rule = Arc::new(Rule {
             resource: "abc".into(),
@@ -392,7 +394,7 @@ pub(crate) mod test {
             param_key: "test2".into(),
             ..Default::default()
         });
-        let mut controller = gen_reject::<Counter>(rule, None);
+        let controller = gen_reject::<Counter>(rule, None);
 
         let mut args = ParamsList::new();
         args.push("1".into());
@@ -411,6 +413,7 @@ pub(crate) mod test {
         assert_eq!("2", &extracted.unwrap());
     }
 
+    #[test]
     fn extract_args_not_exist() {
         let rule = Arc::new(Rule {
             resource: "abc".into(),
@@ -421,7 +424,7 @@ pub(crate) mod test {
             param_key: "test2".into(),
             ..Default::default()
         });
-        let mut controller = gen_reject::<Counter>(rule, None);
+        let controller = gen_reject::<Counter>(rule, None);
 
         let mut args = ParamsList::new();
         args.push("1".into());
@@ -718,7 +721,7 @@ pub(crate) mod test {
             rule_time_counter
                 .expect_cap()
                 .return_const(CONCURRENCY_MAX_COUNT);
-            let mut rule_token_counter: MockCounter<ParamKey> = MockCounter::new();
+            let rule_token_counter: MockCounter<ParamKey> = MockCounter::new();
             let metric = Arc::new(ParamsMetric {
                 rule_time_counter,
                 rule_token_counter,

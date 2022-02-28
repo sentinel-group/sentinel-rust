@@ -1,7 +1,7 @@
 use super::{BucketLeapArray, BucketWrap, MetricBucket};
 use crate::base::{
     check_validity_for_reuse_statistic, MetricEvent, MetricItem, ReadStat, TimePredicate,
-    WriteStat, DEFAULT_STATISTIC_MAX_RT,
+    DEFAULT_STATISTIC_MAX_RT,
 };
 use crate::utils::curr_time_millis;
 use crate::Result;
@@ -22,6 +22,7 @@ pub struct SlidingWindowMetric {
     inner: Arc<BucketLeapArray>,
 }
 
+#[allow(dead_code)]
 // all the methods are getter
 impl SlidingWindowMetric {
     pub fn new(sample_count: u32, interval_ms: u32, inner: Arc<BucketLeapArray>) -> Result<Self> {
@@ -159,12 +160,11 @@ impl SlidingWindowMetric {
         let timestamp = bucket.start_stamp();
         let bucket = bucket.value();
         let complete_qps = bucket.get(MetricEvent::Complete);
-        let mut avg_rt = 0u64;
-        if complete_qps > 0 {
-            avg_rt = bucket.get(MetricEvent::Rt) / complete_qps;
+        let avg_rt = if complete_qps > 0 {
+            bucket.get(MetricEvent::Rt) / complete_qps
         } else {
-            avg_rt = bucket.get(MetricEvent::Rt);
-        }
+            bucket.get(MetricEvent::Rt)
+        };
         MetricItem {
             timestamp,
             pass_qps: bucket.get(MetricEvent::Pass),
@@ -212,6 +212,7 @@ impl ReadStat for SlidingWindowMetric {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::base::stat::WriteStat;
     use std::thread;
     const SAMPLE_COUNT: u32 = 20;
     const BUCKET_LEN_MS: u32 = 500; // 500 ms
@@ -261,7 +262,7 @@ mod test {
             now: u64,
             wanted_start: u64,
             wanted_end: u64,
-        };
+        }
         let testcases = [
             Testcase {
                 sample_count: 4,
@@ -340,11 +341,11 @@ mod test {
         let arr = Arc::new(BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap());
         let (sample_count, interval_ms, now) = (2, 2000, 1678416556599);
         let mut handles = Vec::new();
-        for i in 0..500 {
+        for _ in 0..500 {
             handles.push(thread::spawn({
                 let arr = arr.clone();
                 move || {
-                    arr.add_count_with_time(now, MetricEvent::Pass, 1);
+                    arr.add_count_with_time(now, MetricEvent::Pass, 1).unwrap();
                 }
             }))
         }
@@ -352,12 +353,13 @@ mod test {
             handles.push(thread::spawn({
                 let arr = arr.clone();
                 move || {
-                    arr.add_count_with_time(now - 100 - i, MetricEvent::Pass, 1);
+                    arr.add_count_with_time(now - 100 - i, MetricEvent::Pass, 1)
+                        .unwrap();
                 }
             }))
         }
         for h in handles {
-            h.join();
+            h.join().unwrap();
         }
         let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr.clone()).unwrap();
         assert_eq!(swm.sum_with_time(now, MetricEvent::Pass), 2000);
@@ -427,8 +429,10 @@ mod test {
         let arr = Arc::new(BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap());
         let (sample_count, interval_ms, now) = (4, 2000, curr_time_millis());
         let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr.clone()).unwrap();
-        arr.add_count_with_time(now, MetricEvent::Pass, 100);
-        arr.add_count_with_time(now - 1000, MetricEvent::Pass, 100);
+        arr.add_count_with_time(now, MetricEvent::Pass, 100)
+            .unwrap();
+        arr.add_count_with_time(now - 1000, MetricEvent::Pass, 100)
+            .unwrap();
         let (start, end) = swm.bucket_start_range(now);
         let item = swm.second_metrics_on_condition(&move |ts| start <= ts && ts <= end);
         assert_eq!(item.len(), 2);

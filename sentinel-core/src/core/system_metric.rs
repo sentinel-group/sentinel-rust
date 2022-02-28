@@ -1,8 +1,4 @@
-use crate::{
-    logging,
-    utils::{self, curr_time_millis},
-    Error, Result,
-};
+use crate::{logging, utils, Result};
 cfg_exporter! {
     use crate::exporter;
 }
@@ -11,8 +7,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc, Mutex, Once,
 };
-use std::time;
-use sysinfo::{get_current_pid, Process, ProcessExt, System, SystemExt};
+use sysinfo::{get_current_pid, ProcessExt, System, SystemExt};
 
 lazy_static! {
     static ref SYSTEM: Arc<Mutex<System>> = Arc::new(Mutex::new(System::new_all()));
@@ -70,7 +65,7 @@ pub fn init_cpu_collector(cpu_interval: u32) {
     }
     CPU_ONCE.call_once(move || {
         std::thread::spawn(move || loop {
-            let mut cpu_percent = get_process_cpu_stat();
+            let cpu_percent = get_process_cpu_stat();
             #[cfg(feature = "exporter")]
             exporter::set_cpu_ratio(cpu_percent);
             *CURRENT_CPU.lock().unwrap() = cpu_percent;
@@ -102,7 +97,7 @@ pub fn init_load_collector(load_interval: u32) {
     }
     LOAD_ONCE.call_once(move || {
         std::thread::spawn(move || loop {
-            let mut load = get_system_load().unwrap_or_else(|_| {
+            let load = get_system_load().unwrap_or_else(|_| {
                 logging::error!(
                     "[retrieveAndUpdateSystemStat] Failed to retrieve current system load"
                 );
@@ -120,7 +115,7 @@ pub fn init_load_collector(load_interval: u32) {
 
 #[inline]
 fn get_system_load() -> Result<f64> {
-    let mut system = SYSTEM.lock().unwrap();
+    let system = SYSTEM.lock().unwrap();
     let avg = system.load_average();
     Ok(avg.one)
 }
@@ -161,6 +156,7 @@ pub fn set_memory_usage(usage: u64) {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::utils::curr_time_millis;
 
     #[test]
     #[ignore]
@@ -197,16 +193,12 @@ mod test {
     #[test]
     #[ignore]
     fn process_cpu_stat() {
-        std::thread::spawn(|| {
-            let mut i = 0;
-            loop {
-                let start = curr_time_millis();
-                while curr_time_millis() - start < 50 {
-                    i += 1;
-                    i -= 1;
-                }
-                utils::sleep_for_ms(20);
+        std::thread::spawn(|| loop {
+            let start = curr_time_millis();
+            while curr_time_millis() - start < 50 {
+                let _ = 0;
             }
+            utils::sleep_for_ms(20);
         });
         set_cpu_usage(0.0);
         assert!((current_cpu_usage() - 0.0) < f32::EPSILON);

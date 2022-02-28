@@ -1,15 +1,8 @@
 use super::*;
-use crate::{
-    base,
-    base::{nop_read_stat, nop_write_stat, ReadStat, ResourceType, SentinelRule, StatNode},
-    config, logging, stat,
-    stat::{ResourceNode, SlidingWindowMetric},
-    system_metric, utils,
-};
+use crate::{base::SentinelRule, logging, utils};
 use lazy_static::lazy_static;
 use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
-use std::sync::{Arc, Mutex, RwLock, Weak};
+use std::sync::{Arc, Mutex, RwLock};
 
 pub type RuleMap = HashMap<MetricType, HashSet<Arc<Rule>>>;
 
@@ -110,7 +103,7 @@ fn build_rule_map(rules: Vec<Arc<Rule>>) -> RuleMap {
             );
             continue;
         }
-        let mut value = m.entry(rule.metric_type.clone()).or_insert(HashSet::new());
+        let value = m.entry(rule.metric_type.clone()).or_insert(HashSet::new());
         value.insert(rule);
     }
     return m;
@@ -121,7 +114,6 @@ mod test {
     //! Some tests cannot run in parallel, since we cannot promise that
     //! the global data structs are not modified before assertion.
     use super::*;
-    use crate::{base::ReadStat, utils::AsAny};
 
     #[test]
     fn empty_rules() {

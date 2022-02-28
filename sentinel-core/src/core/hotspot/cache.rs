@@ -128,7 +128,7 @@ where
             .read()
             .unwrap()
             .iter()
-            .map(|(k, v)| k)
+            .map(|(k, _v)| k)
             .rev()
             .collect()
     }
