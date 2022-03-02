@@ -19,7 +19,7 @@ exclude = ["/tests"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["proxy_envoy"]
+default = []
 full = ["macros"]
 # If the sentinel is not utilized in asynchronous scenarios, 
 # the `Sentinel` entry is not necessary to use `Arc` with `Send` trait

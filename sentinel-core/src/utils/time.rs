@@ -1,3 +1,6 @@
+//! Timer implementation for the Sentinel.
+//! It supports a cached timer and a real-time timer from `unix_timestamp_nanos`.
+
 use lazy_static::lazy_static;
 use time::{macros::format_description, Duration, OffsetDateTime};
 

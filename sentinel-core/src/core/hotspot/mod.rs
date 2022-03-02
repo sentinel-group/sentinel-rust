@@ -1,4 +1,4 @@
-//! `hotspot` mod provides implementation of "hot-spot" (frequent) parameter flow control.
+//! The `hotspot` mod provides implementation of "hot-spot" (frequent) parameter flow control.
 
 pub mod cache;
 pub mod concurrency_stat_slot;

@@ -18,7 +18,7 @@ pub(crate) fn next_after(x: f64) -> f64 {
     f64::from_bits(x)
 }
 
-// trait for upcast/downcast
+/// Trait for upcast/downcast
 pub trait AsAny: Any + Send + Sync {
     fn as_any(&self) -> &(dyn Any + Send + Sync);
     fn as_any_arc(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;

@@ -1,6 +1,6 @@
-//! Package flow implements the flow shaping control.
+//! The `flow` mod implements the flow shaping control.
 //!
-//! flow module is based on QPS statistic metric
+//! Flow module is based on QPS statistic metric
 //!
 //! The TrafficShapingController consists of two part: TrafficShapingCalculator and TrafficShapingChecker
 //!
