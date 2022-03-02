@@ -9,7 +9,7 @@
 [![Gitter chat][gitter-badge]][gitter-url]
 
 
-[crates-badge]: https://img.shields.io/crates/v/sentinel.svg
+[crates-badge]: https://img.shields.io/crates/v/sentinel-core.svg
 [crates-url]: https://crates.io/crates/sentinel-core
 [ci-badge]: https://github.com/sentinel-group/sentinel-rust/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/sentinel-group/sentinel-rust/actions/workflows/ci.yml
