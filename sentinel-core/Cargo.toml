@@ -61,7 +61,7 @@ regex = { version = "1.5", optional = true }
 prometheus_exporter = { version = "0.8", optional = true }
 # todo: simplify encapsulation
 # using getset = "0.1.1"
-lru = "0.7.0"
+lru = "0.7.3"
 etcd-rs = { version = "0.6", optional = true }
 consul = { version = "0.4", optional = true }
 futures = { version = "0.3.17", optional = true }
