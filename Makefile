@@ -8,7 +8,7 @@ clippy:
 	cargo clippy --all-targets --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
 
 doc: clean
-	KERNEL_VERSION=$(KERNEL_VERSION) cargo doc --no-deps --all-features
+	cargo doc --lib --no-deps --all-features --document-private-items --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
 
 clean:
 	cargo clean

@@ -1,3 +1,6 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, allow(unused_attributes))]
+
 //! # Sentinel in Rust
 //!
 //! Sentinel takes "flow" as breakthrough point, and works on multiple fields including **flow control**,
@@ -130,7 +133,6 @@
 //!
 //! See the [中文文档](https://sentinelguard.io/zh-cn/) for document in Chinese.
 //!
-
 // This module is not intended to be part of the public API. In general, any
 // `doc(hidden)` code is not part of Sentinel's public and stable API.
 #[macro_use]

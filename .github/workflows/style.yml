@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
       - run: cargo doc --lib --no-deps --all-features --document-private-items --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
 
   check-readme:

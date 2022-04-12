@@ -1,6 +1,6 @@
 [build]
 # Default target
-target = "x86_64-unknown-linux-gnu"
+# target = "x86_64-unknown-linux-gnu"
 
 [member."examples/proxy/envoy"]
 # Override default target for Wasm packages

@@ -4,6 +4,11 @@ name: grcov
 
 on:
   push:
+    paths:
+      - "**.rs"
+      - "**.yaml"
+      - "**.yml"
+      - "**.toml"
     branches: 
       - main
   schedule: 
