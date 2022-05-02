@@ -187,8 +187,8 @@ pub(crate) use test::aggregation::{MockRuleCheckSlot, MockStatPrepareSlot, MockS
 #[cfg(test)]
 mod test {
     use super::super::{
-        BlockType, EntryContext, MockStatNode, ResourceType, ResourceWrapper, ResultStatus,
-        SentinelEntry, TrafficType,
+        BlockType, EntryContext, MockStatNode, ResourceType, ResourceWrapper, SentinelEntry,
+        TrafficType,
     };
     use super::*;
     use std::cell::RefCell;
@@ -393,7 +393,7 @@ mod test {
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
             let r = sc.entry(Rc::clone(&ctx));
-            assert_eq!(ResultStatus::Pass, *r.status(), "should pass but blocked");
+            assert!(r.is_pass(), "should pass but blocked");
             sc.exit(Rc::clone(&ctx));
         }
 
@@ -459,11 +459,7 @@ mod test {
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
             let r = sc.entry(Rc::clone(&ctx));
-            assert_eq!(
-                ResultStatus::Blocked,
-                *r.status(),
-                "should blocked but pass"
-            );
+            assert!(r.is_blocked(), "should blocked but pass");
             assert_eq!(
                 BlockType::Flow,
                 r.block_err().unwrap().block_type(),

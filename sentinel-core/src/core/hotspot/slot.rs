@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    base::{BaseSlot, ContextPtr, ResultStatus, RuleCheckSlot, TokenResult},
+    base::{BaseSlot, ContextPtr, RuleCheckSlot, TokenResult},
     utils,
 };
 use lazy_static::lazy_static;
@@ -39,9 +39,9 @@ impl RuleCheckSlot for Slot {
             let extracted = tc.extract_args(&ctx_ptr);
             if let Some(arg) = extracted {
                 let r = tc.perform_checking(arg, batch);
-                match r.status() {
-                    ResultStatus::Pass => {}
-                    ResultStatus::Blocked => {
+                match r {
+                    TokenResult::Pass => {}
+                    TokenResult::Blocked(_) => {
                         cfg_if_async! {
                             ctx_ptr.write().unwrap().set_result(r),
                             ctx_ptr.borrow_mut().set_result(r)
@@ -51,8 +51,7 @@ impl RuleCheckSlot for Slot {
                             return ctx_ptr.borrow().result().clone()
                         }
                     }
-                    ResultStatus::ShouldWait => {
-                        let nanos_to_wait = r.nanos_to_wait();
+                    TokenResult::Wait(nanos_to_wait) => {
                         utils::sleep_for_ns(nanos_to_wait);
                     }
                 }

@@ -1,7 +1,7 @@
 use super::global_slot_chain;
 use crate::base::{
     EntryContext, EntryStrongPtr, ParamsList, ParamsMap, ResourceType, ResourceWrapper,
-    ResultStatus, SentinelEntry, SentinelInput, SlotChain, TrafficType,
+    SentinelEntry, SentinelInput, SlotChain, TokenResult, TrafficType,
 };
 use crate::utils::format_time_nanos_curr;
 use crate::{Error, Result};
@@ -83,14 +83,17 @@ impl EntryBuilder {
             ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
 
             let r = self.slot_chain.entry(Arc::clone(&ctx));
-            if *r.status() == ResultStatus::Blocked {
-                // todo: here need fix
-                // if return block_error,
-                // must deep copy the error, since Arc only clone pointer
-                entry.read().unwrap().exit();
-                Err(Error::msg(r.to_string()))
-            } else {
-                Ok(EntryStrongPtr::new(entry))
+            match r {
+                TokenResult::Blocked(_) => {
+                    // todo:
+                    // if return block_error,
+                    // must deep copy the error, since Arc only clone pointer
+                    entry.read().unwrap().exit();
+                    Err(Error::msg(r.to_string()))
+                },
+                _ => {
+                    Ok(EntryStrongPtr::new(entry))
+                },
             }
         }
     }
@@ -124,14 +127,17 @@ impl EntryBuilder {
             ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
 
             let r = self.slot_chain.entry(Rc::clone(&ctx));
-            if *r.status() == ResultStatus::Blocked {
-                // todo:
-                // if return block_error,
-                // must deep copy the error, since Arc only clone pointer
-                entry.borrow().exit();
-                Err(Error::msg(r.to_string()))
-            } else {
-                Ok(EntryStrongPtr::new(entry))
+            match r {
+                TokenResult::Blocked(_) => {
+                    // todo:
+                    // if return block_error,
+                    // must deep copy the error, since Arc only clone pointer
+                    entry.borrow().exit();
+                    Err(Error::msg(r.to_string()))
+                },
+                _ => {
+                    Ok(EntryStrongPtr::new(entry))
+                },
             }
         }
     }

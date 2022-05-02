@@ -170,7 +170,6 @@ impl Checker for ThrottlingChecker {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::base::ResultStatus;
     use crate::utils::unix_time_unit_offset;
     use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -238,7 +237,7 @@ mod test {
         // wait_count is count of request that will wait and not be blocked
         let wait_count: u64 = timeout_ms as u64 / (interval_ms as f64 / threshold) as u64;
         for i in 0..wait_count as usize {
-            assert_eq!(result_list[i].status(), &ResultStatus::ShouldWait);
+            assert!(result_list[i].is_wait());
             let wt = result_list[i].nanos_to_wait() as f64;
             let mid = ((i + 1) as u64 * 1000 * unix_time_unit_offset() / wait_count) as f64;
             assert!(wt > (1.0 - EPSILON) * mid && wt < (1.0 + EPSILON) * mid);

@@ -60,32 +60,17 @@ impl fmt::Display for BlockType {
     }
 }
 
-/// If the `ResultStatus` of checkers is `Pass`, there is no need to change the result in ctx.
-/// Since by default it should be `Pass`, and if there is a `Blocked` status, the whole ctx should be blocked
 #[derive(Debug, Clone, PartialEq)]
-pub enum ResultStatus {
+pub enum TokenResult {
     Pass,
-    Blocked,
-    ShouldWait,
+    Blocked(BlockError),
+    Wait(u64),
 }
 
-impl Default for ResultStatus {
+impl Default for TokenResult {
     fn default() -> Self {
-        ResultStatus::Pass
+        TokenResult::Pass
     }
-}
-
-impl fmt::Display for ResultStatus {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct TokenResult {
-    status: ResultStatus,
-    block_err: Option<BlockError>,
-    nanos_to_wait: u64,
 }
 
 impl TokenResult {
@@ -94,28 +79,15 @@ impl TokenResult {
     }
 
     pub fn new_should_wait(nanos_to_wait: u64) -> Self {
-        Self {
-            status: ResultStatus::ShouldWait,
-            // here u64->i64 should not overflow, since it represents the waiting duration
-            nanos_to_wait,
-            ..Self::default()
-        }
+        Self::Wait(nanos_to_wait)
     }
 
     pub fn new_blocked(block_type: BlockType) -> Self {
-        Self {
-            status: ResultStatus::Blocked,
-            block_err: Some(BlockError::new(block_type)),
-            ..Self::default()
-        }
+        Self::Blocked(BlockError::new(block_type))
     }
 
     pub fn new_blocked_with_msg(block_type: BlockType, block_msg: String) -> Self {
-        Self {
-            status: ResultStatus::Blocked,
-            block_err: Some(BlockError::new_with_msg(block_type, block_msg)),
-            ..Self::default()
-        }
+        Self::Blocked(BlockError::new_with_msg(block_type, block_msg))
     }
 
     pub fn new_blocked_with_cause(
@@ -124,35 +96,24 @@ impl TokenResult {
         rule: Arc<dyn SentinelRule>,
         snapshot_value: Arc<Snapshot>,
     ) -> Self {
-        Self {
-            status: ResultStatus::Blocked,
-            block_err: Some(BlockError::new_with_cause(
-                block_type,
-                block_msg,
-                rule,
-                snapshot_value,
-            )),
-            ..Self::default()
-        }
+        Self::Blocked(BlockError::new_with_cause(
+            block_type,
+            block_msg,
+            rule,
+            snapshot_value,
+        ))
     }
 
-    //[attention] think what would happen outside this function? add lifetime automatically? or &self would be dangling?
     pub fn reset_to_pass(&mut self) {
-        self.status = ResultStatus::Pass;
-        self.block_err = None;
-        self.nanos_to_wait = 0;
+        *self = Self::new_pass();
     }
 
     pub fn reset_to_blocked(&mut self, block_type: BlockType) {
-        self.status = ResultStatus::Blocked;
-        self.block_err = Some(BlockError::new(block_type));
-        self.nanos_to_wait = 0;
+        *self = Self::new_blocked(block_type);
     }
 
     pub fn reset_to_blocked_with_msg(&mut self, block_type: BlockType, block_msg: String) {
-        self.status = ResultStatus::Blocked;
-        self.block_err = Some(BlockError::new_with_msg(block_type, block_msg));
-        self.nanos_to_wait = 0;
+        *self = Self::new_blocked_with_msg(block_type, block_msg);
     }
 
     pub fn reset_to_blocked_with_cause(
@@ -162,55 +123,53 @@ impl TokenResult {
         rule: Arc<dyn SentinelRule>,
         snapshot_value: Arc<Snapshot>,
     ) {
-        self.status = ResultStatus::Blocked;
-        self.block_err = Some(BlockError::new_with_cause(
-            block_type,
-            block_msg,
-            rule,
-            snapshot_value,
-        ));
-        self.nanos_to_wait = 0;
+        *self = Self::new_blocked_with_cause(block_type, block_msg, rule, snapshot_value);
     }
 
     pub fn is_pass(&self) -> bool {
-        self.status == ResultStatus::Pass
+        match self {
+            Self::Pass => true,
+            _ => false,
+        }
     }
 
     pub fn is_blocked(&self) -> bool {
-        self.status == ResultStatus::Blocked
+        match self {
+            Self::Blocked(_) => true,
+            _ => false,
+        }
     }
 
     pub fn is_wait(&self) -> bool {
-        self.status == ResultStatus::ShouldWait
+        match self {
+            Self::Wait(_) => true,
+            _ => false,
+        }
     }
 
-    pub fn status(&self) -> &ResultStatus {
-        &self.status
-    }
     pub fn block_err(&self) -> Option<BlockError> {
-        self.block_err.clone()
+        match self {
+            Self::Blocked(err) => Some(err.clone()),
+            _ => None,
+        }
     }
+
     pub fn nanos_to_wait(&self) -> u64 {
-        self.nanos_to_wait
+        match self {
+            Self::Wait(nanos) => *nanos,
+            _ => 0,
+        }
     }
 }
 
 impl fmt::Display for TokenResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.block_err.is_some() {
-            write!(
-                f,
-                "TokenResult{{status={}, blockErr={:?}, nanosToWait={:?}}}",
-                self.status,
-                self.block_err.as_ref().unwrap(),
-                self.nanos_to_wait
-            )
-        } else {
-            write!(
-                f,
-                "TokenResult{{status={}, blockErr=None, nanosToWait={:?}}}",
-                self.status, self.nanos_to_wait
-            )
+        match self {
+            TokenResult::Pass => write!(f, "TokenResult::Pass"),
+            TokenResult::Blocked(block_err) => write!(f, "TokenResult::Blocked: {:?}", block_err),
+            TokenResult::Wait(nanos_to_wait) => {
+                write!(f, "TokenResult::Wait: {} ns", nanos_to_wait)
+            }
         }
     }
 }

@@ -20,6 +20,12 @@ pub struct BlockError {
     snapshot_value: Option<Arc<Snapshot>>,
 }
 
+impl PartialEq for BlockError {
+    fn eq(&self, other: &BlockError) -> bool {
+        self.block_type == other.block_type && self.block_msg == other.block_msg
+    }
+}
+
 impl BlockError {
     pub fn new(block_type: BlockType) -> Self {
         Self {
@@ -87,9 +93,7 @@ mod test {
 
     use super::*;
     #[derive(Debug, Default)]
-    struct MockRule {
-        id: String,
-    }
+    struct MockRule {}
 
     impl SentinelRule for MockRule {
         fn resource_name(&self) -> String {

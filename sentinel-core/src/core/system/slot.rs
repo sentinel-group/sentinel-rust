@@ -143,7 +143,7 @@ mod test {
         ctx.set_resource(rw);
         let ctx = Rc::new(RefCell::new(ctx));
         let r = slot.check(&ctx);
-        assert_eq!(r.status(), ctx.borrow().result().status());
+        assert_eq!(r, *ctx.borrow().result());
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    base::{BaseSlot, ContextPtr, ResultStatus, RuleCheckSlot, StatNode, TokenResult},
+    base::{BaseSlot, ContextPtr, RuleCheckSlot, StatNode, TokenResult},
     logging, stat, utils,
     utils::AsAny,
 };
@@ -42,7 +42,7 @@ impl RuleCheckSlot for Slot {
                         ctx.set_result(r);
                         return ctx.result().clone();
                     }
-                    ResultStatus::ShouldWait => {
+                    ResultStatus::Wait => {
                         let nanos_to_wait = r.nanos_to_wait();
                         utils::sleep_for_ns(nanos_to_wait);
                     }
@@ -61,14 +61,13 @@ impl RuleCheckSlot for Slot {
             let tcs = get_traffic_controller_list_for(res);
             for tc in tcs {
                 let r = can_pass_check(tc, stat_node.clone(), input.batch_count());
-                match r.status() {
-                    ResultStatus::Pass => {}
-                    ResultStatus::Blocked => {
+                match r {
+                    TokenResult::Pass => {}
+                    TokenResult::Blocked(_) => {
                         ctx.set_result(r);
                         return ctx.result().clone();
                     }
-                    ResultStatus::ShouldWait => {
-                        let nanos_to_wait = r.nanos_to_wait();
+                    TokenResult::Wait(nanos_to_wait) => {
                         utils::sleep_for_ns(nanos_to_wait);
                     }
                 }
