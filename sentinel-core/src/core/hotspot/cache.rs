@@ -42,7 +42,7 @@ pub trait CounterTrait<K = ParamKey>: Send + Sync + std::fmt::Debug + Default + 
     where
         KeyRef<K>: Borrow<Q>,
         Q: Hash + Eq + 'static + Sized;
-    fn keys<'a>(&'a self) -> Vec<&'a K>;
+    fn keys(&self) -> Vec<K>;
     fn len(&self) -> usize;
     fn purge(&self);
 }
@@ -50,7 +50,7 @@ pub trait CounterTrait<K = ParamKey>: Send + Sync + std::fmt::Debug + Default + 
 #[derive(Debug)]
 pub struct Counter<K = ParamKey>
 where
-    K: Send + Sync + Hash + Eq + std::fmt::Debug + 'static,
+    K: Send + Sync + Hash + Eq + std::fmt::Debug + Clone + 'static,
 {
     cache: RwLock<LruCache<K, Arc<AtomicU64>>>,
 }
@@ -58,7 +58,7 @@ where
 /// Counter caches the hotspot parameter
 impl<K> CounterTrait<K> for Counter<K>
 where
-    K: Send + Sync + Hash + Eq + std::fmt::Debug,
+    K: Send + Sync + Hash + Eq + std::fmt::Debug + Clone,
 {
     fn with_capacity(cap: usize) -> Counter<K> {
         Counter {
@@ -123,14 +123,10 @@ where
     }
 
     // `keys` returns the keys in the cache, from oldest to newest.
-    fn keys(&self) -> Vec<&K> {
-        self.cache
-            .read()
-            .unwrap()
-            .iter()
-            .map(|(k, _v)| k)
-            .rev()
-            .collect()
+    fn keys(&self) -> Vec<K> {
+        let cache = self.cache.read().unwrap();
+        let keys = cache.iter().rev().map(|(k, _v)| k.clone());
+        keys.collect()
     }
 
     // `len` returns the number of items in the cache.
@@ -146,7 +142,7 @@ where
 
 impl<K> Default for Counter<K>
 where
-    K: Send + Sync + Hash + Eq + std::fmt::Debug,
+    K: Send + Sync + Hash + Eq + std::fmt::Debug + Clone,
 {
     fn default() -> Counter<K> {
         Counter::<K>::with_capacity(0)
@@ -166,11 +162,11 @@ pub(crate) mod test {
         #[derive(Debug)]
         pub(crate) Counter<K>
         where
-        K: Send + Sync +Hash + Eq + std::fmt::Debug + 'static
+        K: Send + Sync +Hash + Eq + std::fmt::Debug + Clone + 'static
         {}
         impl<K> CounterTrait<K> for Counter<K>
         where
-        K: Send + Sync +Hash + Eq + std::fmt::Debug + 'static
+        K: Send + Sync +Hash + Eq + std::fmt::Debug + Clone + 'static
         {
             fn with_capacity(cap: usize) -> Self;
             fn cap(&self) -> usize;
@@ -188,7 +184,7 @@ pub(crate) mod test {
             where
                 KeyRef<K>: Borrow<Q>,
                 Q: Hash + Eq + Sized + 'static;
-            fn keys<'a>(&'a self) -> Vec<&'a K>;
+            fn keys(&self) -> Vec<K>;
             fn len(&self) -> usize;
             fn purge(&self);
         }

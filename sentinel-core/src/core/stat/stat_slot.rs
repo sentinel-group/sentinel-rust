@@ -1,8 +1,8 @@
 use super::inbound_node;
+#[cfg(feature = "exporter")]
+use crate::base::TokenResult;
 use crate::{
-    base::{
-        BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot, TokenResult, TrafficType,
-    },
+    base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot, TrafficType},
     utils::curr_time_millis,
 };
 use lazy_static::lazy_static;

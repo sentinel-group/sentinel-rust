@@ -1,3 +1,4 @@
 target
 data
 logs
+Cargo.lock

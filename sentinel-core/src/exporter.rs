@@ -1,7 +1,4 @@
-use crate::{
-    base::{BlockError, TokenResult},
-    config,
-};
+use crate::{base::TokenResult, config};
 ///! exporter the process protected by Sentinel
 use lazy_static::lazy_static;
 use prometheus_exporter::{
