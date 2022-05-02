@@ -1,8 +1,8 @@
 use super::inbound_node;
-#[cfg(feature = "exporter")]
-use crate::base::ResultStatus;
 use crate::{
-    base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot, TrafficType},
+    base::{
+        BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot, TokenResult, TrafficType,
+    },
     utils::curr_time_millis,
 };
 use lazy_static::lazy_static;
@@ -60,12 +60,7 @@ impl StatSlot for ResourceNodeStatSlot {
             }
         }
         #[cfg(feature = "exporter")]
-        crate::exporter::add_handled_counter(
-            input.batch_count(),
-            res.name(),
-            ResultStatus::Pass,
-            None,
-        );
+        crate::exporter::add_handled_counter(input.batch_count(), res.name(), TokenResult::Pass);
     }
 
     #[allow(unused_variables)]
@@ -86,8 +81,7 @@ impl StatSlot for ResourceNodeStatSlot {
         crate::exporter::add_handled_counter(
             input.batch_count(),
             res.name(),
-            ResultStatus::Blocked,
-            block_error,
+            TokenResult::Blocked(block_error.unwrap()),
         );
     }
 

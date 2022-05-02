@@ -1,5 +1,5 @@
 use crate::{
-    base::{BlockError, ResultStatus},
+    base::{BlockError, TokenResult},
     config,
 };
 ///! exporter the process protected by Sentinel
@@ -99,12 +99,7 @@ pub fn add_state_change_counter(resourse: &str, from: &str, to: &str) {
         .inc_by(1.0);
 }
 
-pub fn add_handled_counter(
-    batch_count: u32,
-    resource: &str,
-    result: ResultStatus,
-    block_error: Option<BlockError>,
-) {
+pub fn add_handled_counter(batch_count: u32, resource: &str, result: TokenResult) {
     HANDLED_COUNTER
         .with_label_values(&[
             &HOST_NAME,
@@ -112,7 +107,6 @@ pub fn add_handled_counter(
             &PID_STRING,
             resource,
             &result.to_string(),
-            &format!("{:?}", block_error),
         ])
         .inc_by(batch_count as f64);
 }

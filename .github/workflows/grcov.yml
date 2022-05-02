@@ -42,7 +42,7 @@ jobs:
               ${{ runner.os }}-cargo-ci-${{ env.cache-name }}-
               ${{ runner.os }}-cargo-ci-
         - name: install grcov
-          run: cargo install grcov
+          run: cargo install grcov --force
         - name: install llvm tools
           run: rustup component add llvm-tools-preview
         - name: test project

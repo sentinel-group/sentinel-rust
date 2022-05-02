@@ -49,7 +49,7 @@ Add the dependency in Cargo.toml:
 
 ```toml
 [dependencies]
-sentinel-core = { version = "0.1.0", features = ["full"] }
+sentinel-core = { version = "0.1.1", features = ["full"] }
 ```
 
 ## Contributing
