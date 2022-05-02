@@ -46,8 +46,8 @@ enum-map = "1.1.0"
 # num_enum = "0.5.2"
 time = { version = "0.3.5", features = ["formatting", "macros"] }
 # serialize/deserialize
-serde = { version = "1.0.131", features = ["derive"] }
-serde_json = "1.0.64"
+serde = { version = "1.0.137", features = ["derive"] }
+serde_json = "1.0.80"
 serde_yaml = "0.8.23"
 lazy_static = "1.4.0"
 # error
@@ -58,16 +58,16 @@ env_logger = { version = "0.9.0", optional = true }
 log4rs = { version = "1.0.0", optional = true }
 log = "0.4"
 regex = { version = "1.5", optional = true }
-prometheus_exporter = { version = "0.8", optional = true }
+prometheus_exporter = { version = "0.8.4", optional = true }
 # todo: simplify encapsulation
 # using getset = "0.1.1"
-lru = "0.7.0"
+lru = "0.7.5"
 etcd-rs = { version = "0.6", optional = true }
 consul = { version = "0.4", optional = true }
 futures = { version = "0.3.17", optional = true }
 base64 = { version = "0.13", optional = true }
 kube = { version = "0.65", features = ["derive", "runtime"], optional = true }
-k8s-openapi = { version = "0.13.1", default-features = false, features = [
+k8s-openapi = { version = "0.14.0", default-features = false, features = [
   "v1_22",
 ], optional = true }
 schemars = { version = "0.8.8", optional = true }
