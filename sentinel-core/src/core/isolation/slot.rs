@@ -23,46 +23,26 @@ impl BaseSlot for AdaptiveSlot {
 }
 
 impl RuleCheckSlot for AdaptiveSlot {
-    cfg_async! {
-        fn check(&self, ctx: &ContextPtr) -> TokenResult {
-            let res_name = ctx.read().unwrap().resource().name().clone();
-            if res_name.len() == 0 {
-                return ctx.read().unwrap().result().clone();
-            }
-            let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
-            if !passed {
-                // never panic
-                ctx.write().unwrap()
-                    .set_result(TokenResult::new_blocked_with_cause(
-                        BlockType::SystemFlow,
-                        "concurrency exceeds threshold".into(),
-                        rule.unwrap(),
-                        snapshot.unwrap(),
-                    ));
-            }
-            return ctx.read().unwrap().result().clone();
+    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
+        cfg_if_async! {
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
+        };
+        let res_name = ctx.resource().name().clone();
+        if res_name.len() == 0 {
+            return ctx.result().clone();
         }
-    }
-
-    cfg_not_async! {
-        fn check(&self, ctx: &ContextPtr) -> TokenResult {
-            let res_name = ctx.borrow().resource().name().clone();
-            if res_name.len() == 0 {
-                return ctx.borrow().result().clone();
-            }
-            let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
-            if !passed {
-                // never panic
-                ctx.borrow_mut()
-                    .set_result(TokenResult::new_blocked_with_cause(
-                        BlockType::SystemFlow,
-                        "concurrency exceeds threshold".into(),
-                        rule.unwrap(),
-                        snapshot.unwrap(),
-                    ));
-            }
-            return ctx.borrow().result().clone();
+        let (passed, rule, snapshot) = can_pass_check(ctx_ptr, &res_name);
+        if !passed {
+            // never panic
+            ctx.set_result(TokenResult::new_blocked_with_cause(
+                BlockType::SystemFlow,
+                "concurrency exceeds threshold".into(),
+                rule.unwrap(),
+                snapshot.unwrap(),
+            ));
         }
+        return ctx.result().clone();
     }
 }
 

@@ -28,13 +28,12 @@ impl BaseSlot for Slot {
 impl RuleCheckSlot for Slot {
     fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
         cfg_if_async! {
-            let ctx = ctx_ptr.write().unwrap(),
-            let ctx = ctx_ptr.borrow()
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
         };
         let res = ctx.resource().name();
         let batch = ctx.input().batch_count();
         let tcs = get_traffic_controller_list_for(res);
-        drop(ctx);
         for tc in tcs {
             let extracted = tc.extract_args(&ctx_ptr);
             if let Some(arg) = extracted {
@@ -42,14 +41,8 @@ impl RuleCheckSlot for Slot {
                 match r {
                     TokenResult::Pass => {}
                     TokenResult::Blocked(_) => {
-                        cfg_if_async! {
-                            ctx_ptr.write().unwrap().set_result(r),
-                            ctx_ptr.borrow_mut().set_result(r)
-                        };
-                        cfg_if_async! {
-                            return ctx_ptr.read().unwrap().result().clone(),
-                            return ctx_ptr.borrow().result().clone()
-                        }
+                        ctx.set_result(r);
+                        return ctx.result().clone();
                     }
                     TokenResult::Wait(nanos_to_wait) => {
                         utils::sleep_for_ns(nanos_to_wait);
@@ -57,9 +50,6 @@ impl RuleCheckSlot for Slot {
                 }
             }
         }
-        cfg_if_async! {
-            return ctx_ptr.read().unwrap().result().clone(),
-            return ctx_ptr.borrow().result().clone()
-        }
+        return ctx.result().clone();
     }
 }

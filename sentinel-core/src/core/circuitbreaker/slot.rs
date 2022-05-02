@@ -23,38 +23,22 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    cfg_async! {
-        fn check(&self, ctx: &ContextPtr) -> TokenResult {
-            let res = ctx.read().unwrap().resource().name().clone();
-            if res.len() == 0 {
-                return ctx.read().unwrap().result().clone();
-            }
-            if let Some(_) = can_pass_check(&ctx, &res) {
-                ctx.write().unwrap()
-                    .set_result(TokenResult::new_blocked_with_msg(
-                        BlockType::CircuitBreaking,
-                        "circuit breaker check blocked".into(),
-                    ));
-            }
-            return ctx.read().unwrap().result().clone();
+    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
+        cfg_if_async! {
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
+        };
+        let res = ctx.resource().name().clone();
+        if res.len() == 0 {
+            return ctx.result().clone();
         }
-    }
-
-    cfg_not_async! {
-        fn check(&self, ctx: &ContextPtr) -> TokenResult {
-            let res = ctx.borrow().resource().name().clone();
-            if res.len() == 0 {
-                return ctx.borrow().result().clone();
-            }
-            if let Some(_) = can_pass_check(&ctx, &res) {
-                ctx.borrow_mut()
-                    .set_result(TokenResult::new_blocked_with_msg(
-                        BlockType::CircuitBreaking,
-                        "circuit breaker check blocked".into(),
-                    ));
-            }
-            return ctx.borrow().result().clone();
+        if let Some(_) = can_pass_check(ctx_ptr, &res) {
+            ctx.set_result(TokenResult::new_blocked_with_msg(
+                BlockType::CircuitBreaking,
+                "circuit breaker check blocked".into(),
+            ));
         }
+        return ctx.result().clone();
     }
 }
 

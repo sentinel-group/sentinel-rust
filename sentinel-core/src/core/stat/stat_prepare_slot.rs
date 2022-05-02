@@ -23,23 +23,13 @@ impl BaseSlot for ResourceNodePrepareSlot {
 }
 
 impl StatPrepareSlot for ResourceNodePrepareSlot {
-    cfg_async! {
-        fn prepare(&self, ctx: ContextPtr) {
-            let node = get_or_create_resource_node(
-                ctx.read().unwrap().resource().name(),
-                ctx.read().unwrap().resource().resource_type(),
-            );
-            ctx.write().unwrap().set_stat_node(node);
-        }
-    }
-
-    cfg_not_async! {
-        fn prepare(&self, ctx: ContextPtr) {
-            let node = get_or_create_resource_node(
-                ctx.borrow().resource().name(),
-                ctx.borrow().resource().resource_type(),
-            );
-            ctx.borrow_mut().set_stat_node(node);
-        }
+    fn prepare(&self, ctx_ptr: ContextPtr) {
+        cfg_if_async! {
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
+        };
+        let node =
+            get_or_create_resource_node(ctx.resource().name(), ctx.resource().resource_type());
+        ctx.set_stat_node(node);
     }
 }

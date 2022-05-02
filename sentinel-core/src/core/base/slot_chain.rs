@@ -80,35 +80,21 @@ impl SlotChain {
         }
     }
 
-    cfg_async! {
-        pub fn exit(&self, ctx: ContextPtr) {
-            if ctx.read().unwrap().entry().is_none() {
-                logging::error!("SentinelEntry is nil in SlotChain.exit()");
-                return;
-            }
-            if ctx.read().unwrap().is_blocked() {
-                return;
-            }
-            // The on_completed is called only when entry passed
-            for s in &self.stats {
-                s.on_completed(ctx.clone()); // Rc/Arc clone
-            }
+    pub fn exit(&self, ctx_ptr: ContextPtr) {
+        cfg_if_async! {
+            let ctx = ctx_ptr.read().unwrap(),
+            let ctx = ctx_ptr.borrow()
+        };
+        if ctx.entry().is_none() {
+            logging::error!("SentinelEntry is nil in SlotChain.exit()");
+            return;
         }
-    }
-
-    cfg_not_async! {
-        pub fn exit(&self, ctx: ContextPtr) {
-            if ctx.borrow().entry().is_none() {
-                logging::error!("SentinelEntry is nil in SlotChain.exit()");
-                return;
-            }
-            if ctx.borrow().is_blocked() {
-                return;
-            }
-            // The on_completed is called only when entry passed
-            for s in &self.stats {
-                s.on_completed(ctx.clone()); // Rc/Arc clone
-            }
+        if ctx.is_blocked() {
+            return;
+        }
+        // The on_completed is called only when entry passed
+        for s in &self.stats {
+            s.on_completed(ctx_ptr.clone()); // Rc/Arc clone
         }
     }
 
@@ -141,43 +127,37 @@ impl SlotChain {
 
     /// The entrance of slot chain
     /// Return the TokenResult
-    pub fn entry(&self, ctx: ContextPtr) -> TokenResult {
+    pub fn entry(&self, ctx_ptr: ContextPtr) -> TokenResult {
+        cfg_if_async! {
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
+        };
         // execute prepare slot
         for s in &self.stat_pres {
-            s.prepare(ctx.clone()); // Rc/Arc clone
+            s.prepare(ctx_ptr.clone()); // Rc/Arc clone
         }
 
         // execute rule based checking slot
-        cfg_if_async! {
-            ctx.write().unwrap().reset_result_to_pass(),
-            ctx.borrow_mut().reset_result_to_pass()
-        };
+        ctx.reset_result_to_pass();
         for s in &self.rule_checks {
-            let res = s.check(&ctx);
+            let res = s.check(&ctx_ptr);
             // check slot result
             if res.is_blocked() {
-                cfg_if_async! {
-                    ctx.write().unwrap().set_result(res.clone()),
-                    ctx.borrow_mut().set_result(res.clone())
-                };
+                ctx.set_result(res.clone());
             }
         }
 
-        cfg_if_async! {
-            let ctx_ptr = ctx.read().unwrap(),
-            let ctx_ptr = ctx.borrow()
-        };
         // execute statistic slot
         for s in &self.stats {
             // indicate the result of rule based checking slot.
-            if ctx_ptr.result().is_pass() {
-                s.on_entry_pass(ctx.clone()) // Rc/Arc clone
+            if ctx.result().is_pass() {
+                s.on_entry_pass(ctx_ptr.clone()) // Rc/Arc clone
             } else {
                 // The block error should not be nil.
-                s.on_entry_blocked(ctx.clone(), ctx_ptr.result().block_err()) // Rc/Arc clone
+                s.on_entry_blocked(ctx_ptr.clone(), ctx.result().block_err()) // Rc/Arc clone
             }
         }
-        ctx_ptr.result().clone()
+        ctx.result().clone()
     }
 }
 

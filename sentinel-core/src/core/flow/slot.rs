@@ -27,53 +27,29 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    cfg_async! {
-        fn check(&self, ctx: &ContextPtr) -> TokenResult {
-            let mut ctx = ctx.write().unwrap();
-            let res = ctx.resource().name();
-            let stat_node = ctx.stat_node();
-            let input = ctx.input();
-            let tcs = get_traffic_controller_list_for(res);
-            for tc in tcs {
-                let r = can_pass_check(tc, stat_node.clone(), input.batch_count());
-                match r.status() {
-                    ResultStatus::Pass => {}
-                    ResultStatus::Blocked => {
-                        ctx.set_result(r);
-                        return ctx.result().clone();
-                    }
-                    ResultStatus::Wait => {
-                        let nanos_to_wait = r.nanos_to_wait();
-                        utils::sleep_for_ns(nanos_to_wait);
-                    }
+    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
+        cfg_if_async! {
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
+        };
+        let res = ctx.resource().name();
+        let stat_node = ctx.stat_node();
+        let input = ctx.input();
+        let tcs = get_traffic_controller_list_for(res);
+        for tc in tcs {
+            let r = can_pass_check(tc, stat_node.clone(), input.batch_count());
+            match r {
+                TokenResult::Pass => {}
+                TokenResult::Blocked(_) => {
+                    ctx.set_result(r);
+                    return ctx.result().clone();
+                }
+                TokenResult::Wait(nanos_to_wait) => {
+                    utils::sleep_for_ns(nanos_to_wait);
                 }
             }
-            ctx.result().clone()
         }
-    }
-
-    cfg_not_async! {
-        fn check(&self, ctx: &ContextPtr) -> TokenResult {
-            let mut ctx = ctx.borrow_mut();
-            let res = ctx.resource().name();
-            let stat_node = ctx.stat_node();
-            let input = ctx.input();
-            let tcs = get_traffic_controller_list_for(res);
-            for tc in tcs {
-                let r = can_pass_check(tc, stat_node.clone(), input.batch_count());
-                match r {
-                    TokenResult::Pass => {}
-                    TokenResult::Blocked(_) => {
-                        ctx.set_result(r);
-                        return ctx.result().clone();
-                    }
-                    TokenResult::Wait(nanos_to_wait) => {
-                        utils::sleep_for_ns(nanos_to_wait);
-                    }
-                }
-            }
-            ctx.result().clone()
-        }
+        return ctx.result().clone();
     }
 }
 

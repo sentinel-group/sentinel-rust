@@ -91,28 +91,17 @@ impl StatSlot for ResourceNodeStatSlot {
         );
     }
 
-    cfg_async! {
-        fn on_completed(&self, ctx: ContextPtr) {
-            let round_trip = curr_time_millis() - ctx.read().unwrap().start_time();
-            ctx.write().unwrap().set_round_trip(round_trip);
-            if let Some(stat_node) = ctx.read().unwrap().stat_node().clone() {
-                self.record_complete_for(stat_node, ctx.read().unwrap().input().batch_count(), round_trip);
-                if *ctx.read().unwrap().resource().traffic_type() == TrafficType::Inbound {
-                    self.record_complete_for(inbound_node(), ctx.read().unwrap().input().batch_count(), round_trip);
-                }
-            }
-        }
-    }
-
-    cfg_not_async! {
-        fn on_completed(&self, ctx: ContextPtr) {
-            let round_trip = curr_time_millis() - ctx.borrow().start_time();
-            ctx.borrow_mut().set_round_trip(round_trip);
-            if let Some(stat_node) = ctx.borrow().stat_node().clone() {
-                self.record_complete_for(stat_node, ctx.borrow().input().batch_count(), round_trip);
-                if *ctx.borrow().resource().traffic_type() == TrafficType::Inbound {
-                    self.record_complete_for(inbound_node(), ctx.borrow().input().batch_count(), round_trip);
-                }
+    fn on_completed(&self, ctx_ptr: ContextPtr) {
+        cfg_if_async! {
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
+        };
+        let round_trip = curr_time_millis() - ctx.start_time();
+        ctx.set_round_trip(round_trip);
+        if let Some(stat_node) = ctx.stat_node().clone() {
+            self.record_complete_for(stat_node, ctx.input().batch_count(), round_trip);
+            if *ctx.resource().traffic_type() == TrafficType::Inbound {
+                self.record_complete_for(inbound_node(), ctx.input().batch_count(), round_trip);
             }
         }
     }
