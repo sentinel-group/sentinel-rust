@@ -1,6 +1,5 @@
 use crate::{
     base::{ParamKey, SentinelRule},
-    config::DEFAULT_RULE_NAME,
     Error,
 };
 use serde::{Deserialize, Serialize};
@@ -98,7 +97,10 @@ pub struct Rule {
 impl Default for Rule {
     fn default() -> Self {
         Rule {
-            id: DEFAULT_RULE_NAME.clone(),
+            #[cfg(target_arch = "wasm32")]
+            id: String::new(),
+            #[cfg(not(target_arch = "wasm32"))]
+            id: uuid::Uuid::new_v4().to_string(),
             resource: String::default(),
             metric_type: MetricType::default(),
             control_strategy: ControlStrategy::default(),

@@ -1,17 +1,5 @@
 use crate::base::ResourceType;
 
-cfg_if::cfg_if! {
-    if #[cfg(target_arch = "wasm32")]{
-        lazy_static::lazy_static!{
-            pub static ref DEFAULT_RULE_NAME: String = String::new();
-        }
-    }else{
-        lazy_static::lazy_static!{
-            pub static ref DEFAULT_RULE_NAME: String = uuid::Uuid::new_v4().to_string();
-        }
-    }
-}
-
 // default app settings
 pub const SENTINEL_VERSION: &str = "v1";
 pub const DEFAULT_APP_NAME: &str = "unknown_service";

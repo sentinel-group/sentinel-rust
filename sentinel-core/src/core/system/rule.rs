@@ -1,4 +1,4 @@
-use crate::{base::SentinelRule, config::DEFAULT_RULE_NAME, Error};
+use crate::{base::SentinelRule, Error};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fmt;
@@ -71,7 +71,10 @@ pub struct Rule {
 impl Default for Rule {
     fn default() -> Self {
         Rule {
-            id: DEFAULT_RULE_NAME.clone(),
+            #[cfg(target_arch = "wasm32")]
+            id: String::new(),
+            #[cfg(not(target_arch = "wasm32"))]
+            id: uuid::Uuid::new_v4().to_string(),
             metric_type: MetricType::default(),
             threshold: 0.0,
             strategy: AdaptiveStrategy::default(),
