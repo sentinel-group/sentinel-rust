@@ -1,4 +1,4 @@
-use crate::base::{BaseSlot, BlockError, ContextPtr, StatSlot};
+use crate::base::{BaseSlot, BlockError, EntryContext, StatSlot};
 use lazy_static::lazy_static;
 use std::sync::Arc;
 
@@ -21,10 +21,10 @@ impl BaseSlot for Slot {
 }
 
 impl StatSlot for Slot {
-    fn on_entry_pass(&self, _ctx: ContextPtr) {}
+    fn on_entry_pass(&self, _ctx: &EntryContext) {}
 
     // todo: write sentinel-block.log here
-    fn on_entry_blocked(&self, _ctx: ContextPtr, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: Option<BlockError>) {}
 
-    fn on_completed(&self, _ctx: ContextPtr) {}
+    fn on_completed(&self, _ctx: &mut EntryContext) {}
 }

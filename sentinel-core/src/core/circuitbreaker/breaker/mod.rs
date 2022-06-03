@@ -29,7 +29,7 @@ pub use stat::*;
 
 use super::*;
 use crate::{
-    base::{ContextPtr, SentinelEntry, Snapshot},
+    base::{ContextPtr, EntryContext, SentinelEntry, Snapshot},
     logging,
     stat::MetricTrait,
     utils, Error, Result,
@@ -113,7 +113,7 @@ pub trait CircuitBreakerTrait: Send + Sync {
 
     /// `try_pass` acquires permission of an invocation only if it is available at the time of invocation.
     /// it checks circuit breaker based on state machine of circuit breaker.
-    fn try_pass(&self, ctx: ContextPtr) -> bool {
+    fn try_pass(&self, ctx: &EntryContext) -> bool {
         match self.current_state() {
             State::Closed => true,
             State::Open => {
@@ -167,7 +167,7 @@ pub trait CircuitBreakerTrait: Send + Sync {
     }
 
     #[inline]
-    fn from_open_to_half_open(&self, ctx: ContextPtr) -> bool {
+    fn from_open_to_half_open(&self, ctx: &EntryContext) -> bool {
         self.breaker().from_open_to_half_open(ctx)
     }
 
@@ -247,7 +247,7 @@ impl BreakerBase {
 
     /// from_open_to_half_open updates circuit breaker state machine from open to half-open.
     /// Return true only if current goroutine successfully accomplished the transformation.
-    pub fn from_open_to_half_open(&self, ctx_ptr: ContextPtr) -> bool {
+    pub fn from_open_to_half_open(&self, ctx: &EntryContext) -> bool {
         let mut state = self.state.lock().unwrap();
         if *state == State::Open {
             *state = State::HalfOpen;
@@ -255,10 +255,6 @@ impl BreakerBase {
             for listener in &*listeners {
                 listener.on_transform_to_half_open(State::Open, Arc::clone(&self.rule));
             }
-            cfg_if_async! {
-                let ctx = ctx_ptr.read().unwrap(),
-                let ctx = ctx_ptr.borrow()
-            };
             let entry = ctx.entry();
             if entry.is_none() {
                 logging::error!(
@@ -372,13 +368,13 @@ pub(crate) mod test {
             fn stat(&self) -> &Arc<CounterLeapArray>;
             fn bound_rule(&self) -> &Arc<Rule>;
             fn next_retry_timestamp_ms(&self)->u64;
-            fn try_pass(&self, ctx: ContextPtr) -> bool;
+            fn try_pass(&self, ctx: &EntryContext) -> bool;
             fn set_state(&self, state:State);
             fn current_state(&self) -> State;
             fn on_request_complete(&self, rt: u64, error: &Option<Error>);
             fn reset_metric(&self);
             fn from_closed_to_open(&self, snapshot: Arc<Snapshot>) -> bool;
-            fn from_open_to_half_open(&self, ctx: ContextPtr) -> bool;
+            fn from_open_to_half_open(&self, ctx: &EntryContext) -> bool;
             fn from_half_open_to_open(&self, snapshot: Arc<Snapshot>) -> bool;
             fn from_half_open_to_closed(&self) -> bool;
         }
@@ -420,7 +416,7 @@ pub(crate) mod test {
             ..Default::default()
         });
         let breaker = SlowRtBreaker::new(Arc::clone(&rule));
-        let token = breaker.try_pass(Rc::new(RefCell::new(EntryContext::new())));
+        let token = breaker.try_pass(&EntryContext::new());
         clear_state_change_listeners();
         assert!(token);
     }
@@ -463,7 +459,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
-        let token = breaker.try_pass(ctx);
+        let token = breaker.try_pass(&*ctx.borrow());
         clear_state_change_listeners();
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
@@ -483,7 +479,7 @@ pub(crate) mod test {
             ..Default::default()
         });
         let breaker = SlowRtBreaker::new(Arc::clone(&rule));
-        let token = breaker.try_pass(Rc::new(RefCell::new(EntryContext::new())));
+        let token = breaker.try_pass(&EntryContext::new());
         assert!(token);
     }
 
@@ -512,7 +508,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
-        let token = breaker.try_pass(ctx);
+        let token = breaker.try_pass(&*ctx.borrow());
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
     }
@@ -560,7 +556,7 @@ pub(crate) mod test {
             ..Default::default()
         });
         let breaker = ErrorCountBreaker::new(Arc::clone(&rule));
-        let token = breaker.try_pass(Rc::new(RefCell::new(EntryContext::new())));
+        let token = breaker.try_pass(&EntryContext::new());
         assert!(token);
     }
 
@@ -588,7 +584,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
-        let token = breaker.try_pass(ctx);
+        let token = breaker.try_pass(&*ctx.borrow());
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
     }
@@ -635,7 +631,7 @@ pub(crate) mod test {
             ..Default::default()
         });
         let breaker = ErrorCountBreaker::new(Arc::clone(&rule));
-        let token = breaker.try_pass(Rc::new(RefCell::new(EntryContext::new())));
+        let token = breaker.try_pass(&EntryContext::new());
         assert!(token);
     }
 
@@ -663,7 +659,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
-        let token = breaker.try_pass(ctx);
+        let token = breaker.try_pass(&*ctx.borrow());
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
     }

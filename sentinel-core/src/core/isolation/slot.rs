@@ -1,5 +1,5 @@
 use super::*;
-use crate::base::{BaseSlot, BlockType, ContextPtr, RuleCheckSlot, Snapshot, TokenResult};
+use crate::base::{BaseSlot, BlockType, EntryContext, RuleCheckSlot, Snapshot, TokenResult};
 use lazy_static::lazy_static;
 use std::sync::Arc;
 
@@ -23,16 +23,12 @@ impl BaseSlot for AdaptiveSlot {
 }
 
 impl RuleCheckSlot for AdaptiveSlot {
-    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+    fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         let res_name = ctx.resource().name().clone();
         if res_name.len() == 0 {
             return ctx.result().clone();
         }
-        let (passed, rule, snapshot) = can_pass_check(ctx_ptr, &res_name);
+        let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
         if !passed {
             // never panic
             ctx.set_result(TokenResult::new_blocked_with_cause(
@@ -47,13 +43,9 @@ impl RuleCheckSlot for AdaptiveSlot {
 }
 
 fn can_pass_check(
-    ctx: &ContextPtr,
+    ctx: &EntryContext,
     res: &String,
 ) -> (bool, Option<Arc<Rule>>, Option<Arc<Snapshot>>) {
-    cfg_if_async! {
-        let ctx = ctx.read().unwrap(),
-        let ctx = ctx.borrow()
-    };
     let stat_node = ctx.stat_node().unwrap();
     let batch_count = ctx.input().batch_count();
     for rule in get_rules_of_resource(res) {

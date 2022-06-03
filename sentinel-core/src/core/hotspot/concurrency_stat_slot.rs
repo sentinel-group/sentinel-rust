@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    base::{BaseSlot, BlockError, ContextPtr, StatSlot},
+    base::{BaseSlot, BlockError, EntryContext, StatSlot},
     logging,
 };
 use lazy_static::lazy_static;
@@ -27,19 +27,14 @@ impl BaseSlot for ConcurrencyStatSlot {
 }
 
 impl StatSlot for ConcurrencyStatSlot {
-    fn on_entry_pass(&self, ctx: ContextPtr) {
-        let ctx_ref = &ctx;
-        cfg_if_async! {
-            let ctx = ctx.read().unwrap(),
-            let ctx = ctx.borrow()
-        };
+    fn on_entry_pass(&self, ctx: &EntryContext) {
         let res = ctx.resource().name();
         let tcs = get_traffic_controller_list_for(res);
         for tc in tcs {
             if tc.rule().metric_type != MetricType::Concurrency {
                 continue;
             }
-            if let Some(arg) = tc.extract_args(ctx_ref) {
+            if let Some(arg) = tc.extract_args(ctx) {
                 let metric = tc.metric();
                 match metric.concurrency_counter.get(&arg) {
                     Some(counter) => {
@@ -53,21 +48,16 @@ impl StatSlot for ConcurrencyStatSlot {
         }
     }
 
-    fn on_entry_blocked(&self, _ctx: ContextPtr, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: Option<BlockError>) {}
 
-    fn on_completed(&self, ctx: ContextPtr) {
-        let ctx_ref = &ctx;
-        cfg_if_async! {
-            let ctx = ctx.read().unwrap(),
-            let ctx = ctx.borrow()
-        };
+    fn on_completed(&self, ctx: &mut EntryContext) {
         let res = ctx.resource().name();
         let tcs = get_traffic_controller_list_for(res);
         for tc in tcs {
             if tc.rule().metric_type != MetricType::Concurrency {
                 continue;
             }
-            if let Some(arg) = tc.extract_args(ctx_ref) {
+            if let Some(arg) = tc.extract_args(ctx) {
                 let metric = tc.metric();
                 match metric.concurrency_counter.get(&arg) {
                     Some(counter) => {

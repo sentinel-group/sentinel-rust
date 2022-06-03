@@ -1,4 +1,4 @@
-use super::{BlockError, ContextPtr, TokenResult, SLOT_INIT};
+use super::{BlockError, ContextPtr, EntryContext, TokenResult, SLOT_INIT};
 use crate::logging;
 use crate::utils::AsAny;
 use std::any::Any;
@@ -24,7 +24,7 @@ pub trait StatPrepareSlot: BaseSlot {
     /// The result of preparing would store in EntryContext
     /// All StatPrepareSlots execute in sequence
     /// prepare fntion should not throw panic.
-    fn prepare(&self, _ctx: ContextPtr) {}
+    fn prepare(&self, _ctx: &mut EntryContext) {}
 }
 
 /// RuleCheckSlot is rule based checking strategy
@@ -34,11 +34,7 @@ pub trait RuleCheckSlot: BaseSlot {
     // It can break off the slot pipeline
     // Each TokenResult will return check result
     // The upper logic will control pipeline according to SlotResult.
-    fn check(&self, ctx: &ContextPtr) -> TokenResult {
-        cfg_if_async! {
-            let ctx = ctx.read().unwrap(),
-            let ctx = ctx.borrow()
-        };
+    fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         ctx.result().clone()
     }
 }
@@ -48,16 +44,16 @@ pub trait RuleCheckSlot: BaseSlot {
 pub trait StatSlot: BaseSlot {
     /// OnEntryPass fntion will be invoked when StatPrepareSlots and RuleCheckSlots execute pass
     /// StatSlots will do some statistic logic, such as QPS、log、etc
-    fn on_entry_pass(&self, _ctx: ContextPtr) {}
+    fn on_entry_pass(&self, _ctx: &EntryContext) {}
     /// on_entry_blocked fntion will be invoked when StatPrepareSlots and RuleCheckSlots fail to execute
     /// It may be inbound flow control or outbound cir
     /// StatSlots will do some statistic logic, such as QPS、log、etc
     /// blockError introduce the block detail
-    fn on_entry_blocked(&self, _ctx: ContextPtr, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: Option<BlockError>) {}
     /// on_completed fntion will be invoked when chain exits.
     /// The semantics of on_completed is the entry passed and completed
     /// Note: blocked entry will not call this fntion
-    fn on_completed(&self, _ctx: ContextPtr) {}
+    fn on_completed(&self, _ctx: &mut EntryContext) {}
 }
 
 /// SlotChain hold all system slots and customized slot.
@@ -82,8 +78,8 @@ impl SlotChain {
 
     pub fn exit(&self, ctx_ptr: ContextPtr) {
         cfg_if_async! {
-            let ctx = ctx_ptr.read().unwrap(),
-            let ctx = ctx_ptr.borrow()
+            let mut ctx = ctx_ptr.write().unwrap(),
+            let mut ctx = ctx_ptr.borrow_mut()
         };
         if ctx.entry().is_none() {
             logging::error!("SentinelEntry is nil in SlotChain.exit()");
@@ -94,7 +90,7 @@ impl SlotChain {
         }
         // The on_completed is called only when entry passed
         for s in &self.stats {
-            s.on_completed(ctx_ptr.clone()); // Rc/Arc clone
+            s.on_completed(&mut *ctx);
         }
     }
 
@@ -134,13 +130,13 @@ impl SlotChain {
         };
         // execute prepare slot
         for s in &self.stat_pres {
-            s.prepare(ctx_ptr.clone()); // Rc/Arc clone
+            s.prepare(&mut *ctx); // Rc/Arc clone
         }
 
         // execute rule based checking slot
         ctx.reset_result_to_pass();
         for s in &self.rule_checks {
-            let res = s.check(&ctx_ptr);
+            let res = s.check(&mut *ctx);
             // check slot result
             if res.is_blocked() {
                 ctx.set_result(res.clone());
@@ -151,10 +147,10 @@ impl SlotChain {
         for s in &self.stats {
             // indicate the result of rule based checking slot.
             if ctx.result().is_pass() {
-                s.on_entry_pass(ctx_ptr.clone()) // Rc/Arc clone
+                s.on_entry_pass(&*ctx) // Rc/Arc clone
             } else {
                 // The block error should not be nil.
-                s.on_entry_blocked(ctx_ptr.clone(), ctx.result().block_err()) // Rc/Arc clone
+                s.on_entry_blocked(&*ctx, ctx.result().block_err()) // Rc/Arc clone
             }
         }
         ctx.result().clone()
@@ -295,22 +291,22 @@ mod test {
         mock! {
             pub(crate) StatPrepareSlot {}
             impl BaseSlot for StatPrepareSlot {}
-            impl StatPrepareSlot for StatPrepareSlot { fn prepare(&self, ctx: ContextPtr); }
+            impl StatPrepareSlot for StatPrepareSlot { fn prepare(&self, ctx: &mut EntryContext); }
         }
 
         mock! {
             pub(crate) RuleCheckSlot {}
             impl BaseSlot for RuleCheckSlot {}
-            impl RuleCheckSlot for RuleCheckSlot { fn check(&self, ctx: &ContextPtr) -> TokenResult; }
+            impl RuleCheckSlot for RuleCheckSlot { fn check(&self, ctx: &mut EntryContext) -> TokenResult; }
         }
 
         mock! {
             pub(crate) StatSlot {}
             impl BaseSlot for StatSlot {}
             impl StatSlot for StatSlot {
-                fn on_entry_pass(&self, ctx: ContextPtr);
-                fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>);
-                fn on_completed(&self, ctx: ContextPtr);
+                fn on_entry_pass(&self, ctx: &EntryContext);
+                fn on_entry_blocked(&self, ctx: &EntryContext, block_error: Option<BlockError>);
+                fn on_completed(&self, ctx: &mut EntryContext);
             }
         }
 
@@ -453,7 +449,7 @@ mod test {
         impl BaseSlot for StatPrepareSlotBadMock {}
 
         impl StatPrepareSlot for StatPrepareSlotBadMock {
-            fn prepare(&self, _ctx: ContextPtr) {
+            fn prepare(&self, _ctx: &mut EntryContext) {
                 panic!("sentinel internal panic for test");
             }
         }

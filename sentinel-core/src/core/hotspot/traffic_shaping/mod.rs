@@ -6,7 +6,7 @@ pub use throttling::*;
 
 use super::*;
 use crate::{
-    base::{BlockType, ContextPtr, ParamKey, TokenResult},
+    base::{BlockType, EntryContext, ParamKey, TokenResult},
     logging,
 };
 use std::cmp::min;
@@ -147,7 +147,7 @@ where
     }
 
     /// ExtractArgs matches the arg from ctx based on Controller
-    pub fn extract_args(&self, ctx: &ContextPtr) -> Option<ParamKey> {
+    pub fn extract_args(&self, ctx: &EntryContext) -> Option<ParamKey> {
         if let Some(args) = self.extract_kv_args(ctx) {
             Some(args)
         } else if let Some(args) = self.extract_list_args(ctx) {
@@ -157,11 +157,7 @@ where
         }
     }
 
-    fn extract_list_args(&self, ctx: &ContextPtr) -> Option<ParamKey> {
-        cfg_if_async! {
-            let ctx = ctx.read().unwrap(),
-            let ctx = ctx.borrow()
-        };
+    fn extract_list_args(&self, ctx: &EntryContext) -> Option<ParamKey> {
         let args = ctx.input().args();
         match args {
             Some(args) => {
@@ -186,11 +182,7 @@ where
         }
     }
 
-    fn extract_kv_args(&self, ctx: &ContextPtr) -> Option<ParamKey> {
-        cfg_if_async! {
-            let ctx = ctx.read().unwrap(),
-            let ctx = ctx.borrow()
-        };
+    fn extract_kv_args(&self, ctx: &EntryContext) -> Option<ParamKey> {
         let attachments = ctx.input().attachments();
         match attachments {
             Some(attachments) => {
@@ -223,9 +215,7 @@ pub(crate) mod test {
         base::{EntryContext, ParamsList, ParamsMap, SentinelInput},
         utils,
     };
-    use std::cell::RefCell;
     use std::collections::HashMap;
-    use std::rc::Rc;
     use std::sync::atomic::AtomicU64;
 
     #[test]
@@ -316,7 +306,6 @@ pub(crate) mod test {
         input.set_args(args);
         input.set_attachments(attachments);
         ctx.set_input(input);
-        let ctx = Rc::new(RefCell::new(ctx));
 
         // no data
         let extracted = controller.extract_args(&ctx);
@@ -347,7 +336,6 @@ pub(crate) mod test {
         input.set_args(args);
         input.set_attachments(attachments);
         ctx.set_input(input);
-        let ctx = Rc::new(RefCell::new(ctx));
 
         let extracted = controller.extract_args(&ctx);
         assert_eq!("v1", &extracted.unwrap());
@@ -377,7 +365,6 @@ pub(crate) mod test {
         input.set_args(args);
         input.set_attachments(attachments);
         ctx.set_input(input);
-        let ctx = Rc::new(RefCell::new(ctx));
 
         let extracted = controller.extract_args(&ctx);
         assert_eq!("v1", &extracted.unwrap());
@@ -407,7 +394,6 @@ pub(crate) mod test {
         input.set_args(args);
         input.set_attachments(attachments);
         ctx.set_input(input);
-        let ctx = Rc::new(RefCell::new(ctx));
 
         let extracted = controller.extract_args(&ctx);
         assert_eq!("2", &extracted.unwrap());
@@ -437,7 +423,6 @@ pub(crate) mod test {
         input.set_args(args);
         input.set_attachments(attachments);
         ctx.set_input(input);
-        let ctx = Rc::new(RefCell::new(ctx));
 
         let extracted = controller.extract_args(&ctx);
         assert!(extracted.is_none());

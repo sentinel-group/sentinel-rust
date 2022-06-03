@@ -2,7 +2,7 @@ use super::inbound_node;
 #[cfg(feature = "exporter")]
 use crate::base::TokenResult;
 use crate::{
-    base::{BaseSlot, BlockError, ContextPtr, MetricEvent, StatNode, StatSlot, TrafficType},
+    base::{BaseSlot, BlockError, EntryContext, MetricEvent, StatNode, StatSlot, TrafficType},
     utils::curr_time_millis,
 };
 use lazy_static::lazy_static;
@@ -46,11 +46,7 @@ impl BaseSlot for ResourceNodeStatSlot {
 }
 
 impl StatSlot for ResourceNodeStatSlot {
-    fn on_entry_pass(&self, ctx: ContextPtr) {
-        cfg_if_async! {
-            let ctx = ctx.read().unwrap(),
-            let ctx = ctx.borrow()
-        };
+    fn on_entry_pass(&self, ctx: &EntryContext) {
         let res = ctx.resource();
         let input = ctx.input();
         if let Some(stat_node) = ctx.stat_node().clone() {
@@ -64,11 +60,7 @@ impl StatSlot for ResourceNodeStatSlot {
     }
 
     #[allow(unused_variables)]
-    fn on_entry_blocked(&self, ctx: ContextPtr, block_error: Option<BlockError>) {
-        cfg_if_async! {
-            let ctx = ctx.read().unwrap(),
-            let ctx = ctx.borrow()
-        };
+    fn on_entry_blocked(&self, ctx: &EntryContext, block_error: Option<BlockError>) {
         let res = ctx.resource();
         let input = ctx.input();
         if let Some(stat_node) = ctx.stat_node().clone() {
@@ -85,11 +77,7 @@ impl StatSlot for ResourceNodeStatSlot {
         );
     }
 
-    fn on_completed(&self, ctx_ptr: ContextPtr) {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+    fn on_completed(&self, ctx: &mut EntryContext) {
         let round_trip = curr_time_millis() - ctx.start_time();
         ctx.set_round_trip(round_trip);
         if let Some(stat_node) = ctx.stat_node().clone() {

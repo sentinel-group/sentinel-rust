@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    base::{BaseSlot, ContextPtr, RuleCheckSlot, StatNode, TokenResult},
+    base::{BaseSlot, EntryContext, RuleCheckSlot, StatNode, TokenResult},
     logging, stat, utils,
     utils::AsAny,
 };
@@ -27,11 +27,7 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+    fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         let res = ctx.resource().name();
         let stat_node = ctx.stat_node();
         let input = ctx.input();
@@ -90,8 +86,6 @@ mod test {
         EntryContext, MetricEvent, ResourceType, ResourceWrapper, SentinelInput, StatSlot,
         TrafficType,
     };
-    use std::cell::RefCell;
-    use std::rc::Rc;
 
     #[test]
     fn rule_check_slot() {
@@ -105,9 +99,8 @@ mod test {
         ctx.set_input(SentinelInput::new(1, 0));
         ctx.set_stat_node(res_node);
         ctx.set_resource(res);
-        let ctx = Rc::new(RefCell::new(ctx));
 
-        slot.check(&ctx);
+        slot.check(&mut ctx);
 
         let r1 = Arc::new(Rule {
             resource: res_name.clone(),
@@ -122,8 +115,8 @@ mod test {
         load_rules(vec![r1]);
 
         for _ in 0..50 {
-            slot.check(&ctx);
-            stat_slot.on_entry_pass(Rc::clone(&ctx));
+            slot.check(&mut ctx);
+            stat_slot.on_entry_pass(&ctx);
         }
         assert_eq!(
             get_traffic_controller_list_for(&res_name)[0]

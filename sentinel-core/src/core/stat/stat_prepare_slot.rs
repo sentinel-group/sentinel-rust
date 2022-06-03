@@ -1,5 +1,5 @@
 use super::get_or_create_resource_node;
-use crate::base::{BaseSlot, ContextPtr, StatPrepareSlot};
+use crate::base::{BaseSlot, EntryContext, StatPrepareSlot};
 use lazy_static::lazy_static;
 use std::sync::Arc;
 
@@ -23,11 +23,7 @@ impl BaseSlot for ResourceNodePrepareSlot {
 }
 
 impl StatPrepareSlot for ResourceNodePrepareSlot {
-    fn prepare(&self, ctx_ptr: ContextPtr) {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+    fn prepare(&self, ctx: &mut EntryContext) {
         let node =
             get_or_create_resource_node(ctx.resource().name(), ctx.resource().resource_type());
         ctx.set_stat_node(node);

@@ -1,5 +1,5 @@
 use super::*;
-use crate::base::{BaseSlot, BlockType, ContextPtr, RuleCheckSlot, TokenResult};
+use crate::base::{BaseSlot, BlockType, EntryContext, RuleCheckSlot, TokenResult};
 use lazy_static::lazy_static;
 use std::sync::Arc;
 
@@ -23,16 +23,12 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+    fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         let res = ctx.resource().name().clone();
         if res.len() == 0 {
             return ctx.result().clone();
         }
-        if let Some(_) = can_pass_check(ctx_ptr, &res) {
+        if let Some(_) = can_pass_check(ctx, &res) {
             ctx.set_result(TokenResult::new_blocked_with_msg(
                 BlockType::CircuitBreaking,
                 "circuit breaker check blocked".into(),
@@ -44,10 +40,10 @@ impl RuleCheckSlot for Slot {
 
 /// `None` indicates it passes
 /// `Some(rule)` indicates it is broke by the rule
-fn can_pass_check(ctx: &ContextPtr, res: &String) -> Option<Arc<Rule>> {
+fn can_pass_check(ctx: &EntryContext, res: &String) -> Option<Arc<Rule>> {
     let breakers = get_breakers_of_resource(res);
     for breaker in breakers {
-        if !breaker.try_pass(ctx.clone()) {
+        if !breaker.try_pass(ctx) {
             return Some(Arc::clone(breaker.bound_rule()));
         }
     }
@@ -58,8 +54,6 @@ fn can_pass_check(ctx: &ContextPtr, res: &String) -> Option<Arc<Rule>> {
 mod test {
     use super::*;
     use crate::base::{EntryContext, ResourceType, ResourceWrapper, TrafficType};
-    use std::cell::RefCell;
-    use std::rc::Rc;
 
     #[test]
     #[ignore]
@@ -106,8 +100,7 @@ mod test {
         let mut ctx = EntryContext::new();
         let res = ResourceWrapper::new(res_name, ResourceType::Common, TrafficType::Inbound);
         ctx.set_resource(res);
-        let ctx = Rc::new(RefCell::new(ctx));
-        let token = slot.check(&ctx);
+        let token = slot.check(&mut ctx);
         assert!(token.is_blocked());
         clear_rules();
     }
@@ -146,10 +139,9 @@ mod test {
         let mut ctx = EntryContext::new();
         let res = ResourceWrapper::new(res_name, ResourceType::Common, TrafficType::Inbound);
         ctx.set_resource(res);
-        let ctx = Rc::new(RefCell::new(ctx));
-        let token = slot.check(&ctx);
+        let token = slot.check(&mut ctx);
         assert!(token.is_pass());
-        assert!(ctx.borrow().result().is_pass());
+        assert!(ctx.result().is_pass());
         clear_rules();
     }
 }

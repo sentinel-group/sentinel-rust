@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    base::{BaseSlot, ContextPtr, RuleCheckSlot, TokenResult},
+    base::{BaseSlot, EntryContext, RuleCheckSlot, TokenResult},
     utils,
 };
 use lazy_static::lazy_static;
@@ -26,16 +26,12 @@ impl BaseSlot for Slot {
 }
 
 impl RuleCheckSlot for Slot {
-    fn check(&self, ctx_ptr: &ContextPtr) -> TokenResult {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+    fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         let res = ctx.resource().name();
         let batch = ctx.input().batch_count();
         let tcs = get_traffic_controller_list_for(res);
         for tc in tcs {
-            let extracted = tc.extract_args(&ctx_ptr);
+            let extracted = tc.extract_args(ctx);
             if let Some(arg) = extracted {
                 let r = tc.perform_checking(arg, batch);
                 match r {

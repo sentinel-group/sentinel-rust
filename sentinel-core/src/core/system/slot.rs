@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     base::{
-        BaseSlot, BlockType, ConcurrencyStat, ContextPtr, MetricEvent, ReadStat, RuleCheckSlot,
+        BaseSlot, BlockType, ConcurrencyStat, EntryContext, MetricEvent, ReadStat, RuleCheckSlot,
         Snapshot, TokenResult, TrafficType,
     },
     stat, system_metric,
@@ -29,11 +29,7 @@ impl BaseSlot for AdaptiveSlot {
 }
 
 impl RuleCheckSlot for AdaptiveSlot {
-    fn check(&self, ctx: &ContextPtr) -> TokenResult {
-        cfg_if_async! {
-            let mut ctx = ctx.write().unwrap(),
-            let mut ctx = ctx.borrow_mut()
-        };
+    fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         let res = ctx.resource();
         let traffic_type = res.traffic_type();
         if *traffic_type == TrafficType::Outbound {
@@ -128,8 +124,6 @@ fn check_bbr_simple() -> bool {
 mod test {
     use super::*;
     use crate::base::{EntryContext, ResourceType, ResourceWrapper, SentinelInput};
-    use std::cell::RefCell;
-    use std::rc::Rc;
 
     #[test]
     fn unsuitable_traffic_type() {
@@ -141,9 +135,8 @@ mod test {
         ctx.set_input(SentinelInput::new(1, 0));
         ctx.set_stat_node(res_node);
         ctx.set_resource(rw);
-        let ctx = Rc::new(RefCell::new(ctx));
-        let r = slot.check(&ctx);
-        assert_eq!(r, *ctx.borrow().result());
+        let r = slot.check(&mut ctx);
+        assert_eq!(r, *ctx.result());
     }
 
     #[test]
@@ -156,8 +149,7 @@ mod test {
         ctx.set_input(SentinelInput::new(1, 0));
         ctx.set_stat_node(res_node);
         ctx.set_resource(rw);
-        let ctx = Rc::new(RefCell::new(ctx));
-        let r = slot.check(&ctx);
+        let r = slot.check(&mut ctx);
         assert!(r.is_pass());
     }
 
