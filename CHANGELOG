@@ -1,0 +1,16 @@
+0.1.2
+1. Fix repeated locking/mutable borrowing on the same instances.
+2. Yank 0.1.1. Republish the package.
+
+0.1.1
+1. Fix errors in documentation generation. 
+2. Fix unique id generation for rules.
+3. Remove unnecessary compilation options.
+4. Add an example on eBPF programs.
+
+0.1.0
+1. Welcome to the world of Sentinel Rust.
+2. Multiple kinds of rules for reliability: flow, circuit-breaker, system-metrics, etc.
+3. Attribute-like macros for rule definitions.
+4. Dynamical datasource supporting: consul, etcd, k8s.
+5. Introductory examples for all the features.

@@ -192,6 +192,7 @@ mod test {
 
     #[test]
     #[ignore]
+    #[cfg(not(target_os = "macos"))]
     fn process_cpu_stat() {
         std::thread::spawn(|| loop {
             let start = curr_time_millis();
