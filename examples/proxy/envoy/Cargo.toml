@@ -13,5 +13,5 @@ crate-type = ["cdylib"]
 [dependencies]
 sentinel-core = { version = "0.1.0", path = "../../../sentinel-core", features = ["full", "proxy_envoy"] }
 
-proxy-wasm = "0.1.4"
+proxy-wasm = "0.2.0"
 log = "0.4"
