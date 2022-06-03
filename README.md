@@ -35,13 +35,17 @@ Sentinel has the following features:
 
 ## Documentation
 
+### Rust Edition
+
 See the [**Wiki**](https://github.com/sentinel-group/sentinel-rust/wiki) for **Rust version** full documentation, examples, blog posts, operational details and other information.
+
+The [Rust API documentation](https://docs.rs/sentinel-core/latest) is working in progress.
+
+### General Backgrounds on Sentinel
 
 See the [Sentinel](https://sentinelguard.io/en-us/) for the document website.
 
 See the [中文文档](https://sentinelguard.io/zh-cn/) for document in Chinese.
-
-The [Rust API documentation](https://docs.rs/sentinel-core/latest) is working in progress.
 
 ## Example
 
@@ -49,7 +53,13 @@ Add the dependency in Cargo.toml:
 
 ```toml
 [dependencies]
-sentinel-core = { version = "0.1.1", features = ["full"] }
+sentinel-core = { version = "0.1.2", features = ["full"] }
+```
+
+See examples under [`/examples`](https://github.com/sentinel-group/sentinel-rust/tree/main/examples) and test them via 
+
+```bash
+cargo run --example $example_name
 ```
 
 ## Contributing
