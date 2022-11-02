@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 /// a "hello-world" example on small code snippets with explicit Sentinel entry builders
 fn main() {
-    // Init sentienl configurations
+    // Init configurations for Sentinel Rust
     sentinel_core::init_default().unwrap_or_else(|err| sentinel_core::logging::error!("{:?}", err));
     let resource_name = String::from("direct_reject_flow_control_example");
 

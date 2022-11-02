@@ -21,7 +21,7 @@ pub fn init_with_config(config_entity: ConfigEntity) -> Result<()> {
     config::reset_global_config(config_entity);
     #[cfg(any(feature = "env_logger", feature = "log4rs"))]
     config::init_log()?;
-    init_core_compoents()
+    init_core_components()
 }
 
 /// Init loads Sentinel general configuration from the given YAML file
@@ -36,12 +36,12 @@ pub fn init_with_config_file(config_path: String) -> Result<()> {
 fn init_sentinel(config_path: &mut String) -> Result<()> {
     // Initialize general config and logging module.
     config::init_config_with_yaml(config_path)?;
-    init_core_compoents()
+    init_core_components()
 }
 
-// `init_core_compoents` init core components with global config
+// `init_core_components` init core components with global config
 #[inline]
-fn init_core_compoents() -> Result<()> {
+fn init_core_components() -> Result<()> {
     if config::metric_log_flush_interval_sec() > 0 {
         #[cfg(feature = "metric_log")]
         metric::init_task();

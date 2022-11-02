@@ -23,7 +23,7 @@ cfg_not_async! {
 
 pub struct SentinelEntry {
     // todo: it is assumed that entry and context is visited in a single thread,
-    // is it neccessary to consider concurrency?
+    // is it necessary to consider concurrency?
     // Then Rc and RefCell is not suitable...
     /// inner context may need mutability in ExitHandlers, thus, RefCell is used
     ctx: ContextPtr,

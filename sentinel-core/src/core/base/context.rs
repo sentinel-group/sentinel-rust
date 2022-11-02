@@ -28,7 +28,7 @@ pub struct EntryContext {
     /// The round trip time of this transaction
     round_trip: u64,
     resource: ResourceWrapper,
-    // todo: is it neccessary to keep using trait object here?
+    // todo: is it necessary to keep using trait object here?
     // consider replacing by `crate::core::stat::ResourceNode`
     stat_node: Option<Arc<dyn StatNode>>,
     input: SentinelInput,
