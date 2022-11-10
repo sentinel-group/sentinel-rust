@@ -6,3 +6,7 @@ members = [
     "examples/ebpf/probes",
     "examples/ebpf/userspace",
 ]
+
+exclude = [
+    "middleware/",
+]
