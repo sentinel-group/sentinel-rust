@@ -1,0 +1,30 @@
+[package]
+edition = "2021"
+license = "MIT"
+name = "sentinel_motore_example"
+publish = false
+version = "0.1.0"
+
+# hello
+[[bin]]
+name = "volo-server"
+path = "src/server.rs"
+[[bin]]
+name = "volo-client"
+path = "src/client.rs"
+
+[dependencies]
+sentinel-core = "0.1.2"
+sentinel-motore = {path = "../", features=["volo"]}
+volo = "0.2"
+volo-gen = { path = "./volo-gen" }
+volo-grpc = "0.2"
+
+anyhow = "1"
+async-trait = "0.1"
+lazy_static = "1"
+tokio = { version = "1.0", features = ["full"] }
+
+pilota = "0.2"
+
+
