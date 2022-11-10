@@ -5,4 +5,8 @@ members = [
     "examples/proxy/envoy",
     "examples/ebpf/probes",
     "examples/ebpf/userspace",
+    "middleware/tower",
+    "middleware/tower/example",
+    "middleware/tonic",
+    "middleware/tonic/example",
 ]

@@ -1,0 +1,11 @@
+[package]
+edition = "2021"
+license = "MIT"
+name = "sentinel-tonic"
+publish = false
+version = "0.1.0"
+
+[dependencies]
+sentinel-core = {version="0.1.2", features=["async"]}
+sentinel-tower = {path="../tower", features = ["http"]}
+tonic = "0.8.2"

@@ -1,0 +1,30 @@
+[package]
+edition = "2021"
+license = "MIT"
+name = "sentinel_tonic_example"
+publish = false
+version = "0.1.0"
+
+[[bin]]
+name = "tonic-server"
+path = "src/server.rs"
+
+[[bin]]
+name = "tonic-client"
+path = "src/client.rs"
+
+[build-dependencies]
+tonic-build = "0.8.2"
+
+[dependencies]
+sentinel-tonic = {path = "../"}
+sentinel-core = {version = "0.1.2", features = ["async"]}
+async-stream = "0.3"
+http = "0.2"
+tonic = "0.8.2"
+prost = "0.11.0"
+http-body = "0.4"
+tower = "0.4"
+tokio = {version="1", features=["full"]}
+bytes = "1.2.1"
+futures = "0.3"
