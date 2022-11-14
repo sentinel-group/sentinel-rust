@@ -24,11 +24,6 @@ unit_single:
 unit_parallel:
 	cargo test --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace -- --nocapture
 
-envoy:
-	cargo build --target wasm32-unknown-unknown --release -p sentinel-envoy-module
-	cp target/wasm32-unknown-unknown/release/sentinel_envoy_module.wasm examples/proxy/envoy/docker/sentinel_envoy_module.wasm
-	cd examples/proxy/envoy && docker-compose up --build
-
 ebpf_port:
 	cd examples/ebpf/probes && KERNEL_VERSION=$(KERNEL_VERSION) cargo bpf build port --target-dir=../target
 	cd examples/ebpf/userspace && KERNEL_VERSION=$(KERNEL_VERSION) BPF_DIR=$(shell pwd)/examples/ebpf cargo build --example port --target-dir=../target
