@@ -306,7 +306,7 @@ mod test {
     fn valid_head() {
         let sample_count = 10;
         cfg_if::cfg_if! {
-            if #[cfg(target_os = "macos")]{
+            if #[cfg(any(target_os = "macos", target_os = "windows"))]{
                 let interval_ms = 10000;
             }else{
                 let interval_ms = 1000;
@@ -317,10 +317,9 @@ mod test {
 
         for i in 1..=(sample_count as u64) {
             cfg_if::cfg_if! {
-                if #[cfg(target_os = "macos")]{
+                if #[cfg(any(target_os = "macos", target_os = "windows"))]{
                     // simply to pass the tests,
-                    // this crate is not applicable for macos 11,
-                    // because the sleep time is not accurate on it
+                    // the sleep time is not accurate on them
                     sleep_for_ms(bucket_len_ms - (curr_time_millis() % bucket_len_ms )/2);
                 }else{
                     sleep_for_ms(bucket_len_ms);
@@ -332,7 +331,7 @@ mod test {
                 .store(i, Ordering::SeqCst);
         }
         cfg_if::cfg_if! {
-            if #[cfg(target_os = "macos")]{
+            if #[cfg(any(target_os = "macos", target_os = "windows"))]{
                 sleep_for_ms(bucket_len_ms - (curr_time_millis() % bucket_len_ms )/2);
             }else{
                 sleep_for_ms(bucket_len_ms);
