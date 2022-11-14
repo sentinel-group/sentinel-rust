@@ -2,6 +2,9 @@
 members = [
     "sentinel-core",
     "sentinel-macros",
+]
+
+exclude = [
     "examples/proxy/envoy",
     "examples/ebpf/probes",
     "examples/ebpf/userspace",
