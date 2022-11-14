@@ -47,18 +47,18 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --target=${{ matrix.RUSTC_TARGET }} --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace
+          args: --target=${{ matrix.RUSTC_TARGET }} 
 
       - name: Unit Tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --target=${{ matrix.RUSTC_TARGET }} --workspace --exclude sentinel-envoy-module  --exclude ebpf-probes --exclude ebpf-userspace -- --nocapture
+          args: --target=${{ matrix.RUSTC_TARGET }} -- --nocapture
       - name: Ignored Unit Tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --target=${{ matrix.RUSTC_TARGET }} --workspace --exclude sentinel-envoy-module  --exclude ebpf-probes --exclude ebpf-userspace -- --ignored --test-threads=1 --nocapture
+          args: --target=${{ matrix.RUSTC_TARGET }} -- --ignored --test-threads=1 --nocapture
   wasm:
     name: WebAssembly
     runs-on: ubuntu-latest
@@ -81,4 +81,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target=wasm32-unknown-unknown -p sentinel-envoy-module
+          args: --target=wasm32-unknown-unknown

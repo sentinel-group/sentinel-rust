@@ -34,8 +34,6 @@ metric_log = ["directories", "regex"]
 ds_etcdv3 = ["etcd-rs", "futures"]
 ds_consul = ["consul", "base64"]
 ds_k8s = ["kube", "k8s-openapi", "schemars", "futures"]
-# wasm proxy
-proxy_envoy = ["proxy-wasm", "getrandom"]
 
 [dependencies]
 sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = true }
@@ -76,12 +74,6 @@ schemars = { version = "0.8.8", optional = true }
 # cannot add "wasm-bindgen" feature to uuid, 
 # they won't be exported by `proxy_wasm` module 
 uuid = { version = "0.8", features = ["serde", "v4"] }
-
-# for envoy wasm proxy
-[target.wasm32-unknown-unknown.dependencies]
-proxy-wasm = { version = "0.1.4", optional = true }
-getrandom = { version = "0.2", features = ["js"], optional = true  }
-
 
 [dev-dependencies]
 mockall = "0.11.0"
