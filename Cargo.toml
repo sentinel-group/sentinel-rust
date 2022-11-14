@@ -5,7 +5,6 @@ members = [
 ]
 
 exclude = [
-    "examples/proxy/envoy",
     "examples/ebpf/probes",
     "examples/ebpf/userspace",
     "middleware/tower",
