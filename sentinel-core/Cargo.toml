@@ -40,7 +40,7 @@ sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = t
 sysinfo = "0.26.8"
 cfg-if = "1.0.0"
 # enum
-enum-map = "1.1.0"
+enum-map = "2.4.1"
 # num_enum = "0.5.2"
 time = { version = "0.3.5", features = ["formatting", "macros"] }
 # serialize/deserialize
