@@ -73,7 +73,7 @@ schemars = { version = "0.8.8", optional = true }
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 # cannot add "wasm-bindgen" feature to uuid, 
 # they won't be exported by `proxy_wasm` module 
-uuid = { version = "0.8", features = ["serde", "v4"] }
+uuid = { version = "1.2", features = ["serde", "v4"] }
 
 [dev-dependencies]
 mockall = "0.11.0"
