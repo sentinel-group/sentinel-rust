@@ -73,7 +73,7 @@ fn basic_flow_example() -> Vec<JoinHandle<()>> {
                     // Passed, wrap the logic here.
                     task();
                     // Be sure the entry is exited finally.
-                    entry.write().unwrap().exit()
+                    entry.exit()
                 } else {
                     sleep_for_ms(100);
                 }

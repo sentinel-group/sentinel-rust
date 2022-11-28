@@ -85,7 +85,7 @@ async fn basic_flow_example() -> Vec<JoinHandle<()>> {
                     // Passed, wrap the logic here.
                     task().await;
                     // Be sure the entry is exited finally.
-                    entry.write().unwrap().exit()
+                    entry.exit()
                 } else {
                     sleep(Duration::from_millis(100)).await;
                 }
