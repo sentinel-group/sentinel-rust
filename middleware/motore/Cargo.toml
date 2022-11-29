@@ -1,0 +1,15 @@
+[package]
+edition = "2021"
+license = "MIT"
+name = "sentinel-motore"
+publish = false
+version = "0.1.0"
+
+[features]
+default = []
+volo = ["dep:volo"]
+
+[dependencies]
+motore = "0.2.1"
+sentinel-core = {version="0.1.2", features=["async"]}
+volo = {version = "0.2", optional = true}

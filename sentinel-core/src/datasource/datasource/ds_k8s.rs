@@ -4,11 +4,10 @@ use futures::{StreamExt, TryStreamExt};
 use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use kube::{
     api::{Api, DeleteParams, ListParams, Patch, PatchParams},
-    core::{object::HasSpec, CustomResourceExt, Resource},
+    core::{object::HasSpec, CustomResourceExt, NamespaceResourceScope, Resource},
     runtime::{
-        utils::try_flatten_applied,
         wait::{await_condition, conditions},
-        watcher,
+        watcher, WatchStreamExt,
     },
     Client,
 };
@@ -27,7 +26,7 @@ pub struct K8sDataSource<
     P: SentinelRule + PartialEq + DeserializeOwned + Clone,
     H: PropertyHandler<P>,
     R: CustomResourceExt
-        + Resource
+        + Resource<Scope = NamespaceResourceScope>
         + HasSpec<Spec = P>
         + Clone
         + DeserializeOwned
@@ -53,7 +52,7 @@ impl<
         P: SentinelRule + PartialEq + DeserializeOwned + Clone,
         H: PropertyHandler<P>,
         R: CustomResourceExt
-            + Resource
+            + Resource<Scope = NamespaceResourceScope>
             + HasSpec<Spec = P>
             + Clone
             + DeserializeOwned
@@ -108,8 +107,7 @@ where
     /// Close the data source, stop watch the property key.
     pub async fn close(&self) -> Result<()> {
         self.closed.store(true, Ordering::SeqCst);
-        let crds: Api<CustomResourceDefinition> =
-            Api::namespaced(self.client.clone(), &self.namespace);
+        let crds: Api<CustomResourceDefinition> = Api::all(self.client.clone());
         crds.delete(&self.cr_name, &DeleteParams::default()).await?;
         logging::info!(
             "[k8s] k8s data source has been closed. Remove the custom resource {:?}.",
@@ -130,7 +128,7 @@ where
             // Watch for changes to foos in the configured namespace
             let rules: Api<R> = Api::namespaced(self.client.clone(), &self.namespace);
             let lp = ListParams::default();
-            let mut apply_stream = try_flatten_applied(watcher(rules, lp)).boxed();
+            let mut apply_stream = watcher(rules, lp).applied_objects().boxed();
             while let Some(rule) = apply_stream.try_next().await? {
                 self.ds.load(vec![Arc::new(rule.spec().clone())]).unwrap();
             }
@@ -146,7 +144,7 @@ impl<
         P: SentinelRule + PartialEq + DeserializeOwned + Clone,
         H: PropertyHandler<P>,
         R: CustomResourceExt
-            + Resource
+            + Resource<Scope = NamespaceResourceScope>
             + HasSpec<Spec = P>
             + Clone
             + DeserializeOwned

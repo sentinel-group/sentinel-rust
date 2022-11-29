@@ -10,13 +10,13 @@ tokio = { version = "^1.0.1", features = ["rt", "signal", "time", "io-util", "ne
 redbpf = { version = "2.3.0", features = ["load"] }
 futures = "0.3"
 tracing = "0.1.26"
-tracing-subscriber = "0.3.3"
+tracing-subscriber = "0.3.16"
 sentinel-core = { version = "0.1.0", path = "../../../sentinel-core", features = ["full"] }
 
 [build-dependencies]
 cargo-bpf = { version = "2.3.0", default-features = false, features = ["build", "llvm-sys-130"] }
 tracing = "0.1.26"
-tracing-subscriber = "0.3.3"
+tracing-subscriber = "0.3.16"
 
 [[example]]
 name = "port"
