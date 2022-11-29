@@ -93,7 +93,7 @@ macro_rules! deal_with_sentinel {
             Ok(entry) => {
                 let fut = $self.inner.call($req);
                 Box::pin(async move {
-                    let response = fut.await?;
+                    let response = fut.await.map_err(Into::<BoxError>::into)?;
                     entry.exit();
                     Ok(response)
                 })
@@ -108,7 +108,7 @@ macro_rules! deal_with_sentinel {
                         }
                     })
                 }
-                None => Box::pin(async move { Err(Into::<BoxError>::into(err).into()) }),
+                None => Box::pin(async move { Err(err.into()) }),
             },
         }
     }};
@@ -123,11 +123,11 @@ where
     S: Service<http::Request<B>> + Clone + Send + 'static,
     <S as Service<http::Request<B>>>::Future: Send,
     <S as Service<http::Request<B>>>::Response: Send,
-    <S as Service<http::Request<B>>>::Error: From<BoxError>,
+    <S as Service<http::Request<B>>>::Error: Into<BoxError>,
     B: Send + 'static,
 {
     type Response = <S as Service<http::Request<B>>>::Response;
-    type Error = <S as Service<http::Request<B>>>::Error;
+    type Error = BoxError;
     #[allow(clippy::type_complexity)]
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
@@ -151,11 +151,11 @@ where
     S: Service<R> + Clone + Send + 'static,
     <S as Service<R>>::Response: Send,
     <S as Service<R>>::Future: Send,
-    <S as Service<R>>::Error: From<BoxError>,
+    <S as Service<http::Request<B>>>::Error: Into<BoxError>,
     R: Send + 'static,
 {
     type Response = <S as Service<R>>::Response;
-    type Error = <S as Service<R>>::Error;
+    type Error = BoxError;
     #[allow(clippy::type_complexity)]
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
