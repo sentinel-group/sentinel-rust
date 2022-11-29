@@ -53,7 +53,7 @@ Add the dependency in Cargo.toml:
 
 ```toml
 [dependencies]
-sentinel-core = { version = "0.1.2", features = ["full"] }
+sentinel-core = { version = "0.1.3", features = ["full"] }
 ```
 
 See examples under [`/examples`](https://github.com/sentinel-group/sentinel-rust/tree/main/examples) and test them via 

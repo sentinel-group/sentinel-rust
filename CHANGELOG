@@ -1,3 +1,8 @@
+0.1.3
+1. Upgrade dependencies, resolve CVE alerts.
+2. Update k8s data source implementation.
+3. Release middlewares for tower, motore, and tonic.
+
 0.1.2
 1. Fix repeated locking/mutable borrowing on the same instances.
 2. Yank 0.1.1. Republish the package.
