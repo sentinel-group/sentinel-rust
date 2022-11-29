@@ -17,12 +17,11 @@ path = "src/client.rs"
 tonic-build = "0.8.2"
 
 [dependencies]
-sentinel-tower = {path = "../", features = ["http"]}
+sentinel-tower = {path = "../"}
 sentinel-core = {version = "0.1.2", features = ["async"]}
 async-stream = "0.3"
 http = "0.2"
-# tonic = "0.8.2"
-tonic = {path = "/home/kyrie/tonic/tonic"}
+tonic = "0.8.2"
 prost = "0.11.0"
 http-body = "0.4"
 tower = "0.4"
