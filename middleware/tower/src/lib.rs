@@ -172,7 +172,7 @@ where
     }
 }
 
-/// The [`tower::Layer`](https://docs.rs/tower/latest/tower/trait.Layer.html) wrapper for [`SetinelService`].
+/// The [`tower::Layer`](https://docs.rs/tower/latest/tower/trait.Layer.html) wrapper for [`SentinelService`].
 pub struct SentinelLayer<S, R, B>
 where
     S: Service<R> + Clone,

@@ -1,6 +1,6 @@
 # Sentinel in Tower
 
-Implement Sentinel as a service in [Tower](https://github.com/tower-rs/tower). 
+Implement [Sentinel](https://github.com/sentinel-group/sentinel-rust) as a service in [Tower](https://github.com/tower-rs/tower). 
 
 In the `example` directory, we provide an example for [tonic](https://github.com/hyperium/tonic). 
 

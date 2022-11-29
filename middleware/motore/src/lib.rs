@@ -141,7 +141,7 @@ where
     }
 }
 
-/// The [`motore::Layer`](https://docs.rs/motore/latest/motore/layer/trait.Layer.html) wrapper for [`SetinelService`].
+/// The [`motore::Layer`](https://docs.rs/motore/latest/motore/layer/trait.Layer.html) wrapper for [`SentinelService`].
 #[derive(Clone)]
 pub struct SentinelLayer<S, Cx, R>
 where

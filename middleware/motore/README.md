@@ -1,6 +1,6 @@
 # Sentinel in Motore
 
-Implement Sentinel as a service in [Motore](https://github.com/cloudwego/motore). 
+Implement [Sentinel](https://github.com/sentinel-group/sentinel-rust) as a service in [Motore](https://github.com/cloudwego/motore). 
 
 In the `example` directory, we provide an example for [Volo](https://github.com/cloudwego/volo). 
 
