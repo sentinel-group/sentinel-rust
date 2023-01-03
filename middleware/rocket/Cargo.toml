@@ -1,0 +1,20 @@
+[package]
+name = "sentinel-rocket"
+version = "0.1.0"
+authors = ["Forsworns <378974295@qq.com>"]
+edition = "2021"
+license = "Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/sentinel-rocket/latest"
+repository = "https://github.com/sentinel-group/sentinel-rust/tree/main/middleware/rocket"
+homepage = "https://sentinelguard.io/en-us/"
+description = """
+Sentinel middleware for Rocket
+"""
+categories = ["concurrency", "network-programming", "development-tools"]
+keywords = ["microservices", "flow-control", "sentinel", "reliability"]
+exclude = ["/example"]
+
+[dependencies]
+sentinel-core = { version = "0.1", features = ["async"] }
+rocket = "0.5.0-rc.2"

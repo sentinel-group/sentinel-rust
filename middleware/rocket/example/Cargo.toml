@@ -1,0 +1,19 @@
+[package]
+edition = "2021"
+license = "MIT"
+name = "sentinel_rocket_example"
+publish = false
+version = "0.1.0"
+
+[[bin]]
+name = "rocket-fairing"
+path = "src/fairing.rs"
+
+[[bin]]
+name = "rocket-guard"
+path = "src/guard.rs"
+
+[dependencies]
+rocket = "0.5.0-rc.2"
+sentinel-rocket = {path = "../"}
+sentinel-core = {version = "0.1", features = ["async"]}
