@@ -1,0 +1,17 @@
+[package]
+edition = "2021"
+license = "MIT"
+name = "sentinel_axum_example"
+publish = false
+version = "0.1.0"
+
+[[bin]]
+name = "axum-server"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.6"
+sentinel-tower = {path = "../../tower/"}
+sentinel-core = {version = "0.1.2", features = ["async"]}
+tokio = {version="1", features=["full"]}
+tower = "0.4"
