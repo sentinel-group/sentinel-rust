@@ -1,15 +1,17 @@
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/43955412")]
 //! This crate provides the [sentinel](https://docs.rs/sentinel-core) middleware for [tonic](https://docs.rs/tonic).
 //! The are two kinds of middlewares in tonic.
 //! - [`SentinelInterceptor`] based on [`tonic::service::interceptor::Interceptor`](https://docs.rs/tonic/latest/tonic/service/interceptor/trait.Interceptor.html)
 //! - [`SentinelService`] and [`SentinelLayer`] based on [`tower::Service`](https://docs.rs/tower/latest/tower/trait.Service.html)
+//! See [examples](https://github.com/sentinel-group/sentinel-rust/tree/main/middleware) for help.
 
 use sentinel_core::EntryBuilder;
 pub use sentinel_tower::{SentinelLayer, SentinelService, ServiceRole};
 use tonic::service::interceptor::Interceptor;
 use tonic::{Request, Status};
 
-type Extractor = fn(&Request<()>) -> String;
-type Fallback = fn(&Request<()>, &sentinel_core::Error) -> Result<Request<()>, Status>;
+pub type Extractor = fn(&Request<()>) -> String;
+pub type Fallback = fn(&Request<()>, &sentinel_core::Error) -> Result<Request<()>, Status>;
 
 #[derive(Clone)]
 pub struct SentinelInterceptor {

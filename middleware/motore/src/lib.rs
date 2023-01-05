@@ -1,3 +1,4 @@
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/43955412")]
 #![feature(type_alias_impl_trait)]
 //! This crate provides the [Sentinel](https://docs.rs/sentinel-core) service for [Motore](https://github.com/cloudwego/motore).  
 //! See [examples](https://github.com/sentinel-group/sentinel-rust/tree/main/middleware) for help.

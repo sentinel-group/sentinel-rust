@@ -1,6 +1,7 @@
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/43955412")]
 //! This crate provides the [Sentinel](https://docs.rs/sentinel-core) middleware for [Tower](https://docs.rs/tower).  
 //! See the [examples](https://github.com/sentinel-group/sentinel-rust/tree/main/middleware) for help.
-//! [http]: https://docs.rs/http
+//!
 
 use sentinel_core::EntryBuilder;
 use std::future::Future;
@@ -13,10 +14,11 @@ pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 /// It is used to extractor a resource name from requests for Sentinel. If you the service request is [`http::Request`](https://docs.rs/http/latest/http/request/struct.Request.html),
 /// and you are using nightly toolchain, you don't need to provide a sentinel resource name extractor. The middleware will automatically extract the request uri.
-type Extractor<R> = fn(&R) -> String;
+pub type Extractor<R> = fn(&R) -> String;
 
 /// The fallback function when service is rejected by sentinel.
-type Fallback<S, R> = fn(&R, sentinel_core::Error) -> Result<<S as Service<R>>::Response, BoxError>;
+pub type Fallback<S, R> =
+    fn(&R, sentinel_core::Error) -> Result<<S as Service<R>>::Response, BoxError>;
 
 /// The side where the middleware is deplyed.
 #[derive(Debug, Copy, Clone)]
@@ -25,7 +27,7 @@ pub enum ServiceRole {
     Client,
 }
 
-/// The sentinel middleware service in tower. If you the service request is from [http][] crate,
+/// The sentinel middleware service in tower. If your service request is from [http](https://docs.rs/http) crate,
 /// and you are using nightly toolchain, you don't need to provide a [sentinel resource name extractor](Extractor).
 /// The middleware will automatically extract the request uri.
 pub struct SentinelService<S, R, B = ()>

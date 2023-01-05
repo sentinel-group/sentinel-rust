@@ -1,5 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/43955412")]
 
 //! # Sentinel in Rust
 //!
