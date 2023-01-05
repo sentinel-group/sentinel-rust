@@ -1,0 +1,15 @@
+[package]
+edition = "2021"
+license = "MIT"
+name = "sentinel_actix_example"
+publish = false
+version = "0.1.0"
+
+[[bin]]
+name = "actix-server"
+path = "src/main.rs"
+
+[dependencies]
+actix-web = "4"
+sentinel-actix = {path = "../"}
+sentinel-core = {version = "0.1", features = ["async"]}
