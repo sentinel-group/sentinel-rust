@@ -14,8 +14,7 @@ use std::sync::Mutex;
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
-/// It is used to extractor a resource name from requests for Sentinel. If you the service request is [`http::Request`](https://docs.rs/http/latest/http/request/struct.Request.html),
-/// and you are using nightly toolchain, you don't need to provide a sentinel resource name extractor. The middleware will automatically extract the request uri.
+/// It is used to extractor a resource name from requests for Sentinel.
 pub type Extractor = fn(&Request<'_>) -> String;
 
 /// The fallback function when service is rejected by sentinel.
