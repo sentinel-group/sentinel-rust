@@ -37,7 +37,7 @@ ds_k8s = ["kube", "k8s-openapi", "schemars", "futures"]
 
 [dependencies]
 sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = true }
-sysinfo = "0.26.8"
+sysinfo = "0.27.6"
 cfg-if = "1.0.0"
 # enum
 enum-map = "2.4.1"
