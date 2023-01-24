@@ -16,6 +16,6 @@ keywords = ["microservices", "flow-control", "sentinel", "reliability"]
 exclude = ["/example"]
 
 [dependencies]
-sentinel-core = { version = "0.1", features = ["async"] }
+sentinel-core = { version = "0.1" }
 actix-web = "4"
 actix-utils = "3"

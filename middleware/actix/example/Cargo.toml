@@ -12,4 +12,4 @@ path = "src/main.rs"
 [dependencies]
 actix-web = "4"
 sentinel-actix = {path = "../"}
-sentinel-core = {version = "0.1", features = ["async"]}
+sentinel-core = {version = "0.1"}

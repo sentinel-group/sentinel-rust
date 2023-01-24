@@ -18,7 +18,7 @@ tonic-build = "0.8.2"
 
 [dependencies]
 sentinel-tower = {path = "../"}
-sentinel-core = {version = "0.1.2", features = ["async"]}
+sentinel-core = {version = "0.1.2"}
 async-stream = "0.3"
 http = "0.2"
 tonic = "0.8.2"

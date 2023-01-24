@@ -12,6 +12,6 @@ path = "src/main.rs"
 [dependencies]
 axum = "0.6"
 sentinel-tower = {path = "../../tower/"}
-sentinel-core = {version = "0.1.2", features = ["async"]}
+sentinel-core = {version = "0.1.2"}
 tokio = {version="1", features=["full"]}
 tower = "0.4"

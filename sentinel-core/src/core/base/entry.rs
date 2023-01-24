@@ -2,30 +2,19 @@ use super::{ContextPtr, SlotChain};
 use crate::logging;
 use crate::{Error, Result};
 use std::sync::Arc;
+use std::sync::{RwLock, Weak};
 use std::vec::Vec;
 
 type ExitHandler = Box<dyn Send + Sync + Fn(&SentinelEntry, ContextPtr) -> Result<()>>;
 
-cfg_async! {
-    use std::sync::{RwLock, Weak};
-    type EntryStrongPtrInner = Arc<RwLock<SentinelEntry>>;
-    pub struct EntryStrongPtr(EntryStrongPtrInner);
-    pub type EntryWeakPtr = Weak<RwLock<SentinelEntry>>;
-}
-
-cfg_not_async! {
-    use std::rc::{Rc,Weak};
-    use std::cell::RefCell;
-    type EntryStrongPtrInner = Rc<RefCell<SentinelEntry>>;
-    pub struct EntryStrongPtr(EntryStrongPtrInner);
-    pub type EntryWeakPtr = Weak<RefCell<SentinelEntry>>;
-}
+// currently, ctx and entry are N:M mapped,
+// and they may be used in async contexts,
+// therefore, we need Arc (for Sync and Send) and RwLock (for inner mutability)
+type EntryStrongPtrInner = Arc<RwLock<SentinelEntry>>;
+pub struct EntryStrongPtr(EntryStrongPtrInner);
+pub type EntryWeakPtr = Weak<RwLock<SentinelEntry>>;
 
 pub struct SentinelEntry {
-    // todo: it is assumed that entry and context is visited in a single thread,
-    // is it necessary to consider concurrency?
-    // Then Rc and RefCell is not suitable...
-    /// inner context may need mutability in ExitHandlers, thus, RefCell is used
     ctx: ContextPtr,
     exit_handlers: Vec<ExitHandler>,
     /// each entry traverses a slot chain,
@@ -51,10 +40,7 @@ impl SentinelEntry {
     }
 
     pub fn set_err(&self, err: Error) {
-        cfg_if_async! {
-            self.ctx.write().unwrap().set_err(err),
-            self.ctx.borrow_mut().set_err(err)
-        };
+        self.ctx.write().unwrap().set_err(err);
     }
 
     // todo: cleanup
@@ -76,22 +62,16 @@ impl EntryStrongPtr {
     }
 
     pub fn context(&self) -> ContextPtr {
-        cfg_if_async!(
-            let entry = self.0.read().unwrap(),
-            let entry = self.0.borrow()
-        );
+        let entry = self.0.read().unwrap();
         entry.context().clone()
     }
 
     pub fn set_err(&self, err: Error) {
-        cfg_if_async!(
-            self.0.read().unwrap().set_err(err),
-            self.0.borrow().set_err(err)
-        );
+        self.0.read().unwrap().set_err(err);
     }
 
     pub fn exit(&self) {
-        cfg_if_async!(self.0.read().unwrap().exit(), self.0.borrow().exit());
+        self.0.read().unwrap().exit();
     }
 }
 
@@ -100,12 +80,12 @@ mod test {
     use super::*;
     use crate::base::EntryContext;
     use std::cell::RefCell;
-    use std::rc::Rc;
+    use std::sync::RwLock;
 
     std::thread_local! {
         static EXIT_FLAG: RefCell<u8> = RefCell::new(0);
     }
-    fn exit_handler_mock(_entry: &SentinelEntry, _ctx: Rc<RefCell<EntryContext>>) -> Result<()> {
+    fn exit_handler_mock(_entry: &SentinelEntry, _ctx: Arc<RwLock<EntryContext>>) -> Result<()> {
         EXIT_FLAG.with(|f| {
             *f.borrow_mut() += 1;
         });
@@ -115,13 +95,13 @@ mod test {
     #[test]
     fn exit() {
         let sc = Arc::new(SlotChain::new());
-        let ctx = Rc::new(RefCell::new(EntryContext::new()));
+        let ctx = Arc::new(RwLock::new(EntryContext::new()));
         let mut entry = SentinelEntry::new(ctx.clone(), sc);
 
         entry.when_exit(Box::new(exit_handler_mock));
-        let entry = Rc::new(RefCell::new(entry));
-        ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
-        entry.borrow().exit();
+        let entry = Arc::new(RwLock::new(entry));
+        ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
+        entry.read().unwrap().exit();
         EXIT_FLAG.with(|f| {
             assert_eq!(*f.borrow(), 1);
         });

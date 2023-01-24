@@ -5,23 +5,14 @@ use crate::utils::time::curr_time_millis;
 use crate::Error;
 use std::collections::HashMap;
 use std::sync::Arc;
-
-cfg_async! {
-    use std::sync::RwLock;
-    pub type ContextPtr = Arc<RwLock<EntryContext>>;
-}
-
-cfg_not_async! {
-    use std::rc::Rc;
-    use std::cell::RefCell;
-    pub type ContextPtr = Rc<RefCell<EntryContext>>;
-}
+use std::sync::RwLock;
+pub type ContextPtr = Arc<RwLock<EntryContext>>;
 
 #[derive(Default)]
 pub struct EntryContext {
-    /// entry and context do not need to be `Send/Sync`
-    /// entry<->context, cycled reference, so need Weak
-    /// context should not change entry, so here we do not use RefCell
+    /// entry<->context, cycled reference, so need Weak,
+    /// context should not change entry, so here we do not use RwLock,
+    /// todo: do we need this N:M mapping from context to entry, consider 1:1 mapping?
     entry: Option<EntryWeakPtr>,
     /// Use to calculate RT
     start_time: u64,

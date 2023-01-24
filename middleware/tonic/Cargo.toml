@@ -16,6 +16,6 @@ keywords = ["microservices", "flow-control", "sentinel", "reliability"]
 exclude = ["/example"]
 
 [dependencies]
-sentinel-core = { version = "0.1", features = ["async"] }
+sentinel-core = { version = "0.1" }
 sentinel-tower = { version = "0.1", path = "../tower", features = ["http"] }
 tonic = "0.8.2"

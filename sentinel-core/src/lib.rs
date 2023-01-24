@@ -71,7 +71,7 @@
 //! if let Ok(entry) = entry_builder.build() {
 //! 	// The request is allowed to be processed.
 //! 	// after finish the logic, exit the entry.
-//!     entry.borrow().exit()
+//!     entry.exit()
 //! } else {
 //! 	// The request is blocked.
 //! 	// you do not need to call `exit()` on entry now.
@@ -168,7 +168,3 @@ pub use api::*;
 
 pub type Result<T> = anyhow::Result<T>;
 pub type Error = anyhow::Error;
-
-// todo: replace useless Arc by ref
-// returning of getter of Arc should be replaced to ref of Arc, too
-// possible use of getter and setter

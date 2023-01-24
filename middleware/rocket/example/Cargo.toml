@@ -16,4 +16,4 @@ path = "src/guard.rs"
 [dependencies]
 rocket = "0.5.0-rc.2"
 sentinel-rocket = {path = "../"}
-sentinel-core = {version = "0.1", features = ["async"]}
+sentinel-core = {version = "0.1"}

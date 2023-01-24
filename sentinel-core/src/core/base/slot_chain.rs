@@ -77,10 +77,7 @@ impl SlotChain {
     }
 
     pub fn exit(&self, ctx_ptr: ContextPtr) {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+        let mut ctx = ctx_ptr.write().unwrap();
         if ctx.entry().is_none() {
             logging::error!("SentinelEntry is nil in SlotChain.exit()");
             return;
@@ -124,10 +121,7 @@ impl SlotChain {
     /// The entrance of slot chain
     /// Return the TokenResult
     pub fn entry(&self, ctx_ptr: ContextPtr) -> TokenResult {
-        cfg_if_async! {
-            let mut ctx = ctx_ptr.write().unwrap(),
-            let mut ctx = ctx_ptr.borrow_mut()
-        };
+        let mut ctx = ctx_ptr.write().unwrap();
         // execute prepare slot
         for s in &self.stat_pres {
             s.prepare(&mut *ctx); // Rc/Arc clone
@@ -167,9 +161,7 @@ mod test {
         TrafficType,
     };
     use super::*;
-    use std::cell::RefCell;
-    use std::rc::Rc;
-    use std::sync::Arc;
+    use std::sync::RwLock;
 
     // here we test three kinds of slots one by one
     mod single {
@@ -364,13 +356,13 @@ mod test {
             let rw = ResourceWrapper::new("abc".into(), ResourceType::Common, TrafficType::Inbound);
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
-            let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
-            ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
+            let ctx = Arc::new(RwLock::new(ctx));
+            let entry = Arc::new(RwLock::new(SentinelEntry::new(ctx.clone(), sc.clone())));
+            ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
 
-            let r = sc.entry(Rc::clone(&ctx));
+            let r = sc.entry(Arc::clone(&ctx));
             assert!(r.is_pass(), "should pass but blocked");
-            sc.exit(Rc::clone(&ctx));
+            sc.exit(Arc::clone(&ctx));
         }
 
         #[test]
@@ -427,21 +419,21 @@ mod test {
             let rw = ResourceWrapper::new("abc".into(), ResourceType::Common, TrafficType::Inbound);
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
-            let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(RefCell::new(SentinelEntry::new(
-                Rc::clone(&ctx),
+            let ctx = Arc::new(RwLock::new(ctx));
+            let entry = Arc::new(RwLock::new(SentinelEntry::new(
+                Arc::clone(&ctx),
                 sc.clone(),
             )));
-            ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
+            ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
 
-            let r = sc.entry(Rc::clone(&ctx));
+            let r = sc.entry(Arc::clone(&ctx));
             assert!(r.is_blocked(), "should blocked but pass");
             assert_eq!(
                 BlockType::Flow,
                 r.block_err().unwrap().block_type(),
                 "should blocked by BlockType Flow"
             );
-            sc.exit(Rc::clone(&ctx));
+            sc.exit(Arc::clone(&ctx));
         }
 
         struct StatPrepareSlotBadMock {}
@@ -498,14 +490,14 @@ mod test {
             let rw = ResourceWrapper::new("abc".into(), ResourceType::Common, TrafficType::Inbound);
             ctx.set_resource(rw);
             ctx.set_stat_node(Arc::new(MockStatNode::new()));
-            let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(RefCell::new(SentinelEntry::new(
-                Rc::clone(&ctx),
+            let ctx = Arc::new(RwLock::new(ctx));
+            let entry = Arc::new(RwLock::new(SentinelEntry::new(
+                Arc::clone(&ctx),
                 sc.clone(),
             )));
-            ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
+            ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
 
-            sc.entry(Rc::clone(&ctx));
+            sc.entry(Arc::clone(&ctx));
         }
     }
 }

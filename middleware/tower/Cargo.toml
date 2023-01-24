@@ -20,6 +20,6 @@ default = []
 http = ["dep:http"]
 
 [dependencies]
-sentinel-core = { version = "0.1", features = ["async"] }
+sentinel-core = { version = "0.1" }
 tower = "0.4"
 http = { version = "0.2", optional = true }

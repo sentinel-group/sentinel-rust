@@ -21,9 +21,6 @@ exclude = ["/tests"]
 [features]
 default = []
 full = ["macros"]
-# If the sentinel is not utilized in asynchronous scenarios, 
-# the `Sentinel` entry is not necessary to use `Arc` with `Send` trait
-async = []
 macros = ["sentinel-macros"]
 exporter = ["prometheus_exporter"]
 logger_env = ["env_logger"]
@@ -96,7 +93,7 @@ required-features = ["full"]
 [[example]]
 name = "tokio"
 path = "../examples/rules/flow/tokio.rs"
-required-features = ["full", "async"]
+required-features = ["full"]
 
 [[example]]
 name = "macro"
@@ -202,14 +199,14 @@ required-features = ["full", "exporter"]
 [[example]]
 name = "etcdv3"
 path = "../examples/datasources/etcdv3.rs"
-required-features = ["full", "ds_etcdv3", "async"]
+required-features = ["full", "ds_etcdv3"]
 
 [[example]]
 name = "consul"
 path = "../examples/datasources/consul.rs"
-required-features = ["full", "ds_consul", "async"]
+required-features = ["full", "ds_consul"]
 
 [[example]]
 name = "k8s"
 path = "../examples/datasources/k8s.rs"
-required-features = ["full", "ds_k8s", "async"]
+required-features = ["full", "ds_k8s"]

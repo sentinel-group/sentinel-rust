@@ -6,15 +6,7 @@ use crate::base::{
 use crate::utils::format_time_nanos_curr;
 use crate::{Error, Result};
 use std::sync::Arc;
-
-cfg_async! {
-    use std::sync::RwLock;
-}
-
-cfg_not_async! {
-    use std::rc::Rc;
-    use std::cell::RefCell;
-}
+use std::sync::RwLock;
 
 // EntryBuilder is the basic API of Sentinel.
 pub struct EntryBuilder {
@@ -53,92 +45,43 @@ impl EntryBuilder {
         }
     }
 
-    cfg_async! {
-        /// `build()` would consume EntryBuilder
-        pub fn build(self) -> Result<EntryStrongPtr> {
-            // get context from pool.
-            let mut ctx = EntryContext::new();
+    /// `build()` would consume EntryBuilder
+    pub fn build(self) -> Result<EntryStrongPtr> {
+        // get context from pool.
+        let mut ctx = EntryContext::new();
 
-            ctx.set_resource(ResourceWrapper::new(
-                self.resource_name,
-                self.resource_type,
-                self.traffic_type,
-            ));
+        ctx.set_resource(ResourceWrapper::new(
+            self.resource_name,
+            self.resource_type,
+            self.traffic_type,
+        ));
 
-            let mut input = SentinelInput::new(self.batch_count, self.flag);
-            if let Some(args) = self.args {
-                input.set_args(args);
-            }
-            if let Some(attachments) = self.attachments {
-                input.set_attachments(attachments);
-            }
-            ctx.set_input(input);
-
-            let ctx = Arc::new(RwLock::new(ctx));
-            let entry =
-                Arc::new(RwLock::new(SentinelEntry::new(
-                    Arc::clone(&ctx),
-                    Arc::clone(&self.slot_chain),
-                )));
-            ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
-
-            let r = self.slot_chain.entry(Arc::clone(&ctx));
-            match r {
-                TokenResult::Blocked(_) => {
-                    // todo:
-                    // if return block_error,
-                    // must deep copy the error, since Arc only clone pointer
-                    entry.read().unwrap().exit();
-                    Err(Error::msg(r.to_string()))
-                },
-                _ => {
-                    Ok(EntryStrongPtr::new(entry))
-                },
-            }
+        let mut input = SentinelInput::new(self.batch_count, self.flag);
+        if let Some(args) = self.args {
+            input.set_args(args);
         }
-    }
+        if let Some(attachments) = self.attachments {
+            input.set_attachments(attachments);
+        }
+        ctx.set_input(input);
 
-    cfg_not_async! {
-        /// `build()` would consume EntryBuilder
-        pub fn build(self) -> Result<EntryStrongPtr> {
-            // get context from pool.
-            let mut ctx = EntryContext::new();
+        let ctx = Arc::new(RwLock::new(ctx));
+        let entry = Arc::new(RwLock::new(SentinelEntry::new(
+            Arc::clone(&ctx),
+            Arc::clone(&self.slot_chain),
+        )));
+        ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
 
-            ctx.set_resource(ResourceWrapper::new(
-                self.resource_name,
-                self.resource_type,
-                self.traffic_type,
-            ));
-
-            let mut input = SentinelInput::new(self.batch_count, self.flag);
-            if let Some(args) = self.args {
-                input.set_args(args);
+        let r = self.slot_chain.entry(Arc::clone(&ctx));
+        match r {
+            TokenResult::Blocked(_) => {
+                // todo:
+                // if return block_error,
+                // must deep copy the error, since Arc only clone pointer
+                entry.read().unwrap().exit();
+                Err(Error::msg(r.to_string()))
             }
-            if let Some(attachments) = self.attachments {
-                input.set_attachments(attachments);
-            }
-            ctx.set_input(input);
-
-            let ctx = Rc::new(RefCell::new(ctx));
-            let entry = Rc::new(RefCell::new(SentinelEntry::new(
-                    Rc::clone(&ctx),
-                    Arc::clone(&self.slot_chain),
-                )));
-            ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
-
-            let r = self.slot_chain.entry(Rc::clone(&ctx));
-            match r {
-                TokenResult::Blocked(_) => {
-                    // todo:
-                    // if return block_error,
-                    // must deep copy the error, since Arc only clone pointer
-                    entry.borrow().exit();
-                    Err(Error::msg(r.to_string()))
-                },
-                _ => {
-                    Ok(EntryStrongPtr::new(entry))
-                },
-            }
+            _ => Ok(EntryStrongPtr::new(entry)),
         }
     }
 
@@ -189,8 +132,6 @@ mod test {
         BlockType, MockRuleCheckSlot, MockStatNode, MockStatPrepareSlot, MockStatSlot, TokenResult,
     };
     use mockall::*;
-    use std::cell::RefCell;
-    use std::rc::Rc;
 
     #[test]
     fn pass() {
@@ -245,7 +186,7 @@ mod test {
 
         let builder = EntryBuilder::new("abc".into()).with_slot_chain(sc);
         let entry = builder.build().unwrap();
-        assert_eq!("abc", entry.context().borrow().resource().name());
+        assert_eq!("abc", entry.context().read().unwrap().resource().name());
         entry.exit();
     }
 
@@ -303,9 +244,9 @@ mod test {
         let rw = ResourceWrapper::new("abc".into(), ResourceType::Common, TrafficType::Inbound);
         ctx.set_resource(rw);
         ctx.set_stat_node(Arc::new(MockStatNode::new()));
-        let ctx = Rc::new(RefCell::new(ctx));
-        let entry = Rc::new(RefCell::new(SentinelEntry::new(ctx.clone(), sc.clone())));
-        ctx.borrow_mut().set_entry(Rc::downgrade(&entry));
+        let ctx = Arc::new(RwLock::new(ctx));
+        let entry = Arc::new(RwLock::new(SentinelEntry::new(ctx.clone(), sc.clone())));
+        ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
 
         let builder = EntryBuilder::new("abc".into()).with_slot_chain(sc);
         assert!(builder.build().is_err());
