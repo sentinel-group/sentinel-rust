@@ -56,11 +56,16 @@ impl StatSlot for ResourceNodeStatSlot {
             }
         }
         #[cfg(feature = "exporter")]
-        crate::exporter::add_handled_counter(input.batch_count(), res.name(), TokenResult::Pass);
+        crate::exporter::add_handled_counter(
+            input.batch_count(),
+            res.name(),
+            TokenResult::Pass,
+            None,
+        );
     }
 
     #[allow(unused_variables)]
-    fn on_entry_blocked(&self, ctx: &EntryContext, block_error: Option<BlockError>) {
+    fn on_entry_blocked(&self, ctx: &EntryContext, block_error: BlockError) {
         let res = ctx.resource();
         let input = ctx.input();
         if let Some(stat_node) = ctx.stat_node().clone() {
@@ -70,11 +75,15 @@ impl StatSlot for ResourceNodeStatSlot {
             }
         }
         #[cfg(feature = "exporter")]
-        crate::exporter::add_handled_counter(
-            input.batch_count(),
-            res.name(),
-            TokenResult::Blocked(block_error.unwrap()),
-        );
+        {
+            let tp = block_error.block_type();
+            crate::exporter::add_handled_counter(
+                input.batch_count(),
+                res.name(),
+                TokenResult::Blocked(block_error),
+                Some(tp),
+            );
+        }
     }
 
     fn on_completed(&self, ctx: &mut EntryContext) {

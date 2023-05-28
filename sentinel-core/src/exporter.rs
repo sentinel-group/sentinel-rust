@@ -1,4 +1,7 @@
-use crate::{base::TokenResult, config};
+use crate::{
+    base::{BlockType, TokenResult},
+    config,
+};
 ///! exporter the process protected by Sentinel
 use lazy_static::lazy_static;
 use prometheus_exporter::{
@@ -96,7 +99,12 @@ pub fn add_state_change_counter(resourse: &str, from: &str, to: &str) {
         .inc_by(1.0);
 }
 
-pub fn add_handled_counter(batch_count: u32, resource: &str, result: TokenResult) {
+pub fn add_handled_counter(
+    batch_count: u32,
+    resource: &str,
+    result: TokenResult,
+    block_type: Option<BlockType>,
+) {
     HANDLED_COUNTER
         .with_label_values(&[
             &HOST_NAME,
@@ -104,6 +112,7 @@ pub fn add_handled_counter(batch_count: u32, resource: &str, result: TokenResult
             &PID_STRING,
             resource,
             &result.to_string(),
+            &block_type.map_or(String::new(), |v| v.to_string()),
         ])
         .inc_by(batch_count as f64);
 }

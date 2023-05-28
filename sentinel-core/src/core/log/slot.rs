@@ -24,7 +24,7 @@ impl StatSlot for Slot {
     fn on_entry_pass(&self, _ctx: &EntryContext) {}
 
     // todo: write sentinel-block.log here
-    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: BlockError) {}
 
     fn on_completed(&self, _ctx: &mut EntryContext) {}
 }

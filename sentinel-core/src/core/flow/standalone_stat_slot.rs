@@ -37,7 +37,7 @@ impl StatSlot for StandaloneStatSlot {
         }
     }
 
-    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: Option<BlockError>) {}
+    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: BlockError) {}
 
     fn on_completed(&self, _ctx: &mut EntryContext) {}
 }

@@ -19,18 +19,18 @@ pub trait BaseSlot: Any + AsAny + Sync + Send {
 /// StatPrepareSlot is responsible for some preparation before statistic
 /// For example: init structure and so on
 pub trait StatPrepareSlot: BaseSlot {
-    /// prepare fntion do some initialization
+    /// prepare function do some initialization
     /// Such as: init statistic structure、node and etc
     /// The result of preparing would store in EntryContext
     /// All StatPrepareSlots execute in sequence
-    /// prepare fntion should not throw panic.
+    /// prepare function should not throw panic.
     fn prepare(&self, _ctx: &mut EntryContext) {}
 }
 
 /// RuleCheckSlot is rule based checking strategy
 /// All checking rule must implement this interface.
 pub trait RuleCheckSlot: BaseSlot {
-    // check fntion do some validation
+    // check function do some validation
     // It can break off the slot pipeline
     // Each TokenResult will return check result
     // The upper logic will control pipeline according to SlotResult.
@@ -42,17 +42,17 @@ pub trait RuleCheckSlot: BaseSlot {
 /// StatSlot is responsible for counting all custom biz metrics.
 /// StatSlot would not handle any panic, and pass up all panic to slot chain
 pub trait StatSlot: BaseSlot {
-    /// OnEntryPass fntion will be invoked when StatPrepareSlots and RuleCheckSlots execute pass
+    /// OnEntryPass function will be invoked when StatPrepareSlots and RuleCheckSlots execute pass
     /// StatSlots will do some statistic logic, such as QPS、log、etc
     fn on_entry_pass(&self, _ctx: &EntryContext) {}
-    /// on_entry_blocked fntion will be invoked when StatPrepareSlots and RuleCheckSlots fail to execute
+    /// on_entry_blocked function will be invoked when StatPrepareSlots and RuleCheckSlots fail to execute
     /// It may be inbound flow control or outbound cir
     /// StatSlots will do some statistic logic, such as QPS、log、etc
     /// blockError introduce the block detail
-    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: Option<BlockError>) {}
-    /// on_completed fntion will be invoked when chain exits.
+    fn on_entry_blocked(&self, _ctx: &EntryContext, _block_error: BlockError) {}
+    /// on_completed function will be invoked when chain exits.
     /// The semantics of on_completed is the entry passed and completed
-    /// Note: blocked entry will not call this fntion
+    /// Note: blocked entry will not call this function
     fn on_completed(&self, _ctx: &mut EntryContext) {}
 }
 
@@ -142,9 +142,9 @@ impl SlotChain {
             // indicate the result of rule based checking slot.
             if ctx.result().is_pass() {
                 s.on_entry_pass(&*ctx) // Rc/Arc clone
-            } else {
-                // The block error should not be nil.
-                s.on_entry_blocked(&*ctx, ctx.result().block_err()) // Rc/Arc clone
+            } else if ctx.result().is_blocked() {
+                // The block error should not be none.
+                s.on_entry_blocked(&*ctx, ctx.result().block_err().unwrap()) // Rc/Arc clone
             }
         }
         ctx.result().clone()
@@ -297,7 +297,7 @@ mod test {
             impl BaseSlot for StatSlot {}
             impl StatSlot for StatSlot {
                 fn on_entry_pass(&self, ctx: &EntryContext);
-                fn on_entry_blocked(&self, ctx: &EntryContext, block_error: Option<BlockError>);
+                fn on_entry_blocked(&self, ctx: &EntryContext, block_error: BlockError);
                 fn on_completed(&self, ctx: &mut EntryContext);
             }
         }
