@@ -56,7 +56,7 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Etcd
 
     async fn read_and_update(&mut self) -> Result<()> {
         let src = self.read_source().await?;
-        if src.len() == 0 {
+        if src.is_empty() {
             self.get_base().update(None).unwrap();
         } else {
             self.get_base().update(Some(&src)).unwrap();
@@ -73,16 +73,18 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Etcd
             .range(RangeRequest::new(KeyRange::key(&self.property[..])))
             .await?;
         let kvs = resp.take_kvs();
-        if kvs.len() == 0 {
+        if kvs.is_empty() {
             return Err(Error::msg(format!(
                 "The key {} is not existed in the etcd server.",
                 self.property
             )));
         }
-        let header = resp.take_header().ok_or(Error::msg(format!(
-            "The header of  key {} is not existed in the etcd server",
-            self.property
-        )))?;
+        let header = resp.take_header().ok_or_else(|| {
+            Error::msg(format!(
+                "The header of  key {} is not existed in the etcd server",
+                self.property
+            ))
+        })?;
         self.last_updated_revision = header.revision();
         logging::info!(
             "[Etcdv3] Get the newest data for key {}, with revision {} and value {}",
@@ -102,10 +104,12 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Etcd
         loop {
             let mut inbound = self.client.watch(KeyRange::key(&self.property[..])).await?;
             while let Some(resp) = inbound.next().await {
-                let resp = resp?.ok_or(Error::msg(format!(
-                    "Watch a None response for key {} in the etcd server",
-                    self.property
-                )))?;
+                let resp = resp?.ok_or_else(|| {
+                    Error::msg(format!(
+                        "Watch a None response for key {} in the etcd server",
+                        self.property
+                    ))
+                })?;
                 self.process_watch_response(resp).await?;
             }
             if self.closed.load(Ordering::SeqCst) {
@@ -116,23 +120,25 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Etcd
     }
 
     async fn process_watch_response(&mut self, mut resp: WatchResponse) -> Result<()> {
-        let header = resp.take_header().ok_or(Error::msg(format!(
-            "The header of  key {} is not existed in the etcd server",
-            self.property
-        )))?;
+        let header = resp.take_header().ok_or_else(|| {
+            Error::msg(format!(
+                "The header of  key {} is not existed in the etcd server",
+                self.property
+            ))
+        })?;
         if header.revision() > self.last_updated_revision {
             self.last_updated_revision = header.revision();
             for ev in resp.take_events() {
                 match ev.event_type() {
                     EventType::Put => {
-                        if let Err(_) = self.read_and_update().await {
+                        if (self.read_and_update().await).is_err() {
                             logging::error!(
                                 "Fail to execute process_watch_response() for PUT event"
                             );
                         }
                     }
                     EventType::Delete => {
-                        if let Err(_) = self.ds.update(None) {
+                        if self.ds.update(None).is_err() {
                             logging::error!(
                                 "Fail to execute process_watch_response() for DELETE event"
                             );

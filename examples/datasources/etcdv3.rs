@@ -2,9 +2,7 @@
 use etcd_rs::{Client, ClientConfig, PutRequest};
 use sentinel_core::{
     base,
-    datasource::{
-        ds_etcdv3::Etcdv3DataSource, new_flow_rule_handler, rule_json_array_parser, DataSource,
-    },
+    datasource::{ds_etcdv3::Etcdv3DataSource, new_flow_rule_handler, rule_json_array_parser},
     flow, EntryBuilder, Result,
 };
 use std::sync::Arc;

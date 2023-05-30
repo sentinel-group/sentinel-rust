@@ -26,6 +26,7 @@ pub trait MetricLogReader {
 }
 
 // Not thread-safe itself, but guarded by the outside MetricSearcher.
+#[derive(Default)]
 pub struct DefaultMetricLogReader {}
 
 impl DefaultMetricLogReader {
@@ -102,7 +103,7 @@ impl DefaultMetricLogReader {
                     }
 
                     // empty resource name indicates "fetch all"
-                    if resource.len() == 0 || resource == &item.resource {
+                    if resource.is_empty() || resource == &item.resource {
                         items.push(item);
                     }
 
@@ -127,7 +128,7 @@ impl MetricLogReader for DefaultMetricLogReader {
         start_offset: SeekFrom,
         max_lines: usize,
     ) -> Result<MetricItemVec> {
-        if name_list.len() == 0 {
+        if name_list.is_empty() {
             return Ok(Vec::new());
         }
         let mut file_no = file_no;
@@ -157,7 +158,7 @@ impl MetricLogReader for DefaultMetricLogReader {
             }
             file_no += 1;
         }
-        return Ok(items);
+        Ok(items)
     }
 
     fn read_metrics_by_end_time(
@@ -169,7 +170,7 @@ impl MetricLogReader for DefaultMetricLogReader {
         end_ms: u64,
         resource: String,
     ) -> Result<MetricItemVec> {
-        if name_list.len() == 0 {
+        if name_list.is_empty() {
             return Ok(Vec::new());
         }
         let mut file_no = file_no;
@@ -206,12 +207,12 @@ impl MetricLogReader for DefaultMetricLogReader {
             }
             file_no += 1;
         }
-        return Ok(items);
+        Ok(items)
     }
 }
 
 fn get_latest_second(items: &MetricItemVec) -> u64 {
-    if items.len() == 0 {
+    if items.is_empty() {
         return 0;
     }
     items[items.len() - 1].timestamp / 1000

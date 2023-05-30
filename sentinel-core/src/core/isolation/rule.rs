@@ -81,7 +81,7 @@ impl SentinelRule for Rule {
     }
 
     fn is_valid(&self) -> crate::Result<()> {
-        if self.resource.len() == 0 {
+        if self.resource.is_empty() {
             return Err(Error::msg("empty resource of isolation rule"));
         }
 

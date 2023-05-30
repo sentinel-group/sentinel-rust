@@ -10,7 +10,7 @@ use std::sync::{
     Arc, Weak,
 };
 
-static BLOCK_MSG_QUEUEING: &'static str = "flow throttling check blocked, threshold is <= 0.0";
+static BLOCK_MSG_QUEUEING: &str = "flow throttling check blocked, threshold is <= 0.0";
 
 #[derive(Debug)]
 pub struct ThrottlingChecker {
@@ -97,8 +97,8 @@ impl Checker for ThrottlingChecker {
         // Expected pass time of this request.
         let expected_time = loaded_last_passed_time + interval_ns;
         // It has been more than `interval_ns` not running this task
-        if expected_time <= curr_nano {
-            if self
+        if expected_time <= curr_nano
+            && self
                 .last_passed_time
                 .compare_exchange(
                     loaded_last_passed_time,
@@ -107,9 +107,8 @@ impl Checker for ThrottlingChecker {
                     Ordering::Relaxed,
                 )
                 .is_ok()
-            {
-                return TokenResult::new_pass();
-            }
+        {
+            return TokenResult::new_pass();
         }
         // It has been run recently, need queueing, check queueing time
         let estimated_queue_duration =
@@ -160,9 +159,9 @@ impl Checker for ThrottlingChecker {
             }
         }
         if estimated_queue_duration > 0 {
-            return TokenResult::new_should_wait(estimated_queue_duration.try_into().unwrap());
+            TokenResult::new_should_wait(estimated_queue_duration.try_into().unwrap())
         } else {
-            return TokenResult::new_should_wait(0);
+            TokenResult::new_should_wait(0)
         }
     }
 }
@@ -236,14 +235,14 @@ mod test {
         const EPSILON: f64 = 2.0;
         // wait_count is count of request that will wait and not be blocked
         let wait_count: u64 = timeout_ms as u64 / (interval_ms as f64 / threshold) as u64;
-        for i in 0..wait_count as usize {
-            assert!(result_list[i].is_wait());
-            let wt = result_list[i].nanos_to_wait() as f64;
+        for (i, result) in result_list.iter().enumerate().take(wait_count as usize) {
+            assert!(result.is_wait());
+            let wt = result.nanos_to_wait() as f64;
             let mid = ((i + 1) as u64 * 1000 * unix_time_unit_offset() / wait_count) as f64;
             assert!(wt > (1.0 - EPSILON) * mid && wt < (1.0 + EPSILON) * mid);
         }
-        for i in wait_count as usize..req_count {
-            assert!(result_list[i].is_blocked());
+        for result in result_list.iter().take(req_count).skip(wait_count as usize) {
+            assert!(result.is_blocked());
         }
     }
 

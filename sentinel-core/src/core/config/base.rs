@@ -30,13 +30,13 @@ pub fn init_config_with_yaml(config_path: &mut String) -> Result<()> {
 // apply_yaml_config_file loads general configuration from the given YAML file.
 fn apply_yaml_config_file(config_path: &mut String) -> Result<()> {
     // Priority: system environment > YAML file > default config
-    if utils::is_blank(&config_path) {
+    if utils::is_blank(config_path) {
         // If the config file path is absent, Sentinel will try to resolve it from the system env.
-        *config_path = env::var(CONF_FILE_PATH_ENV_KEY).unwrap_or(CONFIG_FILENAME.into());
+        *config_path = env::var(CONF_FILE_PATH_ENV_KEY).unwrap_or_else(|_| CONFIG_FILENAME.into());
     }
     // First Sentinel will try to load config from the given file.
     // If the path is empty (not set), Sentinel will use the default config.
-    load_global_config_from_yaml_file(&config_path)?;
+    load_global_config_from_yaml_file(config_path)?;
     Ok(())
 }
 
@@ -65,7 +65,7 @@ fn load_global_config_from_yaml_file(path_str: &String) -> Result<()> {
 }
 
 fn override_items_from_system_env() -> Result<()> {
-    let app_name = env::var(APP_NAME_ENV_KEY).unwrap_or(DEFAULT_APP_NAME.into());
+    let app_name = env::var(APP_NAME_ENV_KEY).unwrap_or_else(|_| DEFAULT_APP_NAME.into());
     let app_type: ResourceType = env::var(APP_TYPE_ENV_KEY)
         .unwrap_or(format!("{}", DEFAULT_APP_TYPE))
         .parse::<u8>()
@@ -136,7 +136,7 @@ pub fn app_name() -> String {
 #[inline]
 pub fn app_type() -> ResourceType {
     GLOBAL_CONFIG
-        .try_with(|c| c.borrow().config.app.app_type.clone())
+        .try_with(|c| c.borrow().config.app.app_type)
         .unwrap()
 }
 

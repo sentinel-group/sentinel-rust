@@ -56,7 +56,7 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Cons
 
     fn read_and_update(&mut self) -> Result<()> {
         let src = self.read_source()?;
-        if src.len() == 0 {
+        if src.is_empty() {
             self.get_base().update(None).unwrap();
         } else {
             self.get_base().update(Some(&src)).unwrap();
@@ -71,16 +71,15 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Cons
             .client
             .get(&self.property[..], Some(&self.query_options))
             .unwrap();
-        let kv = kv.ok_or(Error::msg(format!(
-            "[Consul] Cannot find the key {:?}.",
-            self.property
-        )))?;
+        let kv = kv.ok_or_else(|| {
+            Error::msg(format!("[Consul] Cannot find the key {:?}.", self.property))
+        })?;
         self.query_options.wait_index = meta.last_index;
         let mut bytes = base64::decode(kv.Value).unwrap();
         bytes.remove(bytes.len() - 1);
         bytes.remove(0);
         let value = String::from_utf8(bytes).unwrap();
-        let value = value.replace(r#"\"#, "");
+        let value = value.replace('\\', "");
         Ok(value)
     }
 

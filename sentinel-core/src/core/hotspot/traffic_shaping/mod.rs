@@ -134,15 +134,15 @@ where
             }
         };
         if concurrency <= threshold {
-            return TokenResult::new_pass();
+            TokenResult::new_pass()
         } else {
             let msg = format!("hotspot specific concurrency check blocked, arg: {:?}", arg);
-            return TokenResult::new_blocked_with_cause(
+            TokenResult::new_blocked_with_cause(
                 BlockType::HotSpotParamFlow,
                 msg,
                 self.rule.clone(),
                 Arc::new(concurrency),
-            );
+            )
         }
     }
 
@@ -150,10 +150,8 @@ where
     pub fn extract_args(&self, ctx: &EntryContext) -> Option<ParamKey> {
         if let Some(args) = self.extract_kv_args(ctx) {
             Some(args)
-        } else if let Some(args) = self.extract_list_args(ctx) {
-            Some(args)
         } else {
-            None
+            self.extract_list_args(ctx)
         }
     }
 
@@ -163,7 +161,7 @@ where
             Some(args) => {
                 let mut idx = self.rule.param_index;
                 if idx < 0 {
-                    idx = args.len() as isize + idx;
+                    idx += args.len() as isize;
                 }
                 if idx < 0 {
                     logging::debug!("[extract_args] The param index of hotspot traffic shaping controller is invalid, args: {:?}, param_index: {}", args, self.param_index());
@@ -187,7 +185,7 @@ where
         match attachments {
             Some(attachments) => {
                 let key = self.rule.param_key.trim();
-                if key.len() == 0 {
+                if key.is_empty() {
                     logging::debug!(
                         "[extract_args] The param key is invalid, key: {}",
                         self.rule.param_key
@@ -325,9 +323,7 @@ pub(crate) mod test {
         });
         let controller = gen_reject::<Counter>(rule, None);
 
-        let mut args = ParamsList::new();
-        args.push("1".into());
-        args.push("2".into());
+        let args = vec!["1".into(), "2".into()];
         let mut attachments = ParamsMap::new();
         attachments.insert("test1".into(), "v1".into());
 
@@ -354,9 +350,7 @@ pub(crate) mod test {
         });
         let controller = gen_reject::<Counter>(rule, None);
 
-        let mut args = ParamsList::new();
-        args.push("1".into());
-        args.push("2".into());
+        let args = vec!["1".into(), "2".into()];
         let mut attachments = ParamsMap::new();
         attachments.insert("test1".into(), "v1".into());
 
@@ -383,9 +377,7 @@ pub(crate) mod test {
         });
         let controller = gen_reject::<Counter>(rule, None);
 
-        let mut args = ParamsList::new();
-        args.push("1".into());
-        args.push("2".into());
+        let args = vec!["1".into(), "2".into()];
         let mut attachments = ParamsMap::new();
         attachments.insert("test1".into(), "v1".into());
 
@@ -412,9 +404,7 @@ pub(crate) mod test {
         });
         let controller = gen_reject::<Counter>(rule, None);
 
-        let mut args = ParamsList::new();
-        args.push("1".into());
-        args.push("2".into());
+        let args = vec!["1".into(), "2".into()];
         let mut attachments = ParamsMap::new();
         attachments.insert("test1".into(), "v1".into());
 
@@ -539,10 +529,10 @@ pub(crate) mod test {
                 });
 
                 let controller = gen_reject(rule, Some(metric));
-                let token = controller.perform_checking(010110.to_string(), 130);
+                let token = controller.perform_checking(10110.to_string(), 130);
                 assert!(token.is_blocked());
 
-                let token = controller.perform_checking(010110.to_string(), 20);
+                let token = controller.perform_checking(10110.to_string(), 20);
                 assert!(token.is_pass());
             }
 
@@ -585,7 +575,7 @@ pub(crate) mod test {
                 });
 
                 let controller = gen_reject(rule, Some(metric));
-                let token = controller.perform_checking(010110.to_string(), 20);
+                let token = controller.perform_checking(10110.to_string(), 20);
                 assert!(token.is_pass());
                 assert_eq!(30, old_qps.load(Ordering::SeqCst));
             }
@@ -629,7 +619,7 @@ pub(crate) mod test {
 
                 let controller = gen_reject(rule, Some(metric));
                 utils::sleep_for_ms(10);
-                let token = controller.perform_checking(010110.to_string(), 20);
+                let token = controller.perform_checking(10110.to_string(), 20);
                 assert!(token.is_pass());
                 assert!(last_add_token_time.load(Ordering::SeqCst) > curr_time);
             }
@@ -674,7 +664,7 @@ pub(crate) mod test {
 
                 let controller = gen_reject(rule, Some(metric));
                 utils::sleep_for_ms(10);
-                let token = controller.perform_checking(010110.to_string(), 20);
+                let token = controller.perform_checking(10110.to_string(), 20);
                 assert!(token.is_pass());
                 assert!(last_add_token_time.load(Ordering::SeqCst) > curr_time);
                 assert!(old_qps.load(Ordering::SeqCst) > 30);
@@ -713,7 +703,7 @@ pub(crate) mod test {
                 ..Default::default()
             });
             let controller = gen_throttling(rule, Some(metric));
-            let token = controller.perform_checking(010110.to_string(), 20);
+            let token = controller.perform_checking(10110.to_string(), 20);
             assert!(token.is_pass());
         }
     }

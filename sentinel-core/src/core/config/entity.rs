@@ -172,10 +172,10 @@ impl ConfigEntity {
     }
 
     pub fn check(&self) -> Result<()> {
-        if self.version.len() == 0 {
+        if self.version.is_empty() {
             return Err(Error::msg("empty version"));
         }
-        if self.config.app.app_name.len() == 0 {
+        if self.config.app.app_name.is_empty() {
             return Err(Error::msg("empty app name"));
         }
         if self.config.log.metric.max_file_count == 0 {

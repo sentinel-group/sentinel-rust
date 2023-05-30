@@ -33,7 +33,7 @@ impl ResourceNodeStatSlot {
 
     fn record_complete_for(&self, node: Arc<dyn StatNode>, count: u32, round_trip: u64) {
         // todo: cannot capture error now
-        node.add_count(MetricEvent::Rt, round_trip as u64);
+        node.add_count(MetricEvent::Rt, round_trip);
         node.add_count(MetricEvent::Complete, count as u64);
         node.decrease_concurrency();
     }

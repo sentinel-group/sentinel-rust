@@ -131,7 +131,7 @@ async fn dynamic_update(
         },
     );
 
-    let flow_rule: Api<flow::FlowResource> = Api::namespaced(client.clone(), namespace.into());
+    let flow_rule: Api<flow::FlowResource> = Api::namespaced(client.clone(), namespace);
     flow_rule.create(&PostParams::default(), &cr).await?;
     println!(
         "Dynamically change custom resource: {} to: {:?}",

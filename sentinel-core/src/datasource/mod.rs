@@ -1,8 +1,8 @@
-pub mod datasource;
+pub mod adapters;
 pub mod helpers;
 pub mod property;
 
-pub use datasource::*;
+pub use adapters::*;
 pub use helpers::*;
 pub use property::*;
 

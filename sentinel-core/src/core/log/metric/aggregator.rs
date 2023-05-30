@@ -49,7 +49,7 @@ pub fn write_task(mut map: MetricTimeMap) {
     let writer = METRIC_WRITER.as_ref().unwrap();
     let mut writer = writer.lock().unwrap();
     for k in keys {
-        writer.write(k, &mut *map.entry(k).or_insert(Vec::new())).unwrap_or_else(|err|{
+        writer.write(k, &mut *map.entry(k).or_default()).unwrap_or_else(|err|{
 			logging::error!("[MetricAggregatorTask] fail to write metric in aggregator::write_task(). Error: {:?}",err);});
     }
 }
@@ -80,7 +80,7 @@ pub fn do_aggregate() {
 
     println!("Store last fetch time {}", cur_time);
 
-    if map.len() > 0 {
+    if !map.is_empty() {
         std::thread::spawn(move || write_task(map));
     }
 }
@@ -93,26 +93,26 @@ fn aggregate_into_map(
     for (t, mut item) in metrics {
         item.resource = node.res_name.clone();
         item.resource_type = node.resource_type;
-        if mm.contains_key(&t) {
-            mm.entry(t).or_insert(Vec::new()).push(item);
+        if let std::collections::hash_map::Entry::Vacant(e) = mm.entry(t) {
+            e.insert(vec![item]);
         } else {
-            mm.insert(t, vec![item]);
+            mm.entry(t).or_default().push(item);
         }
     }
 }
 
 fn is_active_metric_item(item: &MetricItem) -> bool {
-    return item.pass_qps > 0
+    item.pass_qps > 0
         || item.block_qps > 0
         || item.complete_qps > 0
         || item.error_qps > 0
         || item.avg_rt > 0
-        || item.concurrency > 0;
+        || item.concurrency > 0
 }
 
 fn is_item_time_stamp_in_time(ts: u64, current_sec_start: u64) -> bool {
     // The bucket should satisfy: windowStart between [LAST_FETCH_TIME, current_sec_start)
-    return ts >= LAST_FETCH_TIME.load(Ordering::SeqCst) && ts < current_sec_start;
+    ts >= LAST_FETCH_TIME.load(Ordering::SeqCst) && ts < current_sec_start
 }
 
 fn current_metric_items<T: MetricItemRetriever>(
@@ -120,7 +120,7 @@ fn current_metric_items<T: MetricItemRetriever>(
     current_time: u64,
 ) -> HashMap<u64, MetricItem> {
     let items = retriever.metrics_on_condition(&move |ts: u64| -> bool {
-        return is_item_time_stamp_in_time(ts, current_time);
+        is_item_time_stamp_in_time(ts, current_time)
     });
     let mut m = HashMap::with_capacity(items.len());
     for item in items {
@@ -129,5 +129,5 @@ fn current_metric_items<T: MetricItemRetriever>(
         }
         m.insert(item.timestamp, item);
     }
-    return m;
+    m
 }

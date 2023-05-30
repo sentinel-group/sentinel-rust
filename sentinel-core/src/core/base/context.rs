@@ -179,8 +179,8 @@ mod test {
     #[test]
     fn is_blocked() {
         let mut ctx = EntryContext::new();
-        assert_eq!(ctx.is_blocked(), false);
+        assert!(!ctx.is_blocked());
         ctx.set_result(TokenResult::new_blocked(BlockType::Other(1)));
-        assert_eq!(ctx.is_blocked(), true);
+        assert!(ctx.is_blocked());
     }
 }

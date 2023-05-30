@@ -26,7 +26,7 @@ impl MetricTrait for MetricBucket {
             item.store(0, Ordering::SeqCst);
         }
         self.min_rt
-            .store(DEFAULT_STATISTIC_MAX_RT as u64, Ordering::SeqCst);
+            .store(DEFAULT_STATISTIC_MAX_RT, Ordering::SeqCst);
         self.max_concurrency.store(0, Ordering::SeqCst);
     }
 }
@@ -35,7 +35,7 @@ impl Default for MetricBucket {
     fn default() -> Self {
         MetricBucket {
             counter: EnumMap::default(),
-            min_rt: AtomicU64::new(DEFAULT_STATISTIC_MAX_RT as u64),
+            min_rt: AtomicU64::new(DEFAULT_STATISTIC_MAX_RT),
             max_concurrency: AtomicU32::new(0),
         }
     }
@@ -208,7 +208,7 @@ mod test {
         let mb = Arc::new(MetricBucket::new());
         mb.add_rt(100);
         mb.reset();
-        assert_eq!(mb.min_rt(), DEFAULT_STATISTIC_MAX_RT as u64);
+        assert_eq!(mb.min_rt(), DEFAULT_STATISTIC_MAX_RT);
         assert_eq!(mb.max_concurrency(), 0);
     }
 }

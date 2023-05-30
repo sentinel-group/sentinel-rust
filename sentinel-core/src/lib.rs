@@ -67,14 +67,14 @@
 //! use sentinel_core::base;
 //! use sentinel_core::api::EntryBuilder;
 //! let entry_builder = EntryBuilder::new(res_name.clone())
-//! 	.with_traffic_type(base::TrafficType::Inbound);
+//!     .with_traffic_type(base::TrafficType::Inbound);
 //! if let Ok(entry) = entry_builder.build() {
-//! 	// The request is allowed to be processed.
-//! 	// after finish the logic, exit the entry.
+//!     // The request is allowed to be processed.
+//!     // after finish the logic, exit the entry.
 //!     entry.exit()
 //! } else {
-//! 	// The request is blocked.
-//! 	// you do not need to call `exit()` on entry now.
+//!     // The request is blocked.
+//!     // you do not need to call `exit()` on entry now.
 //! }
 //! ```
 //!

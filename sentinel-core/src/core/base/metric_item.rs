@@ -50,21 +50,23 @@ impl fmt::Display for MetricItem {
 impl MetricItem {
     /// cannot use String trait, since conversion may fail
     pub fn from_string(line: &str) -> Result<Self> {
-        if line.len() == 0 {
+        if line.is_empty() {
             return Err(Error::msg(METRIC_EMPTY_STRING_ERROR));
         }
         let arr: Vec<&str> = line.split(METRIC_PART_SEPARATOR).collect();
         if arr.len() < 8 {
             return Err(Error::msg(METRIC_INVALID_FORMAT_ERROR));
         }
-        let mut item = MetricItem::default();
-        item.timestamp = arr[0].parse::<u64>()?;
-        item.resource = arr[2].into();
-        item.pass_qps = arr[3].parse::<u64>()?;
-        item.block_qps = arr[4].parse::<u64>()?;
-        item.complete_qps = arr[5].parse::<u64>()?;
-        item.error_qps = arr[6].parse::<u64>()?;
-        item.avg_rt = arr[7].parse::<u64>()?;
+        let mut item = MetricItem {
+            timestamp: arr[0].parse::<u64>()?,
+            resource: arr[2].into(),
+            pass_qps: arr[3].parse::<u64>()?,
+            block_qps: arr[4].parse::<u64>()?,
+            complete_qps: arr[5].parse::<u64>()?,
+            error_qps: arr[6].parse::<u64>()?,
+            avg_rt: arr[7].parse::<u64>()?,
+            ..Default::default()
+        };
         if arr.len() >= 9 {
             item.occupied_pass_qps = arr[8].parse::<u64>()?;
             if arr.len() >= 10 {

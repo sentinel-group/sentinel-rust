@@ -36,11 +36,13 @@ const EXIST_BLOCK_ERROR: &str = "Block type existed!";
 pub fn registry_block_type(other: BlockType, desc: &'static str) -> Result<()> {
     match other {
         BlockType::Other(id) => {
-            if BLOCK_TYPE_MAP.lock().unwrap().contains_key(&id) {
-                Err(Error::msg(EXIST_BLOCK_ERROR))
-            } else {
-                BLOCK_TYPE_MAP.lock().unwrap().insert(id, desc);
+            if let std::collections::hash_map::Entry::Vacant(e) =
+                BLOCK_TYPE_MAP.lock().unwrap().entry(id)
+            {
+                e.insert(desc);
                 Ok(())
+            } else {
+                Err(Error::msg(EXIST_BLOCK_ERROR))
             }
         }
         _ => Err(Error::msg(EXIST_BLOCK_ERROR)),
@@ -51,11 +53,11 @@ impl fmt::Display for BlockType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let BlockType::Other(id) = self {
             match BLOCK_TYPE_MAP.lock().unwrap().get(id) {
-                Some(&desc) => return write!(f, "{}", desc),
-                None => return write!(f, "{}", id),
+                Some(&desc) => write!(f, "{}", desc),
+                None => write!(f, "{}", id),
             }
         } else {
-            return write!(f, "{:?}", self);
+            write!(f, "{:?}", self)
         }
     }
 }
@@ -127,24 +129,15 @@ impl TokenResult {
     }
 
     pub fn is_pass(&self) -> bool {
-        match self {
-            Self::Pass => true,
-            _ => false,
-        }
+        matches!(self, Self::Pass)
     }
 
     pub fn is_blocked(&self) -> bool {
-        match self {
-            Self::Blocked(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Blocked(_))
     }
 
     pub fn is_wait(&self) -> bool {
-        match self {
-            Self::Wait(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Wait(_))
     }
 
     pub fn block_err(&self) -> Option<BlockError> {

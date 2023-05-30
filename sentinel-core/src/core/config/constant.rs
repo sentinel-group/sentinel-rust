@@ -13,8 +13,8 @@ pub const CONFIG_FILENAME: &str = "USE_DEFAULT_CONFIGURATION";
 pub const FLUSH_INTERVAL_SEC: u32 = 1;
 pub const SINGLE_FILE_MAX_SIZE: u64 = 100; // 1024 * 1024 * 50;
 pub const MAX_FILE_AMOUNT: usize = 2; //8;
-pub const EXPORTER_ADDR: &'static str = "127.0.0.1:9091";
-pub const EXPORTER_METRICS_PATH: &'static str = "/metrics";
+pub const EXPORTER_ADDR: &str = "127.0.0.1:9091";
+pub const EXPORTER_METRICS_PATH: &str = "/metrics";
 
 // default statistic settings
 pub const SYSTEM_INTERVAL_MS: u32 = 1000;

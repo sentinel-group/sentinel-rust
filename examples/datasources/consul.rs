@@ -2,9 +2,7 @@
 use consul::{kv::KVPair, kv::KV, Client, Config, QueryOptions};
 use sentinel_core::{
     base,
-    datasource::{
-        ds_consul::ConsulDataSource, new_flow_rule_handler, rule_json_array_parser, DataSource,
-    },
+    datasource::{ds_consul::ConsulDataSource, new_flow_rule_handler, rule_json_array_parser},
     flow,
     utils::sleep_for_ms,
     EntryBuilder, Result,
@@ -34,7 +32,7 @@ fn main() -> Result<()> {
         };
 
         client.put(&pair, None).unwrap();
-        println!("list: {:?}", client.list(&key, None));
+        println!("list: {:?}", client.list(key, None));
     }
 
     // Sleep 3 seconds and then read the consul

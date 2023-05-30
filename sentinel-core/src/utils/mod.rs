@@ -5,8 +5,8 @@ pub mod time;
 
 pub use self::time::*;
 
-pub fn is_blank(path: &String) -> bool {
-    path.trim().len() == 0
+pub fn is_blank(path: &str) -> bool {
+    path.trim().is_empty()
 }
 
 /// not a general implememtation,

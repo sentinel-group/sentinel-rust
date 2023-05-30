@@ -3,7 +3,7 @@ use sentinel_core::flow;
 use sentinel_rocket::{SentinelFairing, SentinelFairingState};
 use std::sync::Arc;
 
-const RESOURCE_NAME: &'static str = "rocket_example";
+const RESOURCE_NAME: &str = "rocket_example";
 
 fn custom_extractor(_req: &Request<'_>) -> String {
     RESOURCE_NAME.into()

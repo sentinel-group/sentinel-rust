@@ -12,7 +12,7 @@ use volo_grpc::{
     Request, Response,
 };
 
-const RESOURCE_NAME: &'static str = "motore_example";
+const RESOURCE_NAME: &str = "motore_example";
 
 fn custom_extractor(_cx: &ServerContext, _req: &Request<HelloServiceRequestRecv>) -> String {
     RESOURCE_NAME.into()

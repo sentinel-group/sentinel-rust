@@ -25,10 +25,10 @@ impl BaseSlot for Slot {
 impl RuleCheckSlot for Slot {
     fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         let res = ctx.resource().name().clone();
-        if res.len() == 0 {
+        if res.is_empty() {
             return ctx.result().clone();
         }
-        if let Some(_) = can_pass_check(ctx, &res) {
+        if can_pass_check(ctx, &res).is_some() {
             ctx.set_result(TokenResult::new_blocked_with_msg(
                 BlockType::CircuitBreaking,
                 "circuit breaker check blocked".into(),
@@ -47,7 +47,7 @@ fn can_pass_check(ctx: &EntryContext, res: &String) -> Option<Arc<Rule>> {
             return Some(Arc::clone(breaker.bound_rule()));
         }
     }
-    return None;
+    None
 }
 
 #[cfg(test)]

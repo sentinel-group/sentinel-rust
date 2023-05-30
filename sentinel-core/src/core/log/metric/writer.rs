@@ -17,14 +17,14 @@ pub struct DefaultMetricLogWriter {
 
 impl MetricLogWriter for DefaultMetricLogWriter {
     fn write(&mut self, ts: u64, items: &mut Vec<MetricItem>) -> Result<()> {
-        if items.len() == 0 {
+        if items.is_empty() {
             return Ok(());
         }
         if ts == 0 {
             return Err(Error::msg(format!("Invalid timestamp: {}", ts)));
         }
         if self.cur_metric_file.is_none() || self.cur_metric_idx_file.is_none() {
-            return Err(Error::msg(format!("file handle not initialized")));
+            return Err(Error::msg("file handle not initialized".to_string()));
         }
         // Update all metric items to the given timestamp.
         for item in items.iter_mut() {
@@ -57,7 +57,7 @@ impl MetricLogWriter for DefaultMetricLogWriter {
             self.latest_op_sec = time_sec;
         }
 
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -67,7 +67,7 @@ impl DefaultMetricLogWriter {
         for item in items {
             // Append the LF line separator.
             let s = item.to_string() + "\n";
-            metric_out.write(s.as_ref())?;
+            metric_out.write_all(s.as_ref())?;
         }
         metric_out.flush()?;
         Ok(())
@@ -105,8 +105,8 @@ impl DefaultMetricLogWriter {
     fn write_index(&self, time: u64, offset: u64) -> Result<()> {
         // Use BigEndian here to keep consistent with DataOutputStream in Java.
         let mut idx_out = self.cur_metric_idx_file.as_ref().unwrap().write().unwrap();
-        idx_out.write(&time.to_be_bytes())?;
-        idx_out.write(&offset.to_be_bytes())?;
+        idx_out.write_all(&time.to_be_bytes())?;
+        idx_out.write_all(&offset.to_be_bytes())?;
         idx_out.flush()?;
         Ok(())
     }
@@ -117,8 +117,7 @@ impl DefaultMetricLogWriter {
         let files = list_metric_files(&self.base_dir, &self.base_filename)?;
         if files.len() >= self.max_file_amount {
             let amount_to_remove = files.len() - self.max_file_amount + 1;
-            for i in 0..amount_to_remove {
-                let filename = &files[i];
+            for filename in files.iter().take(amount_to_remove) {
                 let idx_filename = form_metric_idx_filename(filename.to_str().unwrap());
                 match fs::remove_file(filename) {
                     Ok(_) => {
@@ -151,14 +150,14 @@ impl DefaultMetricLogWriter {
             &PathBuf::from(&file_pattern),
             |filename: &str, p: &str| -> bool { filename.contains(p) },
         )?;
-        if list.len() == 0 {
+        if list.is_empty() {
             return Ok(self.base_dir.to_str().unwrap().to_owned() + &file_pattern);
         }
         // Find files with the same prefix pattern, have to add the order to separate files.
         let last = &list[list.len() - 1];
         let mut n = 0;
-        let items = last.to_str().unwrap().split(".").collect::<Vec<&str>>();
-        if items.len() > 0 {
+        let items = last.to_str().unwrap().split('.').collect::<Vec<&str>>();
+        if !items.is_empty() {
             n = str::parse::<u32>(items[items.len() - 1]).unwrap_or(0);
         }
         return Ok(format!(
@@ -195,7 +194,7 @@ impl DefaultMetricLogWriter {
         self.cur_metric_file = Some(RwLock::new(mf));
         self.cur_metric_idx_file = Some(RwLock::new(mif));
 
-        return Ok(());
+        Ok(())
     }
 
     fn initialize(&mut self) -> Result<()> {
@@ -207,7 +206,7 @@ impl DefaultMetricLogWriter {
         let ts = utils::curr_time_millis();
         self.roll_to_next_file(ts)?;
         self.latest_op_sec = ts / 1000;
-        return Ok(());
+        Ok(())
     }
 
     fn is_new_day(&self, last_sec: u64, sec: u64) -> bool {

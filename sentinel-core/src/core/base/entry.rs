@@ -46,7 +46,7 @@ impl SentinelEntry {
     // todo: cleanup
     pub fn exit(&self) {
         for handler in &self.exit_handlers {
-            handler(&self, self.ctx.clone()) // Rc/Arc clone
+            handler(self, self.ctx.clone()) // Rc/Arc clone
                 .map_err(|err: Error| {
                     logging::error!("ERROR: {}", err);
                 })

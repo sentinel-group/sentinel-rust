@@ -95,7 +95,7 @@ lazy_static! {
 }
 
 fn log_rule_update(map: &RuleMap) {
-    if map.len() == 0 {
+    if map.is_empty() {
         logging::info!("[FlowRuleManager] Flow rules were cleared")
     } else {
         logging::info!(
@@ -122,7 +122,7 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
                 .lock()
                 .unwrap()
                 .entry(rule.resource.clone())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(Arc::clone(&rule));
         }
         Err(err) => logging::warn!(
@@ -141,12 +141,12 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
             .get_mut(&rule.resource)
             .unwrap_or(&mut placeholder),
     );
-    if new_tcs_of_res.len() > 0 {
+    if !new_tcs_of_res.is_empty() {
         CONTROLLER_MAP
             .lock()
             .unwrap()
             .entry(rule.resource.clone())
-            .or_insert(Vec::new())
+            .or_default()
             .push(Arc::clone(&new_tcs_of_res[0]));
     }
     true
@@ -163,14 +163,12 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
     // instead of dealing with them in
     // `on_rule_update`
     for rule in rules {
-        let entry = rule_map
-            .entry(rule.resource.clone())
-            .or_insert(HashSet::new());
+        let entry = rule_map.entry(rule.resource.clone()).or_default();
         entry.insert(rule);
     }
 
     let mut global_rule_map = RULE_MAP.lock().unwrap();
-    if &*global_rule_map == &rule_map {
+    if *global_rule_map == rule_map {
         logging::info!(
             "[Flow] Load rules is the same with current rules, so ignore load operation."
         );
@@ -184,7 +182,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
         for rule in rules {
             match rule.is_valid() {
                 Ok(_) => {
-                    valid_rules.insert(Arc::clone(&rule));
+                    valid_rules.insert(Arc::clone(rule));
                 }
                 Err(err) => logging::warn!(
                     "[Flow load_rules] Ignoring invalid flow rule {:?}, reason: {:?}",
@@ -193,7 +191,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
                 ),
             }
         }
-        if valid_rules.len() > 0 {
+        if !valid_rules.is_empty() {
             valid_rules_map.insert(res.clone(), valid_rules);
         }
     }
@@ -210,7 +208,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
             rules,
             controller_map.get_mut(res).unwrap_or(&mut placeholder),
         );
-        if new_tcs_of_res.len() > 0 {
+        if !new_tcs_of_res.is_empty() {
             valid_controller_map.insert(res.clone(), new_tcs_of_res);
         }
     }
@@ -223,7 +221,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
         utils::curr_time_nanos() - start
     );
     log_rule_update(&valid_rules_map);
-    return true;
+    true
 }
 
 /// `load_rules_of_resource` loads the given resource's flow rules to the rule manager, while all previous resource's rules will be replaced.
@@ -231,14 +229,14 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
 // This func acquires locks on global `RULE_MAP` and `CONTROLLER_MAP`,
 // please release your locks on them before calling this func
 pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<bool> {
-    if res.len() == 0 {
+    if res.is_empty() {
         return Err(Error::msg("empty resource"));
     }
     let rules: HashSet<_> = rules.into_iter().collect();
     let mut global_rule_map = RULE_MAP.lock().unwrap();
     let mut global_controller_map = CONTROLLER_MAP.lock().unwrap();
     // clear resource rules
-    if rules.len() == 0 {
+    if rules.is_empty() {
         global_rule_map.remove(res);
         global_controller_map.remove(res);
         logging::info!("[Flow] clear resource level rules, resource {}", res);
@@ -254,7 +252,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     for rule in &rules {
         match rule.is_valid() {
             Ok(_) => {
-                valid_res_rules.insert(Arc::clone(&rule));
+                valid_res_rules.insert(Arc::clone(rule));
             }
             Err(err) => logging::warn!(
                 "[Flow load_rules_of_resource] Ignoring invalid flow rule {:?}, reason: {:?}",
@@ -266,15 +264,14 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     // the `res` related rules changes, have to update
     let start = utils::curr_time_nanos();
     let mut placeholder = Vec::new();
-    let mut old_res_tcs = global_controller_map
+    let old_res_tcs = global_controller_map
         .get_mut(res)
         .unwrap_or(&mut placeholder);
 
     let valid_res_rules_string = format!("{:?}", &valid_res_rules);
-    let new_res_tcs =
-        build_resource_traffic_shaping_controller(res, &valid_res_rules, &mut old_res_tcs);
+    let new_res_tcs = build_resource_traffic_shaping_controller(res, &valid_res_rules, old_res_tcs);
 
-    if new_res_tcs.len() == 0 {
+    if new_res_tcs.is_empty() {
         global_controller_map.remove(res);
     } else {
         global_controller_map.insert(res.clone(), new_res_tcs);
@@ -456,7 +453,7 @@ pub fn remove_traffic_shaping_generator(
     }
 }
 
-fn calculate_reuse_index_for(r: &Arc<Rule>, old_res_tcs: &Vec<Arc<Controller>>) -> (usize, usize) {
+fn calculate_reuse_index_for(r: &Arc<Rule>, old_res_tcs: &[Arc<Controller>]) -> (usize, usize) {
     // the index of equivalent rule in old traffic shaping controller slice
     let mut eq_idx = usize::MAX;
     // the index of statistic reusable rule in old traffic shaping controller slice
@@ -489,7 +486,7 @@ pub fn build_resource_traffic_shaping_controller(
             logging::error!("unmatched resource name expect: {}, actual: {}. Unmatched resource name in flow::build_resource_traffic_shaping_controller(), rule: {:?}", res, rule.resource, rule);
             continue;
         }
-        let (eq_idx, reuse_stat_idx) = calculate_reuse_index_for(&rule, old_res_tcs);
+        let (eq_idx, reuse_stat_idx) = calculate_reuse_index_for(rule, old_res_tcs);
 
         // First check equals scenario
         if eq_idx != usize::MAX {
@@ -502,10 +499,7 @@ pub fn build_resource_traffic_shaping_controller(
         }
 
         let gen_fun_map = GEN_FUN_MAP.read().unwrap();
-        let key = ControllerGenKey::new(
-            rule.calculate_strategy.clone(),
-            rule.control_strategy.clone(),
-        );
+        let key = ControllerGenKey::new(rule.calculate_strategy, rule.control_strategy);
         let generator = gen_fun_map.get(&key);
 
         if generator.is_none() {
@@ -517,11 +511,11 @@ pub fn build_resource_traffic_shaping_controller(
         let tc = {
             if reuse_stat_idx != usize::MAX {
                 generator(
-                    Arc::clone(&rule),
+                    Arc::clone(rule),
                     Some(Arc::clone(old_res_tcs[reuse_stat_idx].stat())),
                 )
             } else {
-                generator(Arc::clone(&rule), None)
+                generator(Arc::clone(rule), None)
             }
         };
 
@@ -606,7 +600,7 @@ mod test {
         let controller_map = CONTROLLER_MAP.lock().unwrap();
 
         assert!(GEN_FUN_MAP.read().unwrap().contains_key(&key));
-        assert!(controller_map[&resource].len() > 0);
+        assert!(!controller_map[&resource].is_empty());
         remove_traffic_shaping_generator(
             CalculateStrategy::Custom(STRATEGY),
             ControlStrategy::Custom(STRATEGY),
@@ -638,7 +632,7 @@ mod test {
         load_rules(vec![Arc::clone(&r1), Arc::clone(&r2)]);
         let rs = get_rules();
 
-        if rs[0].resource == String::from("abc1") {
+        if rs[0].resource == *"abc1" {
             // Arc<T> equals when inner T equals, even if they are different pointers
             assert_eq!(rs[0], r1);
             assert_eq!(rs[1], r2);
@@ -670,7 +664,7 @@ mod test {
         load_rules(vec![r1.clone(), r2.clone()]);
         let rs = get_rules();
 
-        if rs[0].resource == String::from("abc1") {
+        if rs[0].resource == *"abc1" {
             // Arc<T> equals when inner T equals, even if they are different pointers
             assert_eq!(rs[0], r1);
             assert_eq!(rs[1], r2);
@@ -682,7 +676,7 @@ mod test {
         let controller_map = CONTROLLER_MAP.lock().unwrap();
 
         assert_eq!(1, controller_map["abc2"].len());
-        assert_eq!(false, controller_map["abc2"][0].stat().reuse_global());
+        assert!(!controller_map["abc2"][0].stat().reuse_global());
 
         assert!(Arc::ptr_eq(
             controller_map["abc2"][0].stat().read_only_metric(),
@@ -782,7 +776,7 @@ mod test {
             0,
             controller_map
                 .entry(String::from("abc1"))
-                .or_insert(Vec::new())
+                .or_default()
                 .len()
         );
 
@@ -864,35 +858,35 @@ mod test {
         let fake_tc0 = Arc::new(Controller::new(Arc::clone(&r0), s0));
         let stat0 = fake_tc0.stat();
         assert!(Arc::ptr_eq(&NOP_STAT, stat0));
-        assert_eq!(false, stat0.reuse_global());
+        assert!(!stat0.reuse_global());
         assert!(stat0.write_only_metric().is_some());
 
         let s1 = generate_stat_for(&r1).unwrap();
         let fake_tc1 = Arc::new(Controller::new(Arc::clone(&r1), s1));
         let stat1 = fake_tc1.stat();
         assert!(!Arc::ptr_eq(&NOP_STAT, stat1));
-        assert_eq!(true, stat1.reuse_global());
+        assert!(stat1.reuse_global());
         assert!(stat1.write_only_metric().is_none());
 
         let s2 = generate_stat_for(&r2).unwrap();
         let fake_tc2 = Arc::new(Controller::new(Arc::clone(&r2), s2));
         let stat2 = fake_tc2.stat();
         assert!(!Arc::ptr_eq(&NOP_STAT, stat2));
-        assert_eq!(true, stat2.reuse_global());
+        assert!(stat2.reuse_global());
         assert!(stat2.write_only_metric().is_none());
 
         let s3 = generate_stat_for(&r3).unwrap();
         let fake_tc3 = Arc::new(Controller::new(Arc::clone(&r3), s3));
         let stat3 = fake_tc3.stat();
         assert!(!Arc::ptr_eq(&NOP_STAT, stat3));
-        assert_eq!(true, stat3.reuse_global());
+        assert!(stat3.reuse_global());
         assert!(stat3.write_only_metric().is_none());
 
         let s4 = generate_stat_for(&r4).unwrap();
         let fake_tc4 = Arc::new(Controller::new(Arc::clone(&r4), s4));
         let stat4 = fake_tc4.stat();
         assert!(!Arc::ptr_eq(&NOP_STAT, stat4));
-        assert_eq!(false, stat4.reuse_global());
+        assert!(!stat4.reuse_global());
         assert!(stat4.write_only_metric().is_some());
 
         let mut controller_map = CONTROLLER_MAP.lock().unwrap();
@@ -1004,7 +998,7 @@ mod test {
             ..Default::default()
         });
 
-        load_rules(vec![r11.clone(), r12.clone(), r21.clone(), r22.clone()]);
+        load_rules(vec![r11.clone(), r12.clone(), r21, r22]);
 
         let result = load_rules_of_resource(&String::from(""), vec![r11.clone(), r12.clone()]);
         assert!(result.is_err());

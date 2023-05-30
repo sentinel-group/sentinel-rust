@@ -6,10 +6,10 @@
 //!  3. `init_with_config_file(config_path: String)`, using yaml file to initialize.
 //! For the examples, visit the [Sentinel repository](https://github.com/sentinel-group/sentinel-rust)
 
-pub mod api;
-pub mod init;
-pub mod slot_chain;
+mod base;
+mod init;
+mod slot_chain;
 
-pub use api::*;
+pub use base::*;
 pub use init::*;
 pub use slot_chain::*;

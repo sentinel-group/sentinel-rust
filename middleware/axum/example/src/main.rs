@@ -13,7 +13,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 
-const RESOURCE_NAME: &'static str = "axum_example";
+const RESOURCE_NAME: &str = "axum_example";
 
 type Request = http::Request<Body>;
 

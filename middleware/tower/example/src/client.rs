@@ -10,7 +10,7 @@ pub mod hello_world {
     tonic::include_proto!("helloworld");
 }
 
-const RESOURCE_NAME: &'static str = "tonic_example";
+const RESOURCE_NAME: &str = "tonic_example";
 
 type Request = http::Request<tonic::body::BoxBody>;
 // type Response = http::Response<tonic::transport::Body>;

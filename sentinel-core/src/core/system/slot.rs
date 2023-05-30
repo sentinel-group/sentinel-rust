@@ -86,21 +86,17 @@ fn can_pass_check(rule: &Arc<Rule>) -> (bool, String, Option<Arc<Snapshot>>) {
         }
         MetricType::Load => {
             let l = system_metric::current_load();
-            if l > threshold {
-                if rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple() {
-                    res = false;
-                    msg = "system load check blocked".into();
-                }
+            if l > threshold && (rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple()) {
+                res = false;
+                msg = "system load check blocked".into();
             }
             snapshot = Some(Arc::new(l) as Arc<Snapshot>);
         }
         MetricType::CpuUsage => {
             let c = system_metric::current_cpu_usage() as f64;
-            if c > threshold {
-                if rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple() {
-                    res = false;
-                    msg = "system cpu usage check blocked".into();
-                }
+            if c > threshold && (rule.strategy != AdaptiveStrategy::BBR || !check_bbr_simple()) {
+                res = false;
+                msg = "system cpu usage check blocked".into();
             }
             snapshot = Some(Arc::new(c) as Arc<Snapshot>);
         }
@@ -113,11 +109,7 @@ fn check_bbr_simple() -> bool {
     let concurrency = global_inbound.current_concurrency() as f64;
     let min_rt = global_inbound.min_rt();
     let max_complete = global_inbound.max_avg(MetricEvent::Complete);
-    if concurrency > 1.0 && concurrency > max_complete * min_rt / 1000.0 {
-        false
-    } else {
-        true
-    }
+    !(concurrency > 1.0 && concurrency > max_complete * min_rt / 1000.0)
 }
 
 #[cfg(test)]
@@ -162,7 +154,7 @@ mod test {
             ..Default::default()
         });
         let (r, _, v) = can_pass_check(&rule);
-        assert_eq!(true, r);
+        assert!(r);
         assert!(v.is_none());
     }
 
@@ -177,7 +169,7 @@ mod test {
         stat::inbound_node().increase_concurrency();
         let (r, _, v) = can_pass_check(&rule);
         stat::inbound_node().decrease_concurrency();
-        assert_eq!(false, r);
+        assert!(!r);
         assert!(
             (1.0 - *Arc::downcast::<f64>(v.unwrap().as_any_arc()).unwrap()).abs() < f64::EPSILON
         );

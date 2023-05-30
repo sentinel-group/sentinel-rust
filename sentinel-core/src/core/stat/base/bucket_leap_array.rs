@@ -46,7 +46,7 @@ impl BucketLeapArray {
     }
 
     pub fn min_rt(&self) -> u64 {
-        let mut res = DEFAULT_STATISTIC_MAX_RT as u64;
+        let mut res = DEFAULT_STATISTIC_MAX_RT;
         let buckets = self.get_current_values();
         for b in buckets {
             res = cmp::min(res, b.value().min_rt());
@@ -109,7 +109,7 @@ mod test {
     #[test]
     fn min_rt() {
         let arr = BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap();
-        assert_eq!(arr.min_rt(), DEFAULT_STATISTIC_MAX_RT as u64);
+        assert_eq!(arr.min_rt(), DEFAULT_STATISTIC_MAX_RT);
         arr.add_count(MetricEvent::Rt, 100);
         assert_eq!(arr.min_rt(), 100);
     }

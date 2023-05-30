@@ -75,7 +75,7 @@ impl BlockError {
 
 impl fmt::Display for BlockError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.block_msg.len() == 0 {
+        if self.block_msg.is_empty() {
             write!(f, "SentinelBlockError: {}", self.block_type)
         } else {
             write!(
@@ -97,7 +97,7 @@ mod test {
 
     impl SentinelRule for MockRule {
         fn resource_name(&self) -> String {
-            return "mock resource".into();
+            "mock resource".into()
         }
     }
 
@@ -130,20 +130,18 @@ mod test {
                 &block_err.triggered_value().unwrap(),
                 &snapshot_value
             ));
+        } else if let Some(block_msg) = block_msg {
+            block_err = BlockError::new_with_msg(block_type, block_msg.clone());
+            assert_eq!(block_err.block_type, block_type);
+            assert_eq!(block_err.block_msg, block_msg);
+            assert!(block_err.triggered_rule().is_none());
+            assert!(block_err.triggered_value().is_none());
         } else {
-            if let Some(block_msg) = block_msg {
-                block_err = BlockError::new_with_msg(block_type, block_msg.clone());
-                assert_eq!(block_err.block_type, block_type);
-                assert_eq!(block_err.block_msg, block_msg);
-                assert_eq!(block_err.triggered_rule().is_none(), true);
-                assert_eq!(block_err.triggered_value().is_none(), true);
-            } else {
-                block_err = BlockError::new(block_type);
-                assert_eq!(block_err.block_type, block_type);
-                assert_eq!(block_err.block_msg, String::default());
-                assert_eq!(block_err.triggered_rule().is_none(), true);
-                assert_eq!(block_err.triggered_value().is_none(), true);
-            }
+            block_err = BlockError::new(block_type);
+            assert_eq!(block_err.block_type, block_type);
+            assert_eq!(block_err.block_msg, String::default());
+            assert!(block_err.triggered_rule().is_none());
+            assert!(block_err.triggered_value().is_none());
         }
     }
 

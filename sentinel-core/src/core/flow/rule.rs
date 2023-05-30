@@ -151,8 +151,8 @@ impl Rule {
     }
 
     pub fn need_statistic(&self) -> bool {
-        return self.calculate_strategy == CalculateStrategy::WarmUp
-            || self.control_strategy == ControlStrategy::Reject;
+        self.calculate_strategy == CalculateStrategy::WarmUp
+            || self.control_strategy == ControlStrategy::Reject
     }
 }
 
@@ -162,13 +162,13 @@ impl SentinelRule for Rule {
     }
 
     fn is_valid(&self) -> crate::Result<()> {
-        if self.resource.len() == 0 {
+        if self.resource.is_empty() {
             return Err(Error::msg("empty resource name"));
         }
         if self.threshold < 0.0 {
             return Err(Error::msg("negative threshold"));
         }
-        if self.relation_strategy == RelationStrategy::Associated && self.ref_resource.len() == 0 {
+        if self.relation_strategy == RelationStrategy::Associated && self.ref_resource.is_empty() {
             return Err(Error::msg("ref_resource must be non empty when relation_strategy is RelationStrategy::Associated"));
         }
         if self.calculate_strategy == CalculateStrategy::WarmUp {

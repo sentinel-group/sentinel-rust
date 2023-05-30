@@ -39,8 +39,8 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
             RULE_MAP
                 .write()
                 .unwrap()
-                .entry(rule.metric_type.clone())
-                .or_insert(HashSet::new())
+                .entry(rule.metric_type)
+                .or_default()
                 .insert(Arc::clone(&rule));
             CURRENT_RULES.lock().unwrap().push(rule);
         }
@@ -58,7 +58,7 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
 // please release the lock before calling this func
 pub fn load_rules(rules: Vec<Arc<Rule>>) {
     let mut current_rules = CURRENT_RULES.lock().unwrap();
-    if &*current_rules == &rules {
+    if *current_rules == rules {
         logging::info!(
             "[System] Load rules is the same with current rules, so ignore load operation."
         );
@@ -103,10 +103,10 @@ fn build_rule_map(rules: Vec<Arc<Rule>>) -> RuleMap {
             );
             continue;
         }
-        let value = m.entry(rule.metric_type.clone()).or_insert(HashSet::new());
+        let value = m.entry(rule.metric_type).or_default();
         value.insert(rule);
     }
-    return m;
+    m
 }
 
 #[cfg(test)]

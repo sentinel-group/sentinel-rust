@@ -64,9 +64,9 @@ pub struct Rule {
     pub resource: String,
     /// `metric_type` indicates the metric type for checking logic.
     /// For Concurrency metric, hotspot module will check the each hot parameter's concurrency,
-    ///		if concurrency exceeds the threshold, reject the traffic directly.
+    /// if concurrency exceeds the threshold, reject the traffic directly.
     /// For QPS metric, hotspot module will check the each hot parameter's QPS,
-    ///		the `control_strategy` decides the behavior of traffic shaping controller
+    /// the `control_strategy` decides the behavior of traffic shaping controller
     pub metric_type: MetricType,
     /// `control_strategy` indicates the traffic shaping behaviour.
     /// `control_strategy` only takes effect when `metric_type` is QPS
@@ -141,13 +141,13 @@ impl SentinelRule for Rule {
     }
 
     fn is_valid(&self) -> crate::Result<()> {
-        if self.resource.len() == 0 {
+        if self.resource.is_empty() {
             return Err(Error::msg("empty resource name"));
         }
         if self.metric_type == MetricType::QPS && self.duration_in_sec == 0 {
             return Err(Error::msg("invalid duration"));
         }
-        if self.param_index > 0 && self.param_key.len() != 0 {
+        if self.param_index > 0 && !self.param_key.is_empty() {
             return Err(Error::msg(
                 "param index and param key are mutually exclusive",
             ));
@@ -236,7 +236,6 @@ mod test {
             duration_in_sec: 1,
             params_max_capacity: 10000,
             specific_items: specific_items.clone(),
-            ..Default::default()
         };
         let rule2 = Rule {
             id: "abc".into(),
@@ -251,7 +250,6 @@ mod test {
             duration_in_sec: 1,
             params_max_capacity: 10000,
             specific_items,
-            ..Default::default()
         };
         assert_eq!(rule1, rule2);
     }

@@ -9,7 +9,7 @@ pub mod hello_world {
     tonic::include_proto!("helloworld");
 }
 
-const RESOURCE_NAME: &'static str = "tonic_example";
+const RESOURCE_NAME: &str = "tonic_example";
 
 fn custom_extractor(_req: &Request<()>) -> String {
     RESOURCE_NAME.into()

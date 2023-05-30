@@ -96,7 +96,7 @@ pub fn get_rules_of_resource(res: &String) -> Vec<Arc<Rule>> {
 pub fn get_rules() -> Vec<Arc<Rule>> {
     let mut rules = Vec::new();
     let breaker_rules = BREAKER_RULES.read().unwrap();
-    for (_, res_rules) in &*breaker_rules {
+    for res_rules in (*breaker_rules).values() {
         for r in res_rules {
             rules.push(Arc::clone(r));
         }
@@ -129,13 +129,13 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
                 .lock()
                 .unwrap()
                 .entry(rule.resource.clone())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(Arc::clone(&rule));
             BREAKER_RULES
                 .write()
                 .unwrap()
                 .entry(rule.resource.clone())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(Arc::clone(&rule));
         }
         Err(err) => logging::warn!(
@@ -147,19 +147,19 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
     let mut placeholder = Vec::new();
     let new_tcs_of_res = build_resource_circuit_breaker(
         &rule.resource,
-        &BREAKER_RULES.read().unwrap().get(&rule.resource).unwrap(),
+        BREAKER_RULES.read().unwrap().get(&rule.resource).unwrap(),
         BREAKER_MAP
             .write()
             .unwrap()
             .get_mut(&rule.resource)
             .unwrap_or(&mut placeholder),
     );
-    if new_tcs_of_res.len() > 0 {
+    if !new_tcs_of_res.is_empty() {
         BREAKER_MAP
             .write()
             .unwrap()
             .entry(rule.resource.clone())
-            .or_insert(Vec::new())
+            .or_default()
             .push(Arc::clone(&new_tcs_of_res[0]));
     }
     true
@@ -176,14 +176,12 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
     // instead of dealing with them in
     // `on_rule_update`
     for rule in rules {
-        let entry = rule_map
-            .entry(rule.resource.clone())
-            .or_insert(HashSet::new());
+        let entry = rule_map.entry(rule.resource.clone()).or_default();
         entry.insert(rule);
     }
 
     let mut global_rule_map = CURRENT_RULES.lock().unwrap();
-    if &*global_rule_map == &rule_map {
+    if *global_rule_map == rule_map {
         logging::info!(
             "[CircuitBreakerTrait] Loaded rules is the same with current rules, so ignore load operation."
         );
@@ -198,7 +196,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
         for rule in rules {
             match rule.is_valid() {
                 Ok(_) => {
-                    valid_rules.insert(Arc::clone(&rule));
+                    valid_rules.insert(Arc::clone(rule));
                 }
                 Err(err) => logging::warn!(
                     "[Flow load_rules] Ignoring invalid flow rule {:?}, reason: {:?}",
@@ -207,7 +205,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
                 ),
             }
         }
-        if valid_rules.len() > 0 {
+        if !valid_rules.is_empty() {
             valid_rules_map.insert(res.clone(), valid_rules);
         }
     }
@@ -221,15 +219,15 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
         let mut placeholder = Vec::new();
         let new_cbs_of_res = build_resource_circuit_breaker(
             res,
-            &rules,
+            rules,
             global_breaker_map.get_mut(res).unwrap_or(&mut placeholder),
         );
-        if new_cbs_of_res.len() > 0 {
+        if !new_cbs_of_res.is_empty() {
             valid_breaker_map.insert(res.clone(), new_cbs_of_res);
         }
     }
 
-    if valid_rules_map.len() == 0 {
+    if valid_rules_map.is_empty() {
         logging::info!("[Circuit Breaker] Circuit breaking rules were cleared")
     } else {
         logging::info!(
@@ -248,7 +246,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
         utils::curr_time_nanos() - start
     );
 
-    return true;
+    true
 }
 
 /// load_rulesOfResource loads the given resource's circuitBreaker rules to the rule manager, while all previous resource's rules will be replaced.
@@ -256,14 +254,14 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) -> bool {
 // This func acquires locks on global `CURRENT_RULES`, `BREAKER_RULES` and `BREAKER_MAP`,
 // please release your locks on them before calling this func
 pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<bool> {
-    if res.len() == 0 {
+    if res.is_empty() {
         return Err(Error::msg("empty resource"));
     }
     let rules: HashSet<_> = rules.into_iter().collect();
     let mut global_rule_map = CURRENT_RULES.lock().unwrap();
     let mut global_breaker_map = BREAKER_MAP.write().unwrap();
     // clear resource rules
-    if rules.len() == 0 {
+    if rules.is_empty() {
         global_rule_map.remove(res);
         global_breaker_map.remove(res);
         BREAKER_RULES.write().unwrap().remove(res);
@@ -282,7 +280,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     let mut valid_res_rules = HashSet::with_capacity(res.len());
     for rule in &rules {
         match rule.is_valid() {
-            Ok(_) => {valid_res_rules.insert(Arc::clone(&rule));},
+            Ok(_) => {valid_res_rules.insert(Arc::clone(rule));},
             Err(err) => logging::warn!(
                 "CircuitBreakerTrait onResourceRuleUpdate] Ignoring invalid circuitBreaker rule {:?}, reason: {:?}",
                 rule,
@@ -293,12 +291,12 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     // the `res` related rules changes, have to update
     let start = utils::curr_time_nanos();
     let mut placeholder = Vec::new();
-    let mut old_res_tcs = global_breaker_map.get_mut(res).unwrap_or(&mut placeholder);
+    let old_res_tcs = global_breaker_map.get_mut(res).unwrap_or(&mut placeholder);
 
     let valid_res_rules_string = format!("{:?}", &valid_res_rules);
-    let new_res_tcs = build_resource_circuit_breaker(res, &valid_res_rules, &mut old_res_tcs);
+    let new_res_tcs = build_resource_circuit_breaker(res, &valid_res_rules, old_res_tcs);
 
-    if new_res_tcs.len() == 0 {
+    if new_res_tcs.is_empty() {
         global_breaker_map.remove(res);
         BREAKER_RULES.write().unwrap().remove(res);
     } else {
@@ -338,7 +336,7 @@ pub fn get_breakers_of_resource(resource: &String) -> Vec<Arc<dyn CircuitBreaker
 
 /// register_state_change_listeners registers the global state change listener for all circuit breakers
 pub fn register_state_change_listeners(mut listeners: Vec<Arc<dyn StateChangeListener>>) {
-    if listeners.len() == 0 {
+    if listeners.is_empty() {
         return;
     }
     STATE_CHANGE_LISTERNERS
@@ -372,7 +370,7 @@ pub fn set_circuit_breaker_generator(
 pub fn remove_circuit_breaker_generator(s: &BreakerStrategy) -> Result<()> {
     match s {
         BreakerStrategy::Custom(_) => {
-            GEN_FUN_MAP.write().unwrap().remove(&s);
+            GEN_FUN_MAP.write().unwrap().remove(s);
             Ok(())
         }
         _ => Err(Error::msg(
@@ -390,7 +388,7 @@ pub fn clear_rules_of_resource(res: &String) {
 
 pub fn calculate_reuse_index_for(
     r: &Arc<Rule>,
-    old_res_cbs: &Vec<Arc<dyn CircuitBreakerTrait>>,
+    old_res_cbs: &[Arc<dyn CircuitBreakerTrait>],
 ) -> (usize, usize) {
     // the index of equivalent rule in old circuit breaker slice
     let mut eq_idx = usize::MAX;
@@ -462,7 +460,7 @@ pub fn build_resource_circuit_breaker(
         }
         new_res_cbs.push(cb);
     }
-    return new_res_cbs;
+    new_res_cbs
 }
 
 #[cfg(test)]
@@ -521,7 +519,7 @@ mod test {
         let breaker_map = BREAKER_MAP.write().unwrap();
 
         assert!(GEN_FUN_MAP.read().unwrap().contains_key(&key));
-        assert!(breaker_map[&resource].len() > 0);
+        assert!(!breaker_map[&resource].is_empty());
         remove_circuit_breaker_generator(&key).unwrap();
         assert!(!GEN_FUN_MAP.read().unwrap().contains_key(&key));
         drop(breaker_map);

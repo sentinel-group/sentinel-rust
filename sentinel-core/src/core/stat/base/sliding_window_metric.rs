@@ -81,7 +81,7 @@ impl SlidingWindowMetric {
     }
 
     pub fn qps_with_time(&self, now: u64, event: MetricEvent) -> f64 {
-        self.sum_with_time(now, event) as f64 / self.interval_s() as f64
+        self.sum_with_time(now, event) as f64 / self.interval_s()
     }
 
     pub fn max_of_single_bucket(&self, event: MetricEvent) -> u64 {
@@ -121,7 +121,7 @@ impl SlidingWindowMetric {
         }
         let mut res = Vec::new();
         for (timestamp, b) in buckets_map {
-            if b.len() > 0 {
+            if !b.is_empty() {
                 res.push(self.metric_item_from_buckets(timestamp, b));
             }
         }
@@ -361,7 +361,7 @@ mod test {
         for h in handles {
             h.join().unwrap();
         }
-        let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr.clone()).unwrap();
+        let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr).unwrap();
         assert_eq!(swm.sum_with_time(now, MetricEvent::Pass), 2000);
     }
 
@@ -378,7 +378,7 @@ mod test {
     fn min_rt() {
         let arr = Arc::new(BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap());
         let (sample_count, interval_ms) = (2, 2000);
-        let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr.clone()).unwrap();
+        let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr).unwrap();
         assert!((swm.min_rt() - DEFAULT_STATISTIC_MAX_RT as f64).abs() < f64::EPSILON);
     }
 
@@ -417,7 +417,7 @@ mod test {
     fn metric_item_from_bucket() {
         let arr = Arc::new(BucketLeapArray::new(SAMPLE_COUNT, INTERVAL_MS).unwrap());
         let (sample_count, interval_ms, now) = (4, 2000, curr_time_millis());
-        let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr.clone()).unwrap();
+        let swm = SlidingWindowMetric::new(sample_count, interval_ms, arr).unwrap();
         let bucket = Arc::new(BucketWrap::<MetricBucket>::new(now));
         bucket.value().add_count(MetricEvent::Pass, 100);
         let item = swm.metric_item_from_bucket(bucket);

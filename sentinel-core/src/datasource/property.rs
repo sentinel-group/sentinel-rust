@@ -26,7 +26,7 @@ pub type PropertyUpdater<P> = fn(rule: Vec<Arc<P>>) -> Result<bool>;
 
 pub trait PropertyHandler<P: SentinelRule>: Send + Sync {
     // check whether the current src is consistent with last update property
-    fn is_property_consistent(&mut self, rules: &Vec<Arc<P>>) -> bool;
+    fn is_property_consistent(&mut self, rules: &[Arc<P>]) -> bool;
     // handle the current property
     fn handle(&mut self, src: Option<&String>) -> Result<bool>;
     // update sentinel rules
@@ -57,13 +57,13 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned> DefaultPropertyHandler<P> {
 impl<P: SentinelRule + PartialEq + DeserializeOwned> PropertyHandler<P>
     for DefaultPropertyHandler<P>
 {
-    fn is_property_consistent<'a>(&mut self, rules: &'a Vec<Arc<P>>) -> bool {
+    fn is_property_consistent(&mut self, rules: &[Arc<P>]) -> bool {
         if self.last_update_property.is_some()
-            && &self.last_update_property.as_ref().unwrap() == &rules
+            && self.last_update_property.as_ref().unwrap() == rules
         {
             true
         } else {
-            self.last_update_property = Some(rules.clone());
+            self.last_update_property = Some(rules.to_vec());
             false
         }
     }

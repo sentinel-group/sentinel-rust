@@ -24,7 +24,7 @@ pub fn inbound_node() -> Arc<ResourceNode> {
 // resource_node_list returns the slice of all existing resource nodes.
 pub fn resource_node_list() -> Vec<Arc<ResourceNode>> {
     let res_map = RESOURCE_NODE_MAP.read().unwrap();
-    res_map.values().map(|x| x.clone()).collect()
+    res_map.values().cloned().collect()
 }
 
 pub fn get_resource_node(res_name: &String) -> Option<Arc<ResourceNode>> {
@@ -38,7 +38,7 @@ pub fn get_or_create_resource_node(
 ) -> Arc<ResourceNode> {
     let node = get_resource_node(res_name);
     match node {
-        Some(node) => node.clone(),
+        Some(node) => node,
         None => {
             if RESOURCE_NODE_MAP.read().unwrap().len() >= DEFAULT_MAX_RESOURCE_AMOUNT {
                 logging::warn!(
@@ -48,7 +48,7 @@ pub fn get_or_create_resource_node(
             }
             RESOURCE_NODE_MAP.write().unwrap().insert(
                 res_name.clone(),
-                Arc::new(ResourceNode::new(res_name.clone(), resource_type.clone())),
+                Arc::new(ResourceNode::new(res_name.clone(), *resource_type)),
             );
             RESOURCE_NODE_MAP
                 .read()

@@ -2,17 +2,19 @@
 //!
 //!                                switch to open based on rule
 //!
-//!				+-----------------------------------------------------------------------+
-//!				|                                                                       |
-//!				|                                                                       v
-//!		+----------------+                   +----------------+      Probe      +----------------+
-//!		|                |                   |                |<----------------|                |
-//!		|                |   Probe succeed   |                |                 |                |
-//!		|     Closed     |<------------------|    HalfOpen    |                 |      Open      |
-//!		|                |                   |                |   Probe failed  |                |
-//!		|                |                   |                +---------------->|                |
-//!		+----------------+                   +----------------+                 +----------------+
+//!             +-----------------------------------------------------------------------+
+//!             |                                                                       |
+//!             |                                                                       v
+//!     +----------------+                   +----------------+      Probe      +----------------+
+//!     |                |                   |                |<----------------|                |
+//!     |                |   Probe succeed   |                |                 |                |
+//!     |     Closed     |<------------------|    HalfOpen    |                 |      Open      |
+//!     |                |                   |                |   Probe failed  |                |
+//!     |                |                   |                +---------------->|                |
+//!     +----------------+                   +----------------+                 +----------------+
 //!
+
+#![allow(clippy::wrong_self_convention)]
 
 /// Error count
 pub mod error_count;
@@ -256,17 +258,11 @@ impl BreakerBase {
                 listener.on_transform_to_half_open(State::Open, Arc::clone(&self.rule));
             }
             let entry = ctx.entry();
-            if entry.is_none() {
-                logging::error!(
-                    "Entry is None in BreakerBase::from_open_to_half_open(), rule: {:?}",
-                    self.rule,
-                );
-            } else {
+            if let Some(entry) = entry {
                 // add hook for entry exit
                 // if the current circuit breaker performs the probe through this entry, but the entry was blocked,
                 // this hook will guarantee current circuit breaker state machine will rollback to Open from Half-Open
                 drop(state);
-                let entry = entry.unwrap();
                 let entry = entry.upgrade().unwrap();
                 let rule = Arc::clone(&self.rule);
                 let state = Arc::clone(&self.state);
@@ -289,8 +285,12 @@ impl BreakerBase {
                         Ok(())
                     },
                 ))
+            } else {
+                logging::error!(
+                    "Entry is None in BreakerBase::from_open_to_half_open(), rule: {:?}",
+                    self.rule,
+                );
             }
-
             #[cfg(feature = "exporter")]
             crate::exporter::add_state_change_counter(&self.rule.resource, "Open", "HalfOpen");
             true
@@ -452,7 +452,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
-        let token = breaker.try_pass(&*ctx.read().unwrap());
+        let token = breaker.try_pass(&ctx.read().unwrap());
         clear_state_change_listeners();
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
@@ -501,7 +501,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
-        let token = breaker.try_pass(&*ctx.read().unwrap());
+        let token = breaker.try_pass(&ctx.read().unwrap());
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
     }
@@ -577,7 +577,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
-        let token = breaker.try_pass(&*ctx.read().unwrap());
+        let token = breaker.try_pass(&ctx.read().unwrap());
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
     }
@@ -652,7 +652,7 @@ pub(crate) mod test {
             Arc::clone(&sc),
         )));
         ctx.write().unwrap().set_entry(Arc::downgrade(&entry));
-        let token = breaker.try_pass(&*ctx.read().unwrap());
+        let token = breaker.try_pass(&ctx.read().unwrap());
         assert!(token);
         assert_eq!(breaker.current_state(), State::HalfOpen);
     }

@@ -13,6 +13,12 @@ pub struct ThrottlingChecker<C: CounterTrait = Counter> {
     owner: Weak<Controller<C>>,
 }
 
+impl<C: CounterTrait> Default for ThrottlingChecker<C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<C: CounterTrait> ThrottlingChecker<C> {
     pub fn new() -> Self {
         ThrottlingChecker { owner: Weak::new() }

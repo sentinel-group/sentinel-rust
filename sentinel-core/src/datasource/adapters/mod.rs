@@ -57,7 +57,7 @@ where
         let mut err = String::new();
         for h in &mut self.handlers {
             let h = Arc::get_mut(h).unwrap();
-            let e = h.handle(src.clone());
+            let e = h.handle(src);
             if let Err(e) = e {
                 err.push_str(&format!("{:?}", e));
             }
@@ -72,11 +72,11 @@ where
     // return idx if existed, else return None
     pub fn index_of_handler(&self, h: Arc<H>) -> Option<usize> {
         for (idx, handler) in self.handlers.iter().enumerate() {
-            if Arc::ptr_eq(&handler, &h) {
+            if Arc::ptr_eq(handler, &h) {
                 return Some(idx);
             }
         }
-        return None;
+        None
     }
 
     pub fn add_property_handler(&mut self, h: Arc<H>) {

@@ -19,15 +19,15 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 // METRIC_FILENAME_SUFFIX represents the suffix of the metric file.
-static METRIC_FILENAME_SUFFIX: &'static str = "metrics.log";
+static METRIC_FILENAME_SUFFIX: &str = "metrics.log";
 // METRIC_IDX_SUFFIX represents the suffix of the metric index file.
-static METRIC_IDX_SUFFIX: &'static str = ".idx";
+static METRIC_IDX_SUFFIX: &str = ".idx";
 // FILE_LOCK_SUFFIX represents the suffix of the lock file.
-static FILE_LOCK_SUFFIX: &'static str = ".lck";
+static FILE_LOCK_SUFFIX: &str = ".lck";
 // FILE_PID_PREFIX represents the pid flag of filename.
-static FILE_PID_PREFIX: &'static str = "pid";
+static FILE_PID_PREFIX: &str = "pid";
 
-static METRIC_FILE_PATTERN: &'static str = r"\.[0-9]{4}-[0-9]{2}-[0-9]{2}(\.[0-9]*)?";
+static METRIC_FILE_PATTERN: &str = r"\.[0-9]{4}-[0-9]{2}-[0-9]{2}(\.[0-9]*)?";
 
 type MetricItemVec = Vec<MetricItem>;
 type MetricTimeMap = HashMap<u64, MetricItemVec>;
@@ -46,7 +46,7 @@ pub trait MetricSearcher {
     fn find_by_time_and_resource(
         begin_time_ms: u64,
         end_time_ms: u64,
-        resource: &String,
+        resource: &str,
     ) -> Result<MetricItem>;
     fn find_from_time_with_max_lines(begin_time_ms: u64, max_lines: u32) -> Result<MetricItem>;
 }
@@ -83,7 +83,7 @@ fn filename_matches(filename: &str, base_filename: &str) -> bool {
 
 fn list_metric_files_conditional(
     base_dir: &PathBuf,
-    file_pattern: &PathBuf,
+    file_pattern: &Path,
     predicate: fn(&str, &str) -> bool,
 ) -> Result<Vec<PathBuf>> {
     let dir = fs::read_dir(base_dir)?;
@@ -113,17 +113,18 @@ fn list_metric_files_conditional(
 
 /// List metrics files according to `base_dir` (the directory of metrics files) and
 /// `file_pattern` (metric file pattern).
-fn list_metric_files(base_dir: &PathBuf, file_pattern: &PathBuf) -> Result<Vec<PathBuf>> {
-    return list_metric_files_conditional(base_dir, file_pattern, filename_matches);
+fn list_metric_files(base_dir: &PathBuf, file_pattern: &Path) -> Result<Vec<PathBuf>> {
+    list_metric_files_conditional(base_dir, file_pattern, filename_matches)
 }
 
 /// Sort the metric files by their date time.
 /// This function is used to remove the deprecated files, or create a new file in order.
+#[allow(clippy::ptr_arg)]
 fn filename_comparator(file1: &PathBuf, file2: &PathBuf) -> Ordering {
     let name1 = file1.file_name().unwrap().to_str().unwrap();
     let name2 = file2.file_name().unwrap().to_str().unwrap();
-    let a1 = name1.split(".").collect::<Vec<&str>>();
-    let a2 = name2.split(".").collect::<Vec<&str>>();
+    let a1 = name1.split('.').collect::<Vec<&str>>();
+    let a2 = name2.split('.').collect::<Vec<&str>>();
     let mut date_str1 = a1[2];
     let mut date_str2 = a2[2];
 
@@ -135,9 +136,9 @@ fn filename_comparator(file1: &PathBuf, file2: &PathBuf) -> Ordering {
 
     // compare date first
     if date_str1 != date_str2 {
-        return date_str1.cmp(&date_str2);
+        return date_str1.cmp(date_str2);
     }
 
     // same date, compare the file number
-    name1.cmp(&name2)
+    name1.cmp(name2)
 }

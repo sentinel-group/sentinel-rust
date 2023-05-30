@@ -18,6 +18,12 @@ impl<C: CounterTrait> RejectChecker<C> {
     }
 }
 
+impl<C: CounterTrait> Default for RejectChecker<C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<C: CounterTrait> Checker<C> for RejectChecker<C> {
     fn get_owner(&self) -> &Weak<Controller<C>> {
         &self.owner
@@ -66,7 +72,7 @@ impl<C: CounterTrait> Checker<C> for RejectChecker<C> {
             if last_add_token_time_arc.is_none() {
                 // First fill token, and consume token immediately
                 let left_count = max_count - batch_count as u64;
-                token_counter.add_if_absent(arg.clone(), left_count);
+                token_counter.add_if_absent(arg, left_count);
                 return TokenResult::new_pass();
             }
             let last_add_token_time_arc = last_add_token_time_arc.unwrap();

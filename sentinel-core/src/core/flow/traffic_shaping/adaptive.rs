@@ -5,7 +5,7 @@
 //! - If the water_mark is less than Rule.mem_low_water_mark, the threshold is Rule.low_mem_usage_threshold.
 //! - If the water_mark is greater than Rule.mem_high_water_mark, the threshold is Rule.high_mem_usage_threshold.
 //! - Otherwise, the threshold is `((water_mark - mem_low_water_mark)/(mem_high_water_mark - mem_low_water_mark)) *
-//!	(high_mem_usage_threshold - low_mem_usage_threshold) + low_mem_usage_threshold`.
+//! (high_mem_usage_threshold - low_mem_usage_threshold) + low_mem_usage_threshold`.
 //!
 
 use super::Rule;

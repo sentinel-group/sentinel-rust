@@ -32,10 +32,10 @@ pub struct DefaultMetricSearcher {
 
 impl DefaultMetricSearcher {
     pub fn new(base_dir: String, base_filename: String) -> Result<Self> {
-        if base_dir.len() == 0 {
+        if base_dir.is_empty() {
             return Err(Error::msg("empty base directory"));
         }
-        if base_filename.len() == 0 {
+        if base_filename.is_empty() {
             return Err(Error::msg("empty base filename pattern"));
         }
         let reader = DefaultMetricLogReader::new();
@@ -108,12 +108,12 @@ impl DefaultMetricSearcher {
                 }
             }
         }
-        return Ok(Vec::new());
+        Ok(Vec::new())
     }
 
     fn get_offset_start_and_file_idx(
         &self,
-        filenames: &Vec<PathBuf>,
+        filenames: &[PathBuf],
         begin_time_ms: u64,
     ) -> Result<(SeekFrom, usize)> {
         let cache_ok = self.is_position_in_time_for(begin_time_ms)?;
@@ -151,17 +151,17 @@ impl DefaultMetricSearcher {
         let mut sec: u64;
         loop {
             let mut buffer: [u8; 8] = [0; 8];
-            file.read(&mut buffer)?;
+            file.read_exact(&mut buffer)?;
             sec = u64::from_be_bytes(buffer);
             if sec >= begin_sec {
                 break;
             }
             let mut buffer: [u8; 4] = [0; 4];
-            file.read(&mut buffer)?;
+            file.read_exact(&mut buffer)?;
             cached_pos.cur_offset_in_idx = SeekFrom::Start(file.seek(SeekFrom::Current(0))?);
         }
         let mut buffer: [u8; 4] = [0; 4];
-        file.read(&mut buffer)?;
+        file.read_exact(&mut buffer)?;
         let offset = u32::from_be_bytes(buffer);
         // Cache the idx filename and position
         cached_pos.metric_filename = filename.into();
@@ -179,10 +179,10 @@ impl DefaultMetricSearcher {
         if idx_filename == &PathBuf::from("") {
             return Ok(false);
         }
-        let mut idx_file = open_file_and_seek_to(&idx_filename, cached_pos.cur_offset_in_idx)?;
+        let mut idx_file = open_file_and_seek_to(idx_filename, cached_pos.cur_offset_in_idx)?;
 
         let mut buffer: [u8; 8] = [0; 8];
-        idx_file.read(&mut buffer)?;
+        idx_file.read_exact(&mut buffer)?;
         let sec = u64::from_be_bytes(buffer);
 
         Ok(sec == cached_pos.cur_sec_in_idx)

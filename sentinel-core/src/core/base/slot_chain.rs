@@ -67,13 +67,19 @@ pub struct SlotChain {
     pub(self) stats: Vec<Arc<dyn StatSlot>>,
 }
 
-impl SlotChain {
-    pub fn new() -> Self {
+impl Default for SlotChain {
+    fn default() -> Self {
         Self {
             stat_pres: Vec::with_capacity(SLOT_INIT),
             rule_checks: Vec::with_capacity(SLOT_INIT),
             stats: Vec::with_capacity(SLOT_INIT),
         }
+    }
+}
+
+impl SlotChain {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn exit(&self, ctx_ptr: ContextPtr) {
@@ -87,7 +93,7 @@ impl SlotChain {
         }
         // The on_completed is called only when entry passed
         for s in &self.stats {
-            s.on_completed(&mut *ctx);
+            s.on_completed(&mut ctx);
         }
     }
 
@@ -124,13 +130,13 @@ impl SlotChain {
         let mut ctx = ctx_ptr.write().unwrap();
         // execute prepare slot
         for s in &self.stat_pres {
-            s.prepare(&mut *ctx); // Rc/Arc clone
+            s.prepare(&mut ctx); // Rc/Arc clone
         }
 
         // execute rule based checking slot
         ctx.reset_result_to_pass();
         for s in &self.rule_checks {
-            let res = s.check(&mut *ctx);
+            let res = s.check(&mut ctx);
             // check slot result
             if res.is_blocked() {
                 ctx.set_result(res.clone());
@@ -141,10 +147,10 @@ impl SlotChain {
         for s in &self.stats {
             // indicate the result of rule based checking slot.
             if ctx.result().is_pass() {
-                s.on_entry_pass(&*ctx) // Rc/Arc clone
+                s.on_entry_pass(&ctx) // Rc/Arc clone
             } else if ctx.result().is_blocked() {
                 // The block error should not be none.
-                s.on_entry_blocked(&*ctx, ctx.result().block_err().unwrap()) // Rc/Arc clone
+                s.on_entry_blocked(&ctx, ctx.result().block_err().unwrap()) // Rc/Arc clone
             }
         }
         ctx.result().clone()
@@ -183,7 +189,7 @@ mod test {
                 for i in 0..10 {
                     let order = base * 10 + i;
                     sc.add_stat_prepare_slot(Arc::new(StatPrepareSlotMock {
-                        name: String::from(format!("mock{}", order)),
+                        name: format!("mock{}", order),
                         order,
                     }))
                 }
@@ -218,7 +224,7 @@ mod test {
                 for i in 0..10 {
                     let order = base * 10 + i;
                     sc.add_rule_check_slot(Arc::new(RuleCheckSlotMock {
-                        name: String::from(format!("mock{}", order)),
+                        name: format!("mock{}", order),
                         order,
                     }))
                 }
@@ -253,7 +259,7 @@ mod test {
                 for i in 0..10 {
                     let order = base * 10 + i;
                     sc.add_stat_slot(Arc::new(StatSlotMock {
-                        name: String::from(format!("mock{}", order)),
+                        name: format!("mock{}", order),
                         order,
                     }))
                 }

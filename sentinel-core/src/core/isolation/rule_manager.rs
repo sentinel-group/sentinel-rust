@@ -28,11 +28,11 @@ pub fn get_rules() -> Vec<Arc<Rule>> {
 // This func acquires a read lock on global `RULE_MAP`,
 // please release the lock before calling this func
 pub fn get_rules_of_resource(res: &String) -> Vec<Arc<Rule>> {
-    let mut placeholder = HashSet::new();
+    let placeholder = HashSet::new();
     let rule_map = RULE_MAP.read().unwrap();
-    let res_rules = rule_map.get(res).unwrap_or(&mut placeholder);
-    let rules = res_rules.clone().into_iter().collect();
-    rules
+    let res_rules = rule_map.get(res).unwrap_or(&placeholder);
+
+    res_rules.clone().into_iter().collect()
 }
 
 pub fn append_rule(rule: Arc<Rule>) -> bool {
@@ -52,13 +52,13 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
                 .write()
                 .unwrap()
                 .entry(rule.resource.clone())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(Arc::clone(&rule));
             CURRENT_RULES
                 .lock()
                 .unwrap()
                 .entry(rule.resource.clone())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(rule);
         }
         Err(err) => logging::warn!(
@@ -76,13 +76,11 @@ pub fn append_rule(rule: Arc<Rule>) -> bool {
 pub fn load_rules(rules: Vec<Arc<Rule>>) {
     let mut res_rules_map = RuleMap::new();
     for rule in rules {
-        let val = res_rules_map
-            .entry(rule.resource.clone())
-            .or_insert(HashSet::new());
+        let val = res_rules_map.entry(rule.resource.clone()).or_default();
         val.insert(rule);
     }
     let mut current_rules = CURRENT_RULES.lock().unwrap();
-    if &*current_rules == &res_rules_map {
+    if *current_rules == res_rules_map {
         logging::info!(
             "[Isolation] Load rules is the same with current rules, so ignore load operation."
         );
@@ -97,7 +95,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) {
         for rule in rules {
             match rule.is_valid() {
                 Ok(_) => {
-                    valid_res_rules.insert(Arc::clone(&rule));
+                    valid_res_rules.insert(Arc::clone(rule));
                 }
                 Err(err) => logging::warn!(
                     "[Isolation load_rules] Ignoring invalid flow rule {:?}, reason: {:?}",
@@ -106,7 +104,7 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) {
                 ),
             }
         }
-        if valid_res_rules.len() > 0 {
+        if !valid_res_rules.is_empty() {
             valid_res_rule_map.insert(res.clone(), valid_res_rules);
         }
     }
@@ -130,12 +128,12 @@ pub fn load_rules(rules: Vec<Arc<Rule>>) {
 // This func acquires the locks on global `CURRENT_RULES` and `RULE_MAP`,
 // please release the locks before calling this func
 pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<bool> {
-    if res.len() == 0 {
+    if res.is_empty() {
         return Err(Error::msg("empty resource"));
     }
     let rules: HashSet<_> = rules.into_iter().collect();
 
-    if rules.len() == 0 {
+    if rules.is_empty() {
         clear_rules_of_resource(res);
         logging::info!("[Isolation] clear resource level rules, resource {}", res);
         return Ok(true);
@@ -160,7 +158,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
     for rule in &rules {
         match rule.is_valid() {
             Ok(_) => {
-                valid_res_rules.insert(Arc::clone(&rule));
+                valid_res_rules.insert(Arc::clone(rule));
             }
             Err(err) => logging::warn!(
                 "[Isolation load_rules_of_resource] Ignoring invalid flow rule {:?}, reason: {:?}",
@@ -172,7 +170,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
 
     let valid_res_rules_string = format!("{:?}", &valid_res_rules);
     let start = utils::curr_time_nanos();
-    if valid_res_rules.len() == 0 {
+    if valid_res_rules.is_empty() {
         RULE_MAP.write().unwrap().remove(res);
     } else {
         RULE_MAP
@@ -190,7 +188,7 @@ pub fn load_rules_of_resource(res: &String, rules: Vec<Arc<Rule>>) -> Result<boo
         "[IsolationRuleManager] Isolation rules loaded, rules {}",
         valid_res_rules_string
     );
-    return Ok(true);
+    Ok(true)
 }
 
 /// `clear_rules` clear all the rules in isolation module

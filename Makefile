@@ -5,7 +5,7 @@ check:
 	cargo check --all-features 
 
 clippy:
-	cargo clippy --all-targets 
+	cargo clippy --all-targets --all-features 
 
 doc: clean
 	cargo doc --lib --no-deps --all-features --document-private-items 
@@ -14,7 +14,7 @@ clean:
 	cargo clean
 
 fmt:
-	@rustfmt --edition 2018 $(SRC_FILES)
+	@rustfmt --edition 2021 $(SRC_FILES)
 
 unit: unit_single unit_parallel
 

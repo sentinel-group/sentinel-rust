@@ -25,7 +25,7 @@ impl BaseSlot for AdaptiveSlot {
 impl RuleCheckSlot for AdaptiveSlot {
     fn check(&self, ctx: &mut EntryContext) -> TokenResult {
         let res_name = ctx.resource().name().clone();
-        if res_name.len() == 0 {
+        if res_name.is_empty() {
             return ctx.result().clone();
         }
         let (passed, rule, snapshot) = can_pass_check(ctx, &res_name);
@@ -58,5 +58,5 @@ fn can_pass_check(
             }
         }
     }
-    return (true, None, None);
+    (true, None, None)
 }

@@ -9,7 +9,7 @@ use sentinel_actix::Sentinel;
 use sentinel_core::flow;
 use std::sync::Arc;
 
-const RESOURCE_NAME: &'static str = "actix_example";
+const RESOURCE_NAME: &str = "actix_example";
 
 fn custom_extractor(_req: &ServiceRequest) -> String {
     RESOURCE_NAME.into()

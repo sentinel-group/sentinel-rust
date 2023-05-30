@@ -87,7 +87,7 @@ impl Rule {
         if bucket_count == 0 || self.stat_interval_ms % bucket_count != 0 {
             bucket_count = 1
         }
-        return bucket_count;
+        bucket_count
     }
 }
 
@@ -97,7 +97,7 @@ impl SentinelRule for Rule {
     }
 
     fn is_valid(&self) -> crate::Result<()> {
-        if self.resource.len() == 0 {
+        if self.resource.is_empty() {
             return Err(Error::msg("empty resource name"));
         }
         if self.stat_interval_ms == 0 {

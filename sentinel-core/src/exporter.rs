@@ -60,17 +60,10 @@ lazy_static! {
     )
     .unwrap();
     static ref GAUGE_METRICS: Vec<GaugeVec> = {
-        let mut vec = Vec::new();
-        vec.push(CPU_RATIO_GAUGE.clone());
-        vec.push(MEMORY_SIZE_GAUGE.clone());
-        vec.push(FLOW_THRESHOLD_GAUGE.clone());
-        vec
+        vec![CPU_RATIO_GAUGE.clone(), MEMORY_SIZE_GAUGE.clone(), FLOW_THRESHOLD_GAUGE.clone()]
     };
     static ref COUNTER_METRICS: Vec<CounterVec> = {
-        let mut vec = Vec::new();
-        vec.push(STATE_CHANGE_COUNTER.clone());
-        vec.push(HANDLED_COUNTER.clone());
-        vec
+        vec![STATE_CHANGE_COUNTER.clone(), HANDLED_COUNTER.clone()]
     };
     static ref INIT_ONCE: Once = Once::new();
 }

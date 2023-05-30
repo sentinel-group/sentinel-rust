@@ -44,6 +44,7 @@ pub trait CounterTrait<K = ParamKey>: Send + Sync + std::fmt::Debug + Default + 
         Q: Hash + Eq + 'static + Sized;
     fn keys(&self) -> Vec<K>;
     fn len(&self) -> usize;
+    fn is_empty(&self) -> bool;
     fn purge(&self);
 }
 
@@ -86,7 +87,7 @@ where
     fn add_if_absent(&self, key: K, value: u64) -> Option<Arc<AtomicU64>> {
         let mut cache = self.cache.write().unwrap();
         if cache.contains(&key) {
-            cache.get(&key).map(|v| Arc::clone(v))
+            cache.get(&key).map(Arc::clone)
         } else {
             cache.put(key, Arc::new(AtomicU64::new(value)));
             None
@@ -99,7 +100,7 @@ where
         KeyRef<K>: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        self.cache.write().unwrap().get(&key).map(|v| Arc::clone(v))
+        self.cache.write().unwrap().get(key).map(Arc::clone)
     }
 
     // `remove` removes a key from the cache.
@@ -109,7 +110,7 @@ where
         KeyRef<K>: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        self.cache.write().unwrap().pop(&key).is_some()
+        self.cache.write().unwrap().pop(key).is_some()
     }
 
     // `contains` checks if a key exists in cache
@@ -119,7 +120,7 @@ where
         KeyRef<K>: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        self.cache.read().unwrap().contains(&key)
+        self.cache.read().unwrap().contains(key)
     }
 
     // `keys` returns the keys in the cache, from oldest to newest.
@@ -132,6 +133,10 @@ where
     // `len` returns the number of items in the cache.
     fn len(&self) -> usize {
         self.cache.read().unwrap().len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     // `purge` clears all cache entries.
@@ -186,6 +191,7 @@ pub(crate) mod test {
                 Q: Hash + Eq + Sized + 'static;
             fn keys(&self) -> Vec<K>;
             fn len(&self) -> usize;
+            fn is_empty(&self) -> bool;
             fn purge(&self);
         }
     }

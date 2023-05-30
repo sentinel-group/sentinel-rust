@@ -202,7 +202,7 @@ mod test {
             utils::sleep_for_ms(20);
         });
         set_cpu_usage(0.0);
-        assert!((current_cpu_usage() - 0.0) < f32::EPSILON);
+        assert!((current_cpu_usage() - 0.0).abs() < f32::EPSILON);
         init_cpu_collector(50);
         utils::sleep_for_ms(500);
         assert!(current_cpu_usage() > 0.0);

@@ -79,7 +79,6 @@ impl CircuitBreakerTrait for ErrorRatioBreaker {
                 } else {
                     self.breaker.from_half_open_to_open(Arc::new(1));
                 }
-                return;
             }
             State::Closed => {
                 if total_count >= self.min_request_amount
