@@ -101,6 +101,11 @@ pub trait StateChangeListener: Sync + Send {
     /// Argument rule is copy from circuit breaker's rule, any changes of rule don't take effect for circuit breaker
     /// Copying rule has a performance penalty and avoids invalid listeners as much as possible
     fn on_transform_to_half_open(&self, prev: State, rule: Arc<Rule>);
+
+    /// `on_circuit_breaker_drop` is triggered when circuit breaker is drop.
+    /// Argument rule is copy from circuit breaker's rule, any changes of rule don't take effect for circuit breaker
+    /// Copying rule has a performance penalty and avoids invalid listeners as much as possible
+    fn on_circuit_breaker_drop(&self, prev: State, rule: Arc<Rule>);
 }
 
 /// `CircuitBreakerTrait` is the basic trait of circuit breaker
@@ -343,6 +348,15 @@ impl BreakerBase {
     }
 }
 
+impl Drop for BreakerBase {
+    fn drop(&mut self) {
+        let listeners = state_change_listeners().lock().unwrap();
+        for listener in &*listeners {
+            listener.on_circuit_breaker_drop(self.current_state(), Arc::clone(&self.rule));
+        }
+    }
+}
+
 #[cfg(test)]
 pub(crate) use test::MockCircuitBreaker;
 
@@ -379,6 +393,7 @@ pub(crate) mod test {
             fn on_transform_to_closed(&self, prev: State, rule: Arc<Rule>);
             fn on_transform_to_open(&self, prev: State, rule: Arc<Rule>, snapshot: Option<Arc<Snapshot>>);
             fn on_transform_to_half_open(&self, prev: State, rule: Arc<Rule>);
+            fn on_circuit_breaker_drop(&self, prev: State, rule: Arc<Rule>);
         }
     }
 
@@ -750,5 +765,38 @@ pub(crate) mod test {
         clear_state_change_listeners();
         assert!(changed);
         assert!(breaker.next_retry_timestamp_ms() > 0);
+    }
+
+    #[test]
+    #[ignore]
+    fn on_circuit_breaker_drop() {
+        // by default, the state of `breaker` is `State::Closed` (see the impl of `Default` trait on `State`)
+        clear_state_change_listeners();
+        let mut listener = MockStateListener::new();
+        listener
+            .expect_on_circuit_breaker_drop()
+            .returning(|prev: State, rule: Arc<Rule>| {
+                logging::debug!(
+                    "circuit breaker drop, strategy: {:?}, previous state: {:?}",
+                    rule.strategy,
+                    prev
+                );
+                assert_eq!(prev, State::Closed);
+            });
+        register_state_change_listeners(vec![Arc::new(listener)]);
+        let rule = Arc::new(Rule {
+            resource: "abc".into(),
+            strategy: BreakerStrategy::Custom(101),
+            retry_timeout_ms: 3000,
+            min_request_amount: 10,
+            stat_interval_ms: 10000,
+            max_allowed_rt_ms: 50,
+            threshold: 0.5,
+            ..Default::default()
+        });
+        {
+            let _breaker = SlowRtBreaker::new(Arc::clone(&rule));
+        }
+        clear_state_change_listeners();
     }
 }
