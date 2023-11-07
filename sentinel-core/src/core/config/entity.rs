@@ -1,4 +1,5 @@
 use super::constant::*;
+use crate::config::get_default_log_dir;
 use crate::{
     base::{check_validity_for_reuse_statistic, constant::*, ResourceType},
     Error, Result,
@@ -38,7 +39,7 @@ impl Default for LogMetricConfig {
     fn default() -> Self {
         LogMetricConfig {
             use_pid: true,
-            dir: LOG_METRICS_DIR.into(),
+            dir: get_default_log_dir(),
             single_file_max_size: SINGLE_FILE_MAX_SIZE,
             max_file_count: MAX_FILE_AMOUNT,
             flush_interval_sec: FLUSH_INTERVAL_SEC,
