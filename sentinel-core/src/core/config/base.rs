@@ -244,3 +244,11 @@ pub fn metric_stat_sample_count() -> u32 {
         .try_with(|c| c.borrow().config.stat.sample_count)
         .unwrap()
 }
+
+#[inline]
+pub fn get_default_log_dir() -> String {
+    match dirs::home_dir() {
+        Some(path) => path.join(LOG_METRICS_DIR).to_string_lossy().to_string(),
+        None => LOG_METRICS_DIR.to_string(),
+    }
+}

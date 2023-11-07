@@ -66,6 +66,7 @@ k8s-openapi = { version = "0.16.0", default-features = false, features = [
   "v1_25",
 ], optional = true }
 schemars = { version = "0.8.8", optional = true }
+dirs = "5.0.1"
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
 # cannot add "wasm-bindgen" feature to uuid, 

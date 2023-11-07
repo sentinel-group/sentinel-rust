@@ -60,6 +60,14 @@ impl ResourceNode {
     pub fn max_concurrency(&self) -> u32 {
         self.metric.max_concurrency()
     }
+
+    pub fn get_res_name(&self) -> &str {
+        self.res_name.as_ref()
+    }
+
+    pub fn get_resource_type(&self) -> ResourceType {
+        self.resource_type
+    }
 }
 
 impl MetricItemRetriever for ResourceNode {
