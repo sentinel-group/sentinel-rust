@@ -9,6 +9,10 @@ pub use ds_etcdv3::*;
 pub mod ds_consul;
 #[cfg(feature = "ds_consul")]
 pub use ds_consul::*;
+#[cfg(feature = "ds_apollo")]
+pub mod ds_apollo;
+#[cfg(feature = "ds_apollo")]
+pub use ds_apollo::*;
 cfg_k8s! {
     pub mod ds_k8s;
     pub use ds_k8s::*;

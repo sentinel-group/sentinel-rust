@@ -31,6 +31,7 @@ metric_log = ["directories", "regex"]
 ds_etcdv3 = ["etcd-rs", "futures"]
 ds_consul = ["consul", "base64"]
 ds_k8s = ["kube", "k8s-openapi", "schemars", "futures"]
+ds_apollo = ["apollo-client", "futures-util"]
 
 [dependencies]
 sentinel-macros = { version = "0.1.0", path = "../sentinel-macros", optional = true }
@@ -66,6 +67,8 @@ k8s-openapi = { version = "0.16.0", default-features = false, features = [
   "v1_25",
 ], optional = true }
 schemars = { version = "0.8.8", optional = true }
+apollo-client = { version = "0.7.5", optional = true }
+futures-util = { version = "0.3.29", optional = true }
 dirs = "5.0.1"
 
 [target.'cfg(not(target_arch="wasm32"))'.dependencies]
@@ -77,6 +80,7 @@ uuid = { version = "1.2", features = ["serde", "v4"] }
 mockall = "0.11.0"
 rand = "0.8.4"
 tokio = { version = "1", features = ["full"] }
+url = "2.5.0"
 
 [lib]
 doctest = false
@@ -211,3 +215,8 @@ required-features = ["full", "ds_consul"]
 name = "k8s"
 path = "../examples/datasources/k8s.rs"
 required-features = ["full", "ds_k8s"]
+
+[[example]]
+name = "apollo"
+path = "../examples/datasources/apollo.rs"
+required-features = ["full", "ds_apollo"]
