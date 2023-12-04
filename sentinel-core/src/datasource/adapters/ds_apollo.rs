@@ -5,7 +5,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use futures_util::{pin_mut, stream::StreamExt};
+use futures_util::{future, pin_mut, stream::StreamExt};
 
 pub struct ApolloDatasource<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> {
     ds: DataSourceBase<P, H>,
@@ -31,7 +31,7 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Apol
         }
     }
 
-    pub async fn initialize(&mut self) -> Result<()>{
+    pub async fn initialize(&mut self) -> Result<()> {
         self.watch().await
     }
 
@@ -41,40 +41,45 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Apol
             self.property
         );
 
-        loop {
-            let stream = self.client.watch(self.watch_request.clone());
+        let stream = self.client.watch(self.watch_request.clone())
+                .take_while(|_| future::ready(!self.closed.load(Ordering::SeqCst)));
 
-            pin_mut!(stream);
+        pin_mut!(stream);
 
-            while let Some(response) = stream.next().await {
-                // Load rules
-                let responses = response?;
-                // One namespace for one response
-                for (_, value) in responses {
-                    let fetch_response = match value {
-                        Ok(r) => r,
-                        Err(e) => {
-                            logging::error!("[Apollo] Fail to fetch response from apollo, {:?}", e);
-                            continue
+        while let Some(response) = stream.next().await {
+            match response {
+                Ok(value) => {
+                    // Load rules
+                    let responses = value;
+                    // One namespace for one response
+                    for (_, value) in responses {
+                        let fetch_response = match value {
+                            Ok(r) => r,
+                            Err(e) => {
+                                logging::error!("[Apollo] Fail to fetch response from apollo, {:?}", e);
+                                continue;
+                            }
+                        };
+                        let rule = fetch_response.configurations.get(&self.property);
+                        match self.ds.update(rule) {
+                            Ok(()) => {}
+                            Err(e) =>
+                                logging::error!("[Apollo] Failed to update rules, {:?}", e)
                         }
-                    };
-                    let rule = fetch_response.configurations.get(&self.property);
-                    match self.ds.update(rule) {
-                        Ok(()) => {},
-                        Err(e) =>
-                            logging::error!("[Apollo] Failed to update rules, {:?}", e)
                     }
+                },
+                // retry
+                Err(e) => {
+                    logging::error!("[Apollo] Client yield an error, {:?}", e);
+                    sleep_for_ms(1000);
                 }
             }
-            if self.closed.load(Ordering::SeqCst) {
-                return Ok(());
-            }
-            sleep_for_ms(1000);
         }
 
+        Ok(())
     }
 
-    pub async fn close(&mut self) -> Result<()> {
+    pub fn close(&self) -> Result<()> {
         self.closed.store(true, Ordering::SeqCst);
         logging::info!(
             "[Apollo] Apollo data source has been closed. Stop watch the key {:?} from apollo.",
@@ -82,11 +87,10 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Apol
         );
         Ok(())
     }
-
 }
 
 impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> DataSource<P, H>
-    for ApolloDatasource<P, H>
+for ApolloDatasource<P, H>
 {
     fn get_base(&mut self) -> &mut DataSourceBase<P, H> {
         &mut self.ds
