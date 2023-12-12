@@ -48,24 +48,19 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Apol
 
         while let Some(response) = stream.next().await {
             match response {
-                Ok(value) => {
+                Ok(responses) => {
                     // Load rules
-                    let responses = value;
                     // One namespace for one response
                     for (_, value) in responses {
-                        let fetch_response = match value {
-                            Ok(r) => r,
-                            Err(e) => {
-                                logging::error!("[Apollo] Fail to fetch response from apollo, {:?}", e);
-                                continue;
-                            }
+                        match value {
+                            Ok(r) => {
+                                let rule = r.configurations.get(&self.property);
+                                if let Err(e) = self.ds.update(rule) {
+                                    logging::error!("[Apollo] Failed to update rules, {:?}", e);
+                                }
+                            },
+                            Err(e) => logging::error!("[Apollo] Fail to fetch response from apollo, {:?}", e),
                         };
-                        let rule = fetch_response.configurations.get(&self.property);
-                        match self.ds.update(rule) {
-                            Ok(()) => {}
-                            Err(e) =>
-                                logging::error!("[Apollo] Failed to update rules, {:?}", e)
-                        }
                     }
                 },
                 // retry
