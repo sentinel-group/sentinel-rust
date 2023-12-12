@@ -1,15 +1,16 @@
 #![allow(unreachable_code)]
 use apollo_client::conf::{requests::WatchRequest, ApolloConfClientBuilder};
-use url::Url;
-use tokio::{task::JoinHandle, time::{sleep, Duration}};
 use sentinel_core::{
-    flow,
     base,
-    Result,
-    datasource::{ApolloDatasource, new_flow_rule_handler, rule_json_array_parser},
-    EntryBuilder
+    datasource::{new_flow_rule_handler, rule_json_array_parser, ApolloDatasource},
+    flow, EntryBuilder, Result,
 };
 use std::sync::Arc;
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
+use url::Url;
 
 // An example on apollo config service data source.
 // Run this example by following steps:
@@ -114,4 +115,3 @@ async fn task() {
     println!("{}: passed", sentinel_core::utils::curr_time_millis());
     sleep(Duration::from_millis(100)).await;
 }
-
