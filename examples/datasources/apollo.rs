@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
         ..Default::default()
     };
 
-    // Sleep 3 seconds and then read the apollp
+    // Sleep 3 seconds and then read the apollo
     sentinel_core::utils::sleep_for_ms(3000);
 
     let property = "flow-apollo-example";
