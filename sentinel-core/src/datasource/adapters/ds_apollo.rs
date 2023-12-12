@@ -1,11 +1,11 @@
 use super::*;
 use crate::{logging, utils::sleep_for_ms};
 use apollo_client::conf::{requests::WatchRequest, ApolloConfClient};
+use futures_util::{future, pin_mut, stream::StreamExt};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use futures_util::{future, pin_mut, stream::StreamExt};
 
 pub struct ApolloDatasource<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> {
     ds: DataSourceBase<P, H>,
@@ -16,8 +16,12 @@ pub struct ApolloDatasource<P: SentinelRule + PartialEq + DeserializeOwned, H: P
 }
 
 impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> ApolloDatasource<P, H> {
-    pub fn new(client: ApolloConfClient, property: String, watch_request: WatchRequest,
-               handlers: Vec<Arc<H>>) -> Self {
+    pub fn new(
+        client: ApolloConfClient,
+        property: String,
+        watch_request: WatchRequest,
+        handlers: Vec<Arc<H>>,
+    ) -> Self {
         let mut ds = DataSourceBase::default();
         for h in handlers {
             ds.add_property_handler(h);
@@ -41,8 +45,10 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Apol
             self.property
         );
 
-        let stream = self.client.watch(self.watch_request.clone())
-                .take_while(|_| future::ready(!self.closed.load(Ordering::SeqCst)));
+        let stream = self
+            .client
+            .watch(self.watch_request.clone())
+            .take_while(|_| future::ready(!self.closed.load(Ordering::SeqCst)));
 
         pin_mut!(stream);
 
@@ -58,11 +64,14 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Apol
                                 if let Err(e) = self.ds.update(rule) {
                                     logging::error!("[Apollo] Failed to update rules, {:?}", e);
                                 }
-                            },
-                            Err(e) => logging::error!("[Apollo] Fail to fetch response from apollo, {:?}", e),
+                            }
+                            Err(e) => logging::error!(
+                                "[Apollo] Fail to fetch response from apollo, {:?}",
+                                e
+                            ),
                         };
                     }
-                },
+                }
                 // retry
                 Err(e) => {
                     logging::error!("[Apollo] Client yield an error, {:?}", e);
@@ -85,7 +94,7 @@ impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> Apol
 }
 
 impl<P: SentinelRule + PartialEq + DeserializeOwned, H: PropertyHandler<P>> DataSource<P, H>
-for ApolloDatasource<P, H>
+    for ApolloDatasource<P, H>
 {
     fn get_base(&mut self) -> &mut DataSourceBase<P, H> {
         &mut self.ds
