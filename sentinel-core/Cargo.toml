@@ -51,7 +51,7 @@ anyhow = "1.0.51"
 # logging 
 directories = { version = "4.0.1", optional = true }
 env_logger = { version = "0.10.0", optional = true }
-log4rs = { version = "1", git = 'https://github.com/Forsworns/log4rs', optional = true }
+log4rs = { version = "1", optional = true }
 log = "0.4"
 regex = { version = "1.5", optional = true }
 prometheus_exporter = { version = "0.8.4", optional = true }
