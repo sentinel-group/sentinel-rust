@@ -1,7 +1,7 @@
 use super::{LeapArray, MetricBucket};
 use crate::base::{MetricEvent, WriteStat, DEFAULT_STATISTIC_MAX_RT};
 use crate::utils::curr_time_millis;
-use crate::Result;
+use crate::{logging, Result};
 use std::cmp;
 
 /// a specialization of `LeapArray<T>` with `MetricBucket`
@@ -9,13 +9,21 @@ pub type BucketLeapArray = LeapArray<MetricBucket>;
 
 impl WriteStat for BucketLeapArray {
     fn add_count(&self, event: MetricEvent, count: u64) {
-        self.add_count_with_time(curr_time_millis(), event, count)
-            .unwrap();
+        let now = curr_time_millis();
+        if let Err(err) = self.add_count_with_time(now, event, count) {
+            logging::error!(
+                "BucketLeapArray::add_count: {:?} Failed to get_bucket_of_time. Error: {:?}.",
+                now,
+                err
+            );
+        }
     }
 
     fn update_concurrency(&self, concurrency: u32) {
-        self.update_concurrency_with_time(curr_time_millis(), concurrency)
-            .unwrap();
+        let now = curr_time_millis();
+        if let Err(err) = self.update_concurrency_with_time(now, concurrency) {
+            logging::error!("BucketLeapArray::update_concurrency: {:?} Failed to get_bucket_of_time. Error: {:?}.", now, err);
+        }
     }
 }
 
