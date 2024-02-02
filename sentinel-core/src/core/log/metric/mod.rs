@@ -44,11 +44,16 @@ pub trait MetricLogWriter {
 // MetricSearcher searches metric items from the metric log file under given condition.
 pub trait MetricSearcher {
     fn find_by_time_and_resource(
+        &self,
         begin_time_ms: u64,
         end_time_ms: u64,
         resource: &str,
-    ) -> Result<MetricItem>;
-    fn find_from_time_with_max_lines(begin_time_ms: u64, max_lines: u32) -> Result<MetricItem>;
+    ) -> Result<MetricItemVec>;
+    fn find_from_time_with_max_lines(
+        &self,
+        begin_time_ms: u64,
+        max_lines: usize,
+    ) -> Result<MetricItemVec>;
 }
 
 // Generate the metric file name from the service name.

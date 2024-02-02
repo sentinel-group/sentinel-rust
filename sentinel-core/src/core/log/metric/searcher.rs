@@ -30,6 +30,43 @@ pub struct DefaultMetricSearcher {
     pub cached_pos: Mutex<FilePosition>,
 }
 
+impl MetricSearcher for DefaultMetricSearcher {
+    fn find_by_time_and_resource(
+        &self,
+        begin_time_ms: u64,
+        end_time_ms: u64,
+        resource: &str,
+    ) -> Result<MetricItemVec> {
+        self.search_offset_and_read(begin_time_ms, &move |filenames: Vec<PathBuf>,
+                                                          file_no: usize,
+                                                          offset: SeekFrom|
+              -> Result<MetricItemVec> {
+            self.reader.read_metrics_by_end_time(
+                filenames,
+                file_no,
+                offset,
+                begin_time_ms,
+                end_time_ms,
+                resource.to_owned(),
+            )
+        })
+    }
+
+    fn find_from_time_with_max_lines(
+        &self,
+        begin_time_ms: u64,
+        max_lines: usize,
+    ) -> Result<MetricItemVec> {
+        self.search_offset_and_read(begin_time_ms, &|filenames: Vec<PathBuf>,
+                                                     file_no: usize,
+                                                     offset: SeekFrom|
+         -> Result<MetricItemVec> {
+            self.reader
+                .read_metrics(filenames, file_no, offset, max_lines)
+        })
+    }
+}
+
 impl DefaultMetricSearcher {
     pub fn new(base_dir: String, base_filename: String) -> Result<Self> {
         if base_dir.is_empty() {
@@ -44,41 +81,6 @@ impl DefaultMetricSearcher {
             base_filename: PathBuf::from(base_filename),
             reader,
             cached_pos: Mutex::new(FilePosition::default()),
-        })
-    }
-
-    pub fn find_by_time_and_resource(
-        &self,
-        begin_time_ms: u64,
-        end_time_ms: u64,
-        resource: String,
-    ) -> Result<MetricItemVec> {
-        self.search_offset_and_read(begin_time_ms, &move |filenames: Vec<PathBuf>,
-                                                          file_no: usize,
-                                                          offset: SeekFrom|
-              -> Result<MetricItemVec> {
-            self.reader.read_metrics_by_end_time(
-                filenames,
-                file_no,
-                offset,
-                begin_time_ms,
-                end_time_ms,
-                resource.clone(),
-            )
-        })
-    }
-
-    pub fn find_from_time_with_max_lines(
-        &self,
-        begin_time_ms: u64,
-        max_lines: usize,
-    ) -> Result<MetricItemVec> {
-        self.search_offset_and_read(begin_time_ms, &|filenames: Vec<PathBuf>,
-                                                     file_no: usize,
-                                                     offset: SeekFrom|
-         -> Result<MetricItemVec> {
-            self.reader
-                .read_metrics(filenames, file_no, offset, max_lines)
         })
     }
 
