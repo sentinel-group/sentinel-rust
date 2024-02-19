@@ -89,23 +89,23 @@ pub trait StateChangeListener: Sync + Send {
     /// on_transform_to_closed is triggered when circuit breaker state transformed to Closed.
     /// Argument rule is copy from circuit breaker's rule, any changes of rule don't take effect for circuit breaker
     /// Copying rule has a performance penalty and avoids invalid listeners as much as possible
-    fn on_transform_to_closed(&self, prev: State, rule: Arc<Rule>);
+    fn on_transform_to_closed(&self, prev: State, rule: Arc<Rule>) {}
 
     /// `on_transform_to_open` is triggered when circuit breaker state transformed to Open.
     /// The "snapshot" indicates the triggered value when the transformation occurs.
     /// Argument rule is copy from circuit breaker's rule, any changes of rule don't take effect for circuit breaker
     /// Copying rule has a performance penalty and avoids invalid listeners as much as possible
-    fn on_transform_to_open(&self, prev: State, rule: Arc<Rule>, snapshot: Option<Arc<Snapshot>>);
+    fn on_transform_to_open(&self, prev: State, rule: Arc<Rule>, snapshot: Option<Arc<Snapshot>>) {}
 
     /// `on_transform_to_half_open` is triggered when circuit breaker state transformed to HalfOpen.
     /// Argument rule is copy from circuit breaker's rule, any changes of rule don't take effect for circuit breaker
     /// Copying rule has a performance penalty and avoids invalid listeners as much as possible
-    fn on_transform_to_half_open(&self, prev: State, rule: Arc<Rule>);
+    fn on_transform_to_half_open(&self, prev: State, rule: Arc<Rule>) {}
 
     /// `on_circuit_breaker_drop` is triggered when circuit breaker is drop.
     /// Argument rule is copy from circuit breaker's rule, any changes of rule don't take effect for circuit breaker
     /// Copying rule has a performance penalty and avoids invalid listeners as much as possible
-    fn on_circuit_breaker_drop(&self, prev: State, rule: Arc<Rule>);
+    fn on_circuit_breaker_drop(&self, prev: State, rule: Arc<Rule>) {}
 }
 
 /// `CircuitBreakerTrait` is the basic trait of circuit breaker
