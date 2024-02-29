@@ -1,5 +1,5 @@
 #![allow(unreachable_code)]
-use apollo_client::conf::{requests::WatchRequest, ApolloConfClientBuilder};
+use sentinel_core::apollo_client::conf::{requests::WatchRequest, ApolloConfClientBuilder};
 use sentinel_core::{
     base,
     datasource::{new_flow_rule_handler, rule_json_array_parser, ApolloDatasource},

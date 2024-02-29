@@ -1,5 +1,5 @@
 #![allow(unreachable_code)]
-use consul::{kv::KVPair, kv::KV, Client, Config, QueryOptions};
+use sentinel_core::consul::{kv::KVPair, kv::KV, Client, Config, QueryOptions};
 use sentinel_core::{
     base,
     datasource::{ds_consul::ConsulDataSource, new_flow_rule_handler, rule_json_array_parser},
