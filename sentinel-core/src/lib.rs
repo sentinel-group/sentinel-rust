@@ -153,11 +153,23 @@ pub mod logging;
 cfg_exporter! {
     /// Metric Exporter implementations. Currently, only Prometheus is supported.
     pub mod exporter;
+    pub extern crate prometheus_exporter;
 }
 cfg_datasource! {
     /// Dynamic datasource support for Sentinel rule management.
-    /// Currently, k8s, etcd and consul are supported.
+    /// Currently, k8s, etcd, consul and apollo are supported.
     pub mod datasource;
+    #[cfg(feature = "ds_etcdv3")]
+    pub extern crate etcd_rs;
+    #[cfg(feature = "ds_consul")]
+    pub extern crate consul;
+    #[cfg(feature = "ds_apollo")]
+    pub extern crate apollo_client;
+}
+
+cfg_k8s! {
+    pub extern crate k8s_openapi;
+    pub extern crate kube;
 }
 // Utility functions for Sentinel.
 pub mod utils;

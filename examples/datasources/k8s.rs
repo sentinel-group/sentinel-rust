@@ -1,6 +1,6 @@
 #![allow(unreachable_code)]
-use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
-use kube::{
+use sentinel_core::k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
+use sentinel_core::kube::{
     api::{Api, Patch, PatchParams, PostParams},
     runtime::wait::{await_condition, conditions},
     Client, CustomResourceExt,
