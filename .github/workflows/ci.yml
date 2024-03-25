@@ -52,10 +52,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: test 
-            args: --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace -- --nocapture
+            args: --all-features --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace -- --nocapture
 
       - name: Ignored Unit Tests
         uses: actions-rs/cargo@v1
         with:
             command: test
-            args: --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace -- --ignored --test-threads=1 --nocapture
+            args: --all-features --workspace --exclude sentinel-envoy-module --exclude ebpf-probes --exclude ebpf-userspace -- --ignored --test-threads=1 --nocapture
