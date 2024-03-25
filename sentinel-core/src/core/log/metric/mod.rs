@@ -58,17 +58,20 @@ pub trait MetricSearcher {
 
 // Generate the metric file name from the service name.
 fn form_metric_filename(service_name: &str, with_pid: bool) -> String {
-    let dot = ".";
     let separator = "-";
-    let mut filename = String::new();
-    if service_name.contains(dot) {
-        filename = service_name.replace(dot, separator);
-    }
-    let mut filename = format!("{}{}{}", filename, separator, METRIC_FILENAME_SUFFIX);
+    let mut filename = if service_name.contains('.') {
+        service_name.replace('.', separator)
+    } else {
+        service_name.to_string()
+    };
+
+    filename.push_str(&format!("{}{}", separator, METRIC_FILENAME_SUFFIX));
+
     if with_pid {
         let pid = std::process::id();
-        filename = format!("{}.pid{}", filename, pid);
+        filename.push_str(&format!(".pid{}", pid));
     }
+
     filename
 }
 
@@ -146,4 +149,130 @@ fn filename_comparator(file1: &PathBuf, file2: &PathBuf) -> Ordering {
 
     // same date, compare the file number
     name1.cmp(name2)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fs::File,
+        path::{Path, PathBuf},
+    };
+
+    use tempfile::tempdir;
+
+    use crate::log::metric::{
+        filename_comparator, filename_matches, form_metric_filename, list_metric_files,
+    };
+
+    #[test]
+    fn test_form_metric_filename() {
+        let app_name1 = "foo-test";
+        let app_name2 = "foo.test";
+        let mf1 = form_metric_filename(app_name1, false);
+        let mf2 = form_metric_filename(app_name2, false);
+        assert_eq!("foo-test-metrics.log", mf1);
+        assert_eq!(mf1, mf2);
+
+        let mf1_pid = form_metric_filename(app_name2, true);
+        assert!(mf1_pid.ends_with(&std::process::id().to_string()));
+    }
+
+    #[test]
+    fn test_filename_matches() {
+        let test_cases = vec![
+            (
+                "~/logs/csp/app1-metric.log.2018-12-24.1111",
+                "~/logs/csp/app1-metric.log",
+                true,
+            ),
+            (
+                "~/logs/csp/app1-metric.log-2018-12-24.1111",
+                "~/logs/csp/app1-metric.log",
+                false,
+            ),
+            (
+                "~/logs/csp/app2-metric.log.2018-12-24.1111",
+                "~/logs/csp/app1-metric.log",
+                false,
+            ),
+        ];
+
+        for (filename, base_filename, expected) in test_cases {
+            assert_eq!(filename_matches(filename, base_filename), expected);
+        }
+    }
+
+    #[test]
+    fn test_filename_comparator_no_pid() {
+        let mut arr = vec![
+            PathBuf::from("metrics.log.2018-03-06"),
+            PathBuf::from("metrics.log.2018-03-07"),
+            PathBuf::from("metrics.log.2018-03-07.51"),
+            PathBuf::from("metrics.log.2018-03-07.10"),
+            PathBuf::from("metrics.log.2018-03-06.100"),
+        ];
+        arr.sort_by(filename_comparator);
+
+        let expected = vec![
+            PathBuf::from("metrics.log.2018-03-06"),
+            PathBuf::from("metrics.log.2018-03-06.100"),
+            PathBuf::from("metrics.log.2018-03-07"),
+            PathBuf::from("metrics.log.2018-03-07.10"),
+            PathBuf::from("metrics.log.2018-03-07.51"),
+        ];
+
+        assert_eq!(expected, arr);
+    }
+
+    #[test]
+    fn test_filename_comparator_with_pid() {
+        let mut arr = vec![
+            PathBuf::from("metrics.log.pid21879.2018-03-06"),
+            PathBuf::from("metrics.log.pid21879.2018-03-07"),
+            PathBuf::from("metrics.log.pid21879.2018-03-07.51"),
+            PathBuf::from("metrics.log.pid21879.2018-03-07.10"),
+            PathBuf::from("metrics.log.pid21879.2018-03-06.100"),
+        ];
+        arr.sort_by(filename_comparator);
+
+        let expected = vec![
+            PathBuf::from("metrics.log.pid21879.2018-03-06"),
+            PathBuf::from("metrics.log.pid21879.2018-03-06.100"),
+            PathBuf::from("metrics.log.pid21879.2018-03-07"),
+            PathBuf::from("metrics.log.pid21879.2018-03-07.10"),
+            PathBuf::from("metrics.log.pid21879.2018-03-07.51"),
+        ];
+
+        assert_eq!(expected, arr);
+    }
+
+    #[test]
+    fn test_list_metric_files() {
+        let temp_dir = tempdir().expect("Failed to create temporary directory");
+
+        let base_dir = temp_dir.path().to_path_buf();
+        let file_pattern = Path::new("app1-metrics.log");
+
+        // Create temporary files and directories for testing
+        let paths = [
+            "app1-metrics.log.2020-02-14",
+            "app1-metrics.log.2020-02-14.12",
+            "app1-metrics.log.2020-02-14.32",
+            "app1-metrics.log.2020-02-15",
+            "app1-metrics.log.2020-02-16",
+            "app1-metrics.log.2020-02-16.100",
+            "app2-metrics.log.2020-02-14",
+        ];
+
+        for path in paths.iter() {
+            let file_path = temp_dir.path().join(path);
+            File::create(&file_path).expect("Failed to create test file");
+        }
+
+        let result =
+            list_metric_files(&base_dir, file_pattern).expect("Failed to list metric files");
+
+        // Assert that the number of files found matches the expected count
+        assert_eq!(result.len(), 6);
+    }
 }
