@@ -44,7 +44,6 @@ pub fn write_task(mut map: MetricTimeMap) {
     }
     // Sort the time
     keys.sort_unstable();
-    println!("keys: {:?}", keys);
 
     let writer = METRIC_WRITER.as_ref().unwrap();
     let mut writer = writer.lock().unwrap();
@@ -73,12 +72,9 @@ pub fn do_aggregate() {
         current_metric_items(stat::inbound_node(), cur_time),
         stat::inbound_node(),
     );
-    println!("map: {:?}", map);
 
     // Update current last fetch timestamp.
     LAST_FETCH_TIME.store(cur_time, Ordering::SeqCst);
-
-    println!("Store last fetch time {}", cur_time);
 
     if !map.is_empty() {
         std::thread::spawn(move || write_task(map));
