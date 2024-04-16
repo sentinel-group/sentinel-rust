@@ -1,7 +1,9 @@
+use byteorder::{BigEndian, ReadBytesExt};
+
 use super::*;
 use crate::{logging, Error, Result};
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::sync::Mutex;
 #[derive(Debug)]
 pub struct FilePosition {
@@ -139,32 +141,32 @@ impl DefaultMetricSearcher {
         filename: &str,
         begin_time_ms: u64,
         last_pos: SeekFrom,
-    ) -> Result<u32> {
-        let mut cached_pos = self.cached_pos.lock().unwrap();
-        cached_pos.idx_filename = "".into();
-        cached_pos.metric_filename = "".into();
-
+    ) -> Result<u64> {
         let idx_filename = form_metric_idx_filename(filename);
         let begin_sec = begin_time_ms / 1000;
         let mut file = File::open(&idx_filename)?;
 
-        // Set position to the offset recorded in the idx file
-        cached_pos.cur_offset_in_idx = SeekFrom::Start(file.seek(last_pos)?);
-        let mut sec: u64;
-        loop {
-            let mut buffer: [u8; 8] = [0; 8];
-            file.read_exact(&mut buffer)?;
-            sec = u64::from_be_bytes(buffer);
+        let mut cached_pos = self.cached_pos.lock().unwrap();
+
+        // Seek to the last position
+        file.seek(last_pos)?;
+
+        let mut index_data = Vec::new();
+        file.read_to_end(&mut index_data)?;
+
+        let mut offset = 0;
+        let mut sec = 0;
+
+        let mut reader = Cursor::new(index_data);
+        while let Ok(sec_be) = ReadBytesExt::read_u64::<BigEndian>(&mut reader) {
+            sec = sec_be;
+            let offset_be = ReadBytesExt::read_u64::<BigEndian>(&mut reader)?;
+            offset = offset_be;
             if sec >= begin_sec {
                 break;
             }
-            let mut buffer: [u8; 4] = [0; 4];
-            file.read_exact(&mut buffer)?;
-            cached_pos.cur_offset_in_idx = SeekFrom::Start(file.seek(SeekFrom::Current(0))?);
         }
-        let mut buffer: [u8; 4] = [0; 4];
-        file.read_exact(&mut buffer)?;
-        let offset = u32::from_be_bytes(buffer);
+
         // Cache the idx filename and position
         cached_pos.metric_filename = filename.into();
         cached_pos.idx_filename = idx_filename.into();

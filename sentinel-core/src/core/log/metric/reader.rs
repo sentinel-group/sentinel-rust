@@ -85,38 +85,36 @@ impl DefaultMetricLogReader {
         let end_sec = end_ms / 1000;
         let file = open_file_and_seek_to(filename, offset)?;
 
-        let mut buf_reader = BufReader::new(file);
+        let buf_reader = BufReader::new(file);
         let mut items = Vec::with_capacity(1024);
-        loop {
-            let mut line = String::new();
-            let count = buf_reader.read_line(&mut line)?;
-            if count == 0 {
-                return Ok((Vec::new(), true));
-            }
-            let item = base::MetricItem::from_string(&line);
-            match item {
-                Ok(item) => {
-                    let ts_sec = item.timestamp / 1000;
-                    // current_second should in [begin_sec, end_sec]
-                    if ts_sec < begin_sec || ts_sec > end_sec {
-                        return Ok((items, false));
-                    }
 
-                    // empty resource name indicates "fetch all"
-                    if resource.is_empty() || resource == &item.resource {
-                        items.push(item);
-                    }
+        let lines = buf_reader.lines();
 
-                    if prev_size + items.len() >= MAX_ITEM_AMOUNT {
-                        return Ok((items, false));
-                    }
-                }
+        for line in lines {
+            let line = line?;
+            let item = match base::MetricItem::from_string(&line) {
+                Ok(item) => item,
                 Err(err) => {
-                    logging::error!("DefaultMetricLogReader::read_metrics_one_file_by_end_time: {:?} Failed to convert to MetricItem. Error: {:?}.", line,err);
+                    logging::error!("Failed to convert to MetricItem: {:?}", err);
                     continue;
                 }
+            };
+
+            let ts_time = item.timestamp / 1000;
+            if ts_time < begin_sec || ts_time > end_sec {
+                return Ok((items, false)); // Outside time range
+            }
+
+            if resource.is_empty() || resource == &item.resource {
+                items.push(item);
+            }
+
+            if prev_size + items.len() >= MAX_ITEM_AMOUNT {
+                return Ok((items, false)); // Reached maximum item amount
             }
         }
+
+        Ok((items, true)) // End of file
     }
 }
 
