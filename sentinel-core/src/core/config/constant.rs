@@ -11,8 +11,8 @@ pub const CONFIG_FILENAME: &str = "USE_DEFAULT_CONFIGURATION";
 
 // default metric log settings
 pub const FLUSH_INTERVAL_SEC: u32 = 1;
-pub const SINGLE_FILE_MAX_SIZE: u64 = 100; // 1024 * 1024 * 50;
-pub const MAX_FILE_AMOUNT: usize = 2; //8;
+pub const SINGLE_FILE_MAX_SIZE: u64 = 1024 * 1024 * 50; // 1024 * 1024 * 50;
+pub const MAX_FILE_AMOUNT: usize = 8; //8;
 pub const EXPORTER_ADDR: &str = "127.0.0.1:9091";
 pub const EXPORTER_METRICS_PATH: &str = "/metrics";
 
